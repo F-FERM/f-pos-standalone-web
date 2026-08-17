@@ -1,19 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Delete, RotateCcw, ArrowRight } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
+import { Form } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRight, Delete, RotateCcw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import FposLogo from "../components/login/LoginLogo";
-import FormCombobox from "../components/form/LoginFormCombobox";
 
-import LoginFormInput from "../components/form/LoginFormInput";
 import LoginFormCombobox from "../components/form/LoginFormCombobox";
-import FormInput from "../components/form/FormInput";
+import LoginFormInput from "../components/form/LoginFormInput";
 
 
 const MAX_PIN_LENGTH = 6;
@@ -25,10 +23,7 @@ const ROLES = [
   { value: "cashier", label: "Cashier" },
 ];
 
-// The whole login screen is a fixed 1024×768 "stage" that scales uniformly
-// to fit any viewport (like a kiosk display), rather than a fluid page that
-// reflows per breakpoint. This keeps every measurement below pixel-exact to
-// the design at any screen size, and centers it on black like the reference.
+
 const STAGE_WIDTH = 1024;
 const STAGE_HEIGHT = 768;
 
@@ -81,7 +76,6 @@ export default function LoginPage() {
     form.setValue("pin", "", { shouldValidate: true });
 
   const onSubmit = (values: LoginFormValues) => {
-    // Wire this up to your auth call.
     console.log("Logging in", values);
   };
 
@@ -102,12 +96,7 @@ export default function LoginPage() {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center overflow-hidden bg-black">
-      {/* Fixed-size stage, uniformly scaled to fit the viewport and centered.
-          `min(1, ...)` caps it at native size — on big monitors you get more
-          black margin, never an upscaled/blurry canvas.
-          Kept as inline style: the scale factor depends on runtime viewport
-          units (vw/dvh) combined via calc(), which Tailwind's static
-          arbitrary-value classes can't express. */}
+   
       <div
         className="relative shrink-0 origin-center w-[1024px] h-[768px]"
         style={{
@@ -121,7 +110,7 @@ export default function LoginPage() {
 
         {/* Left: brand + live clock — top-aligned with the card at y=84 */}
         <section className="absolute left-16 top-[140px] flex w-[420px] flex-col">
-          {/* Logo → tagline below it */}
+       
           <div className="flex flex-col items-start">
             <FposLogo />
             <p className="font-[GROCHES] text-[26px] font-normal leading-none tracking-[0%] text-white">
@@ -159,7 +148,6 @@ export default function LoginPage() {
               Login
             </h1>
 
-            {/* Role select — shared FormCombobox, kiosk variant (365×50 spec) */}
             <LoginFormCombobox
               name="role"
               placeholder="Select role"
@@ -169,9 +157,7 @@ export default function LoginPage() {
             />
             
 
-            {/* PIN field — shared FormInput, kiosk variant. type="password" gives
-                us the built-in show/hide eye toggle for free. readOnly since
-                entry is keypad-driven, not typed. */}
+           
             <LoginFormInput
               name="pin"
               type="password"
@@ -182,7 +168,6 @@ export default function LoginPage() {
               className="mb-[10px]"
             />
 
-            {/* Keypad — buttons 115×50, gap 10px, radius 10 */}
             <div className="mt-[25px] grid grid-cols-3 gap-[10px]">
               {KEYPAD_DIGITS.map((digit) => (
                 <button
@@ -232,11 +217,10 @@ export default function LoginPage() {
               </button>
             </div>
 
-            {/* Submit — 365×50, radius 10, at top:546 left:548 (36px below keypad) */}
             <Button
               type="submit"
               disabled={pin.length === 0}
-              className="mt-[29px] flex h-[50px] w-full items-center justify-center gap-1.5 rounded-[10px] bg-[#22C55E] font-poppins text-base font-bold tracking-wide text-white
+              className="mt-[29px] flex h-[50px] w-full items-center justify-center gap-1.5 rounded-[10px] bg-[#3EA200] cursor-pointer font-poppins text-base font-bold tracking-wide text-white
                 hover:bg-[#22C55E]/90 disabled:opacity-60"
             >
               LOGIN
