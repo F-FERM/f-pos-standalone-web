@@ -24,8 +24,6 @@ const ROLES = [
 ];
 
 
-const STAGE_WIDTH = 1024;
-const STAGE_HEIGHT = 768;
 
 const KEYPAD_BUTTON_CLASS =
   "w-[115px] h-[50px] rounded-[10px] ";
@@ -95,14 +93,7 @@ export default function LoginPage() {
     : "";
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center overflow-hidden bg-black">
-   
-      <div
-        className="relative shrink-0 origin-center w-[1024px] h-[768px]"
-        style={{
-          transform: `scale(min(1, min(calc(100vw / ${STAGE_WIDTH}px), calc(100dvh / ${STAGE_HEIGHT}px))))`,
-        }}
-      >
+    <div className="relative w-full h-full">
         {/* Background photo */}
         <div className="absolute inset-0 bg-[#141018] bg-cover bg-center bg-[url('/images/login/login-fpos.jpg')]" />
         {/* Darken + tint so the UI stays legible over the photo */}
@@ -228,7 +219,6 @@ export default function LoginPage() {
             </Button>
           </form>
         </Form>
-      </div>
     </div>
   );
 }
