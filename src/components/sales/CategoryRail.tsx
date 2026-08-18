@@ -30,25 +30,12 @@ interface Props {
 
 const RAIL_WIDTH = 88;
 
-/*
- * Active circle = 64px
- *
- * The border will curve around it.
- */
+
 const BUMP_RADIUS = 50;
 
-/*
- * How far the curve moves toward
- * the left side of the sidebar.
- */
 const BUMP_DEPTH = 46;
 
-/*
- * Smoothing factor for the bump curve.
- * ~0.55 approximates a circular arc (same idea as
- * SVG's circle-via-bezier constant, kappa).
- * Lower = tighter/more angular, higher = rounder.
- */
+
 const BUMP_SMOOTHING = 0.55;
 
 export default function CategoryRail({
@@ -113,51 +100,12 @@ export default function CategoryRail({
   const top = Math.max(0, cy - BUMP_RADIUS);
   const bottom = Math.min(H, cy + BUMP_RADIUS);
 
-  /*
-   * Right edge of sidebar
-   *
-   * Example:
-   *
-   * RAIL_WIDTH = 88
-   * BUMP_DEPTH = 46
-   *
-   * Deepest point = 42px
-   */
+
   const curveX = RAIL_WIDTH - BUMP_DEPTH;
 
-  /*
-   * How far the control points are pulled
-   * vertically to approximate a smooth arc.
-   */
+  
   const ctrlOffset = BUMP_RADIUS * BUMP_SMOOTHING;
 
-  /* =========================================
-     CURVED BORDER PATH
-
-     Single continuous "C" bracket, built from
-     two cubic beziers that share a tangent at
-     the deepest point (curveX, cy):
-
-          │
-          │╲
-          │ ╲
-          │  )
-          │ (
-          │  )
-          │ (
-          │  )
-          │ ╱
-          │╱
-          │
-
-     - Leaves the straight edge tangent to vertical
-       (control point directly below/above the start).
-     - Meets the deepest point tangent to horizontal
-       (control point directly left of cy).
-
-     This avoids the double-kink you get from chaining
-     three separate bezier segments.
-  ========================================== */
 
   const borderPath =
     H > 0
