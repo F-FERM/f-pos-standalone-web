@@ -398,8 +398,13 @@ function InvoiceHeader() {
 ========================================================= */
 
 function OrderPanel() {
+  const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+
   return (
-    <section
+    <>
+      <section
       className="
         relative
         h-[564px]
@@ -672,19 +677,202 @@ function OrderPanel() {
         <FooterAction
           icon={Table2}
           label="Table"
+          onClick={() => setIsTableModalOpen(true)}
         />
 
         <FooterAction
           icon={ClipboardList}
           label="Order"
+          onClick={() => setIsOrderModalOpen(true)}
         />
 
         <FooterAction
           icon={UsersRound}
           label="Customers"
+          onClick={() => setIsCustomerModalOpen(true)}
         />
       </div>
     </section>
+
+      {isTableModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-[2px]">
+          <div className="relative w-[820px] rounded-[30px] border border-[#DFA3E3]/80 bg-[#3B1836]/90 px-[28px] py-[26px] shadow-[0_0_30px_rgba(0,0,0,0.35)]">
+            <button
+              type="button"
+              onClick={() => setIsTableModalOpen(false)}
+              className="absolute right-[-18px] top-[-18px] flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#FF5C5C] bg-[#FF3B3B] text-white shadow-lg"
+              aria-label="Close table modal"
+            >
+              <X size={20} strokeWidth={2.5} />
+            </button>
+
+            <h3 className="mb-[20px] text-[28px] font-semibold text-white">
+              Change Table
+            </h3>
+
+            <div className="flex items-center gap-[14px]">
+              <button
+                type="button"
+                className="flex items-center gap-[8px] rounded-[12px] border border-[#D7B2D9]/70 bg-[#2B102B]/60 px-[16px] py-[12px] text-[16px] font-medium text-white"
+              >
+                <Table2 size={18} />
+                Change Table
+              </button>
+
+              <button
+                type="button"
+                className="flex items-center gap-[8px] rounded-[12px] border border-[#D7B2D9]/70 bg-[#2B102B]/60 px-[16px] py-[12px] text-[16px] font-medium text-white"
+              >
+                <span className="h-[14px] w-[14px] rounded-full border border-[#F0D7F5] bg-transparent" />
+                No Table
+              </button>
+            </div>
+
+            <div className="mt-[18px] flex items-center gap-[20px] text-[13px] text-white/90">
+              <span className="flex items-center gap-[8px]">
+                <span className="h-[12px] w-[12px] rounded-full bg-[#C7C7C7]" />
+                Available Table
+              </span>
+
+              <span className="flex items-center gap-[8px]">
+                <span className="h-[12px] w-[12px] rounded-full bg-[#FF3B3B]" />
+                Running Table
+              </span>
+
+              <span className="flex items-center gap-[8px]">
+                <span className="h-[12px] w-[12px] rounded-full bg-[#D9D9D9]" />
+                Vacating Soon
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isOrderModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-[2px]">
+          <div className="relative w-[880px] rounded-[30px] border border-[#DFA3E3]/80 bg-[#3B1836]/90 px-[24px] pb-[18px] pt-[22px] shadow-[0_0_30px_rgba(0,0,0,0.35)]">
+            <button
+              type="button"
+              onClick={() => setIsOrderModalOpen(false)}
+              className="absolute right-[-18px] top-[-18px] flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#FF5C5C] bg-[#FF3B3B] text-white shadow-lg"
+              aria-label="Close order modal"
+            >
+              <X size={20} strokeWidth={2.5} />
+            </button>
+
+            <div className="mb-[18px] flex items-center justify-between">
+              <h3 className="text-[32px] font-semibold text-white">Orders</h3>
+            </div>
+
+            <div className="mb-[18px] flex items-center gap-[14px]">
+              {[
+                "On Going",
+                "Completed Order",
+                "Canceled Order",
+              ].map((tab, index) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={`rounded-[12px] border px-[18px] py-[12px] text-[18px] font-medium transition ${
+                    index === 0
+                      ? "border-[#D9D9D9] bg-[#D9D9D9] text-[#2B102B]"
+                      : "border-[#D9D9D9]/70 bg-transparent text-white"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            <div className="mb-[18px] flex items-center gap-[16px]">
+              {[
+                "Dine In",
+                "Take Away",
+                "Home Delivery",
+                "Online",
+              ].map((status, index) => (
+                <button
+                  key={status}
+                  type="button"
+                  className={`rounded-[12px] border px-[16px] py-[10px] text-[15px] font-medium ${
+                    index === 0
+                      ? "border-[#D9D9D9]/70 bg-[#2B102B]/50 text-white"
+                      : "border-[#D9D9D9]/60 bg-transparent text-white/90"
+                  }`}
+                >
+                  {status}
+                </button>
+              ))}
+
+              <div className="ml-auto flex w-[270px] items-center gap-[10px] rounded-[12px] border border-[#D9D9D9]/70 bg-[#D9D9D9]/20 px-[12px] py-[10px] text-white">
+                <Search size={16} className="text-white/80" />
+                <span className="text-[15px] text-white/80">Search</span>
+              </div>
+            </div>
+
+            <div className="rounded-[14px] border border-[#D9D9D9]/20 bg-[#2D0D2F]/40 p-[14px]">
+              <div className="flex min-h-[200px] items-center justify-center text-[22px] text-white/85">
+                No orders for Dine-In
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isCustomerModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-[2px]">
+          <div className="relative w-[880px] rounded-[30px] border border-[#DFA3E3]/80 bg-[#3B1836]/90 px-[24px] pb-[18px] pt-[22px] shadow-[0_0_30px_rgba(0,0,0,0.35)]">
+            <button
+              type="button"
+              onClick={() => setIsCustomerModalOpen(false)}
+              className="absolute right-[-18px] top-[-18px] flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#FF5C5C] bg-[#FF3B3B] text-white shadow-lg"
+              aria-label="Close customer modal"
+            >
+              <X size={20} strokeWidth={2.5} />
+            </button>
+
+            <div className="mb-[18px] flex items-center justify-between">
+              <h3 className="text-[32px] font-semibold text-white">Customers</h3>
+            </div>
+
+            <div className="mb-[18px] flex w-full items-center gap-[12px] rounded-[12px] border border-[#D9D9D9]/50 bg-[#D9D9D9]/20 px-[14px] py-[12px] text-white">
+              <Search size={18} className="text-white/80" />
+              <span className="text-[18px] text-white/80">Search</span>
+            </div>
+
+            <div className="overflow-hidden rounded-[10px] border border-[#D9D9D9]/30 bg-[#13080F]">
+              <div className="grid grid-cols-[80px_1.4fr_1.5fr_1.2fr_1fr] bg-[#0F070D] px-[18px] py-[12px] text-[16px] font-medium text-white">
+                <span>No.</span>
+                <span>Customer Name</span>
+                <span>Customer Address</span>
+                <span>Phone No.</span>
+                <span>Credit</span>
+              </div>
+
+              <div className="flex min-h-[220px] items-center justify-center px-[18px] py-[28px] text-[22px] text-white/80">
+                No customers found
+              </div>
+            </div>
+
+            <div className="mt-[18px] flex items-center justify-between px-[4px] text-[16px] text-white/80">
+              <span>Showing 1 to 0 of 0 entries</span>
+
+              <div className="flex items-center gap-[12px]">
+                <button type="button" className="rounded-[8px] border border-[#D9D9D9]/60 bg-[#2B102B]/40 px-[14px] py-[8px] text-white">
+                  Prev
+                </button>
+                <div className="rounded-[8px] border border-[#D9D9D9]/60 bg-[#2B102B]/40 px-[14px] py-[8px] text-white">
+                  1 / 0
+                </div>
+                <button type="button" className="rounded-[8px] border border-[#D9D9D9]/60 bg-[#2B102B]/40 px-[14px] py-[8px] text-white">
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -695,13 +883,16 @@ function OrderPanel() {
 function FooterAction({
   icon: Icon,
   label,
+  onClick,
 }: {
   icon: ElementType;
   label: string;
+  onClick?: () => void;
 }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="
         flex
         h-[49px]
