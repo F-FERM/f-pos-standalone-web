@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import CategoryRail from "./CategoryRail";
 import MenuGrid from "./MenuGrid";
 import { CATEGORIES, Product, PRODUCTS } from "./Types";
+import CategoryRail from "./CategoryRail";
 
 interface Props {
   search: string;
