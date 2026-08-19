@@ -84,91 +84,75 @@ const products: Product[] = [
     id: 1,
     name: "Butter scotch",
     price: 200,
-    image:
-      "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=500",
+    image: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=500",
   },
   {
     id: 2,
     name: "Vanilla Classic",
     price: 80,
-    image:
-      "https://images.unsplash.com/photo-1576506295286-5cda18df43e7?w=500",
+    image: "https://images.unsplash.com/photo-1576506295286-5cda18df43e7?w=500",
   },
   {
     id: 3,
     name: "Chocolate chip",
     price: 200,
-    image:
-      "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500",
+    image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500",
   },
   {
     id: 4,
     name: "Cookies and cream",
     price: 180,
-    image:
-      "https://images.unsplash.com/photo-1567206563064-6f60f40a2b57?w=500",
+    image: "https://images.unsplash.com/photo-1567206563064-6f60f40a2b57?w=500",
   },
   {
     id: 5,
     name: "Rocky road",
     price: 220,
-    image:
-      "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=500",
+    image: "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=500",
   },
   {
     id: 6,
     name: "Peanut butter",
     price: 90,
-    image:
-      "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=500",
+    image: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=500",
   },
   {
     id: 7,
     name: "Pistachio",
     price: 100,
-    image:
-      "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500",
+    image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500",
   },
   {
     id: 8,
     name: "Mint chocolate",
     price: 100,
-    image:
-      "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=500",
+    image: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=500",
   },
   {
     id: 9,
     name: "Tender coconut",
     price: 60,
-    image:
-      "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=500",
+    image: "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=500",
   },
   {
     id: 10,
     name: "Cherry garcia",
     price: 220,
-    image:
-      "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=500",
+    image: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=500",
   },
   {
     id: 11,
     name: "Mango",
     price: 60,
-    image:
-      "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=500",
+    image: "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=500",
   },
   {
     id: 12,
     name: "Caramel crunch",
     price: 200,
-    image:
-      "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500",
+    image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500",
   },
 ];
-
-
-
-
 
 /* =========================================================
    PRODUCT SECTION
@@ -189,15 +173,12 @@ function ProductSection() {
         bg-[#170716]
       "
     >
-   
-
       <div
         className="
          
         "
       />
 
-     
       {/* Product grid */}
       <div className="flex-1 overflow-hidden px-[27px] py-[29px]">
         <div className="grid grid-cols-3 gap-[18px]">
@@ -279,12 +260,6 @@ function ProductSection() {
           })}
         </div>
       </div>
-
-  
-
-      
-
-
     </section>
   );
 }
@@ -382,13 +357,9 @@ function InvoiceHeader() {
         px-[18px]
       "
     >
-      <span className="text-[14px] font-semibold text-white">
-        #INV0001
-      </span>
+      <span className="text-[14px] font-semibold text-white">#INV0001</span>
 
-      <span className="text-[13px] font-medium text-white">
-        ₹200
-      </span>
+      <span className="text-[13px] font-medium text-white">₹200</span>
     </section>
   );
 }
@@ -405,7 +376,7 @@ function OrderPanel() {
   return (
     <>
       <section
-      className="
+        className="
         relative
         h-[564px]
         w-[281px]
@@ -415,10 +386,10 @@ function OrderPanel() {
         border-[#482045]
         bg-[#170716]
       "
-    >
-      {/* Table header */}
-      <div
-        className="
+      >
+        {/* Table header */}
+        <div
+          className="
           flex
           h-[29px]
           items-center
@@ -429,23 +400,17 @@ function OrderPanel() {
           px-[12px]
           text-[10px]
         "
-      >
-        <span className="w-[84px] text-[#D98DD4]">
-          Item
-        </span>
+        >
+          <span className="w-[84px] text-[#D98DD4]">Item</span>
 
-        <span className="w-[70px] text-[#D98DD4]">
-          Quantity
-        </span>
+          <span className="w-[70px] text-[#D98DD4]">Quantity</span>
 
-        <span className="text-[#D98DD4]">
-          Amount
-        </span>
-      </div>
+          <span className="text-[#D98DD4]">Amount</span>
+        </div>
 
-      {/* Cart item */}
-      <div
-        className="
+        {/* Cart item */}
+        <div
+          className="
           mx-[5px]
           mt-[17px]
           flex
@@ -457,35 +422,35 @@ function OrderPanel() {
           bg-[#170716]
           px-[5px]
         "
-      >
-        <img
-          src={products[0].image}
-          alt=""
-          className="
+        >
+          <img
+            src={products[0].image}
+            alt=""
+            className="
             h-[48px]
             w-[48px]
             rounded-[5px]
             object-cover
           "
-        />
+          />
 
-        <div className="ml-[7px] flex-1">
-          <p
-            className="
+          <div className="ml-[7px] flex-1">
+            <p
+              className="
               max-w-[95px]
               text-[11px]
               font-medium
               leading-[15px]
               text-white
             "
-          >
-            Butter scotch crunch
-          </p>
+            >
+              Butter scotch crunch
+            </p>
 
-          <div className="mt-[4px] flex items-center gap-[7px]">
-            <button
-              type="button"
-              className="
+            <div className="mt-[4px] flex items-center gap-[7px]">
+              <button
+                type="button"
+                className="
                 flex
                 h-[15px]
                 w-[15px]
@@ -494,20 +459,15 @@ function OrderPanel() {
                 rounded-full
                 bg-white
               "
-            >
-              <Minus
-                size={10}
-                className="text-black"
-              />
-            </button>
+              >
+                <Minus size={10} className="text-black" />
+              </button>
 
-            <span className="text-[13px] text-white">
-              1
-            </span>
+              <span className="text-[13px] text-white">1</span>
 
-            <button
-              type="button"
-              className="
+              <button
+                type="button"
+                className="
                 flex
                 h-[15px]
                 w-[15px]
@@ -516,29 +476,26 @@ function OrderPanel() {
                 rounded-full
                 bg-[#D000C8]
               "
-            >
-              <Plus
-                size={10}
-                className="text-white"
-              />
-            </button>
+              >
+                <Plus size={10} className="text-white" />
+              </button>
+            </div>
           </div>
-        </div>
 
-        <span
-          className="
+          <span
+            className="
             mr-[10px]
             text-[12px]
             font-semibold
             text-white
           "
-        >
-          ₹200
-        </span>
+          >
+            ₹200
+          </span>
 
-        <button
-          type="button"
-          className="
+          <button
+            type="button"
+            className="
             flex
             h-[15px]
             w-[15px]
@@ -547,93 +504,90 @@ function OrderPanel() {
             rounded-full
             bg-red-500
           "
-        >
-          <X
-            size={10}
-            className="text-white"
-          />
-        </button>
-      </div>
+          >
+            <X size={10} className="text-white" />
+          </button>
+        </div>
 
-      {/* Bottom calculation */}
-      <div
-        className="
+        {/* Bottom calculation */}
+        <div
+          className="
           absolute
           bottom-[72px]
           left-0
           right-0
           px-[7px]
         "
-      >
-        <div className="space-y-[7px] px-[7px]">
-          <div
-            className="
+        >
+          <div className="space-y-[7px] px-[7px]">
+            <div
+              className="
               flex
               justify-between
               text-[12px]
               text-white
             "
-          >
-            <span>Items (1)</span>
-            <span>200.00</span>
-          </div>
+            >
+              <span>Items (1)</span>
+              <span>200.00</span>
+            </div>
 
-          <div
-            className="
+            <div
+              className="
               flex
               justify-between
               text-[12px]
               text-white
             "
-          >
-            <span>Subtotal</span>
-            <span>200.00</span>
-          </div>
+            >
+              <span>Subtotal</span>
+              <span>200.00</span>
+            </div>
 
-          <div
-            className="
+            <div
+              className="
               flex
               justify-between
               text-[12px]
               text-white
             "
-          >
-            <span>VAT(0%)</span>
-            <span>0.00</span>
-          </div>
+            >
+              <span>VAT(0%)</span>
+              <span>0.00</span>
+            </div>
 
-          <div className="my-[7px] border-t border-[#777777]" />
+            <div className="my-[7px] border-t border-[#777777]" />
 
-          <div
-            className="
+            <div
+              className="
               flex
               justify-between
               text-[14px]
               font-semibold
               text-white
             "
-          >
-            <span>Total</span>
-            <span>200.00</span>
+            >
+              <span>Total</span>
+              <span>200.00</span>
+            </div>
           </div>
-        </div>
 
-        {/* Action buttons */}
-        <div className="mt-[9px] grid grid-cols-3 gap-[9px]">
-          <Button
-            className="
+          {/* Action buttons */}
+          <div className="mt-[9px] grid grid-cols-3 gap-[9px]">
+            <Button
+              className="
               h-[33px]
               rounded-[9px]
               bg-[#3EA200]
               text-[12px]
               hover:bg-[#3EA200]/90
             "
-          >
-            Save
-          </Button>
+            >
+              Save
+            </Button>
 
-          <Button
-            className="
+            <Button
+              className="
               h-[33px]
               rounded-[9px]
               bg-white
@@ -641,27 +595,27 @@ function OrderPanel() {
               text-black
               hover:bg-white/90
             "
-          >
-            Print
-          </Button>
+            >
+              Print
+            </Button>
 
-          <Button
-            className="
+            <Button
+              className="
               h-[33px]
               rounded-[9px]
               bg-[#FF0F0F]
               text-[12px]
               hover:bg-[#FF0F0F]/90
             "
-          >
-            Cancel
-          </Button>
+            >
+              Cancel
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {/* Footer */}
-      <div
-        className="
+        {/* Footer */}
+        <div
+          className="
           absolute
           bottom-[8px]
           left-[7px]
@@ -673,26 +627,26 @@ function OrderPanel() {
           rounded-[10px]
           bg-black
         "
-      >
-        <FooterAction
-          icon={Table2}
-          label="Table"
-          onClick={() => setIsTableModalOpen(true)}
-        />
+        >
+          <FooterAction
+            icon={Table2}
+            label="Table"
+            onClick={() => setIsTableModalOpen(true)}
+          />
 
-        <FooterAction
-          icon={ClipboardList}
-          label="Order"
-          onClick={() => setIsOrderModalOpen(true)}
-        />
+          <FooterAction
+            icon={ClipboardList}
+            label="Order"
+            onClick={() => setIsOrderModalOpen(true)}
+          />
 
-        <FooterAction
-          icon={UsersRound}
-          label="Customers"
-          onClick={() => setIsCustomerModalOpen(true)}
-        />
-      </div>
-    </section>
+          <FooterAction
+            icon={UsersRound}
+            label="Customers"
+            onClick={() => setIsCustomerModalOpen(true)}
+          />
+        </div>
+      </section>
 
       {isTableModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-[2px]">
@@ -765,44 +719,39 @@ function OrderPanel() {
             </div>
 
             <div className="mb-[18px] flex items-center gap-[14px]">
-              {[
-                "On Going",
-                "Completed Order",
-                "Canceled Order",
-              ].map((tab, index) => (
-                <button
-                  key={tab}
-                  type="button"
-                  className={`rounded-[12px] border px-[18px] py-[12px] text-[18px] font-medium transition ${
-                    index === 0
-                      ? "border-[#D9D9D9] bg-[#D9D9D9] text-[#2B102B]"
-                      : "border-[#D9D9D9]/70 bg-transparent text-white"
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
+              {["On Going", "Completed Order", "Canceled Order"].map(
+                (tab, index) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    className={`rounded-[12px] border px-[18px] py-[12px] text-[18px] font-medium transition ${
+                      index === 0
+                        ? "border-[#D9D9D9] bg-[#D9D9D9] text-[#2B102B]"
+                        : "border-[#D9D9D9]/70 bg-transparent text-white"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ),
+              )}
             </div>
 
             <div className="mb-[18px] flex items-center gap-[16px]">
-              {[
-                "Dine In",
-                "Take Away",
-                "Home Delivery",
-                "Online",
-              ].map((status, index) => (
-                <button
-                  key={status}
-                  type="button"
-                  className={`rounded-[12px] border px-[16px] py-[10px] text-[15px] font-medium ${
-                    index === 0
-                      ? "border-[#D9D9D9]/70 bg-[#2B102B]/50 text-white"
-                      : "border-[#D9D9D9]/60 bg-transparent text-white/90"
-                  }`}
-                >
-                  {status}
-                </button>
-              ))}
+              {["Dine In", "Take Away", "Home Delivery", "Online"].map(
+                (status, index) => (
+                  <button
+                    key={status}
+                    type="button"
+                    className={`rounded-[12px] border px-[16px] py-[10px] text-[15px] font-medium ${
+                      index === 0
+                        ? "border-[#D9D9D9]/70 bg-[#2B102B]/50 text-white"
+                        : "border-[#D9D9D9]/60 bg-transparent text-white/90"
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ),
+              )}
 
               <div className="ml-auto flex w-[270px] items-center gap-[10px] rounded-[12px] border border-[#D9D9D9]/70 bg-[#D9D9D9]/20 px-[12px] py-[10px] text-white">
                 <Search size={16} className="text-white/80" />
@@ -832,7 +781,9 @@ function OrderPanel() {
             </button>
 
             <div className="mb-[18px] flex items-center justify-between">
-              <h3 className="text-[32px] font-semibold text-white">Customers</h3>
+              <h3 className="text-[32px] font-semibold text-white">
+                Customers
+              </h3>
             </div>
 
             <div className="mb-[18px] flex w-full items-center gap-[12px] rounded-[12px] border border-[#D9D9D9]/50 bg-[#D9D9D9]/20 px-[14px] py-[12px] text-white">
@@ -858,13 +809,19 @@ function OrderPanel() {
               <span>Showing 1 to 0 of 0 entries</span>
 
               <div className="flex items-center gap-[12px]">
-                <button type="button" className="rounded-[8px] border border-[#D9D9D9]/60 bg-[#2B102B]/40 px-[14px] py-[8px] text-white">
+                <button
+                  type="button"
+                  className="rounded-[8px] border border-[#D9D9D9]/60 bg-[#2B102B]/40 px-[14px] py-[8px] text-white"
+                >
                   Prev
                 </button>
                 <div className="rounded-[8px] border border-[#D9D9D9]/60 bg-[#2B102B]/40 px-[14px] py-[8px] text-white">
                   1 / 0
                 </div>
-                <button type="button" className="rounded-[8px] border border-[#D9D9D9]/60 bg-[#2B102B]/40 px-[14px] py-[8px] text-white">
+                <button
+                  type="button"
+                  className="rounded-[8px] border border-[#D9D9D9]/60 bg-[#2B102B]/40 px-[14px] py-[8px] text-white"
+                >
                   Next
                 </button>
               </div>
@@ -908,14 +865,9 @@ function FooterAction({
         text-white
       "
     >
-      <Icon
-        size={16}
-        strokeWidth={1.5}
-      />
+      <Icon size={16} strokeWidth={1.5} />
 
-      <span className="text-[8px]">
-        {label}
-      </span>
+      <span className="text-[8px]">{label}</span>
     </button>
   );
 }
@@ -982,10 +934,7 @@ export default function POSScreen() {
               bg-[#D9D9D9]
             "
           >
-            <UserRound
-              className="text-black"
-              size={22}
-            />
+            <UserRound className="text-black" size={22} />
           </div>
 
           <h1
@@ -1019,10 +968,7 @@ export default function POSScreen() {
               bg-[#D9D9D9]
             "
           >
-            <UserRound
-              size={18}
-              className="text-black"
-            />
+            <UserRound size={18} className="text-black" />
           </div>
 
           <div>
