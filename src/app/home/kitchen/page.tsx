@@ -1,12 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeft, Search, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { SearchInput } from "@/src/components/SearchInput";
+import { POSHeader } from "@/src/components/sales/PosHeader";
 
 const TABS = [
   "All",
@@ -20,40 +17,11 @@ type DeliveryTab = (typeof TABS)[number];
 export default function DeliveryPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<DeliveryTab>("All");
-  const [search, setSearch] = useState("");
 
   return (
     <main className="flex h-full flex-col overflow-hidden bg-black text-white">
-      <header className="relative flex h-[115px] shrink-0 items-center px-[29px]">
-        <Button
-          size="icon"
-          onClick={() => router.push("/home")}
-          className="h-[40px] w-[40px] rounded-[6px] bg-[#292929] hover:bg-[#333333]"
-        >
-          <ArrowLeft size={22} />
-        </Button>
-
-        <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-[10px]">
-          <div className="flex h-[48px] w-[48px] items-center justify-center rounded-full bg-[#D9D9D9]">
-            <UserRound className="text-black" size={22} />
-          </div>
-
-          <h1 className="text-[32px] font-semibold tracking-[-1px]">
-            My Restaurant
-          </h1>
-        </div>
-
-        <div className="ml-auto flex items-center gap-[8px]">
-          <div className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-[#D9D9D9]">
-            <UserRound size={18} className="text-black" />
-          </div>
-
-          <div>
-            <p className="text-[20px] font-semibold leading-[20px]">Admin</p>
-            <p className="text-[13px] text-[#AAAAAA]">Company Admin</p>
-          </div>
-        </div>
-      </header>
+      {/* Navbar */}
+          <POSHeader />
 
       <div className="flex min-h-0 flex-1 flex-col bg-[#2C192B] px-[29px] pt-[22px]">
         <div className="grid grid-cols-4 items-center gap-[9px]">

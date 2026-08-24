@@ -25,12 +25,12 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
-  { label: "Sale", icon: saleIcon, href: "/sale" },
+  { label: "Sale", icon: saleIcon, href: "/home/sales" },
   { label: "Delivery", icon: deliveryIcon, href: "/home/delivery" },
-  { label: "Kitchen", icon: kitchenIcon, href: "/kitchen" },
+  { label: "Kitchen", icon: kitchenIcon, href: "/home/kitchen" },
   { label: "Customer", icon: customerIcon, href: "/home/customer" },
   { label: "Purchase", icon: purchaseIcon, href: "/home/purchase" },
-  { label: "Expense", icon: expenseIcon, href: "/expense" },
+  { label: "Expense", icon: expenseIcon, href: "/home/expense" },
   { label: "Supplier", icon: supplierIcon, href: "/supplier" },
   { label: "Menu", icon: menuIcon, href: "/menu" },
   { label: "Reports", icon: reportsIcon, href: "/reports" },

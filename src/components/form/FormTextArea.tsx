@@ -48,14 +48,15 @@ const FormTextArea = ({
               readOnly={readOnly}
               placeholder={placeholder}
               className={cn(
-                "min-h-[100px] resize-none w-full box-border rounded-[7px] border border-[#A1A1A1]",
-                "bg-[#1C1C1C] text-[#A1A1A1] placeholder:text-[#A1A1A1]",
+                "min-h-[100px] resize-none w-full box-border rounded-[7px] !border !border-gray-500",
+                "bg-[#2D2D2DAB] text-[#E6D6E8] placeholder:text-[#A1A1A1]",
                 "font-poppins font-normal text-sm leading-[100%] tracking-normal",
-                "px-5 py-1.5 pb-6",
+                "px-[20px] py-3 pb-8",
+                "opacity-100",
                 "transition-all duration-200",
-                "focus-visible:ring-1 focus-visible:ring-[#A1A1A1] focus-visible:ring-offset-0",
-                "disabled:border-gray-700 disabled:bg-[#141414] disabled:text-gray-600",
-                className,
+                "focus-visible:ring-1 focus-visible:ring-gray-700 focus-visible:ring-offset-0",
+                "disabled:border-gray-700 disabled:bg-[#0f0f0f] disabled:text-gray-600",
+                className
               )}
               value={fieldValue}
               onChange={(e) => {
@@ -71,7 +72,7 @@ const FormTextArea = ({
             />
           )}
         />
-        <div className="absolute bottom-3 right-3 text-xs text-[#A1A1A1] bg-[#1C1C1C] px-1 font-poppins">
+        <div className="absolute bottom-3 right-3 text-xs text-[#A1A1A1] bg-[#2D2D2DAB] px-2 py-0.5 rounded-[6px] border border-gray-500 font-poppins">
           {currentLength} / {maxLength}
         </div>
       </div>
