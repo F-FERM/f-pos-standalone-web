@@ -214,7 +214,7 @@ const FormCombobox = ({
                             }}
                             disabled={disabled || readonly}
                             className={`cursor-pointer select-none flex items-center gap-2 p-2 font-poppins text-sm
-                              text-[#E6D6E8] hover:bg-[#2a1e2a] aria-selected:bg-[#2a1e2a] aria-selected:text-[#E6D6E8] ${
+                              text-[#E6D6E8] hover:bg-[#2a1e2a] aria-selected:bg-[#9A379682] aria-selected:text-[#E6D6E8] ${
                                 option.value === currentValue
                                   ? "bg-[#2a1e2a] text-white"
                                   : ""
@@ -248,7 +248,7 @@ const FormCombobox = ({
             >
               {label && (
                 <FormLabel
-                  className={`font-medium text-sm text-white flex items-center justify-end pr-2 flex-shrink-0 ${labelClassName}`}
+                  className={`font-medium text-base mb-3  text-white flex items-center justify-end pr-2 flex-shrink-0 ${labelClassName}`}
                 >
                   {label}
                   {required && (
@@ -273,7 +273,7 @@ const FormCombobox = ({
         return (
           <FormItem>
             <FormLabel
-              className={`flex gap-2 text-base font-medium text-white ${labelClassName}`}
+              className={`flex gap-2 text-base font-medium mb-3 text-white ${labelClassName}`}
             >
               {label}
               {required && (
