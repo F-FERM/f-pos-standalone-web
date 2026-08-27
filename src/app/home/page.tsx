@@ -64,19 +64,34 @@ export default function FposDashboard() {
           position: relative;
           z-index: 0;
         }
-        .gradient-border::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          border-radius: inherit;
-          padding: 1.5px;
-          background: conic-gradient(
-            from var(--angle),
-            transparent 0%,
-            #5b6371 12%,
-            transparent 28%,
-            transparent 100%
-          );
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background-image: conic-gradient(
+    from var(--angle),
+    transparent 0%,
+    #444b55 12%,
+    transparent 28%,
+    transparent 50%,
+    #4f5763 62%,
+    transparent 78%,
+    transparent 100%
+  );
+
+  background-size: 260px 260px;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  -webkit-mask: linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: rotate-border 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
           -webkit-mask: linear-gradient(#fff 0 0) content-box,
             linear-gradient(#fff 0 0);
           -webkit-mask-composite: xor;
