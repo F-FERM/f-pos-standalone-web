@@ -159,31 +159,32 @@ const LoginFormCombobox = ({
                   setSearch?.("");
                 }
               }}
-            >
-              <FormControl>
-                <Button
-                  ref={buttonRef}
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={open}
-                  disabled={disabled}
-                  className={cn(
-                    "flex items-center justify-between gap-[9px]",
-                    TRIGGER_VARIANT_CLASSES[variant],
-                    className
-                  )}
-                >
-                  <span className="truncate flex-1 text-left">
-                    {!options?.length
-                      ? "No options Available"
-                      : displayValue || placeholder}
-                  </span>
-                  <ChevronsUpDown
-                    className={cn("ml-2 h-4 w-4 shrink-0", CHEVRON_VARIANT_CLASSES[variant])}
-                  />
-                </Button>
-              </FormControl>
-            </PopoverTrigger>
+              render={
+                <FormControl>
+                  <Button
+                    ref={buttonRef}
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    disabled={disabled}
+                    className={cn(
+                      "flex items-center justify-between gap-[9px]",
+                      TRIGGER_VARIANT_CLASSES[variant],
+                      className
+                    )}
+                  >
+                    <span className="truncate flex-1 text-left">
+                      {!options?.length
+                        ? "No options Available"
+                        : displayValue || placeholder}
+                    </span>
+                    <ChevronsUpDown
+                      className={cn("ml-2 h-4 w-4 shrink-0", CHEVRON_VARIANT_CLASSES[variant])}
+                    />
+                  </Button>
+                </FormControl>
+              }
+            />
             {!readonly && (
               <PopoverContent
                 className={cn("p-0", DROPDOWN_VARIANT_CLASSES[variant])}

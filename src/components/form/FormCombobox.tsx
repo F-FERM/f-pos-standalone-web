@@ -20,6 +20,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { Check, ChevronsUpDown } from "lucide-react";
 import {
   Dispatch,
@@ -125,58 +126,65 @@ const FormCombobox = ({
         const comboboxComponent = (
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger
+              render={<FormControl />}
               onClick={() => {
                 if (!open) {
                   setSearch?.("");
                 }
               }}
             >
-              <FormControl>
-                <Button
-                  ref={buttonRef}
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={open}
+              <Button
+                ref={buttonRef}
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
                   disabled={disabled}
-                  className={`h-[38px] flex justify-between items-center gap-[9px] ${
-                    className ? className : ""
-                  } w-full rounded-[7px] border border-[#A1A1A1]
-                    bg-[#1C1C1C] text-[#A1A1A1] hover:bg-[#1C1C1C] hover:text-[#A1A1A1]
+                  className={cn(
+                    `flex h-[38px] w-full max-w-[742px] items-center justify-between
+                    rounded-[7px] border border-gray-500
+                    bg-[#2D2D2DAB] text-[#E6D6E8]
                     font-poppins font-normal text-sm leading-none tracking-normal
-                    px-5 py-1.5
+                    pt-[6px] pr-[20px] pb-[6px] pl-[20px]
                     transition-all duration-200
-                    focus-visible:ring-1 focus-visible:ring-[#A1A1A1] focus-visible:ring-offset-0
-                    disabled:border-gray-700 disabled:bg-[#141414] disabled:text-gray-600`}
+                    opacity-100
+                    focus-visible:ring-1 focus-visible:ring-gray-700 focus-visible:ring-offset-0
+                    disabled:border-gray-700 disabled:bg-[#0f0f0f] disabled:text-gray-600`,
+                    className,
+                  )}
                 >
                   <span
                     className={`truncate flex-1 text-left ${
-                      displayValue ? "text-[#A1A1A1]" : "text-[#A1A1A1]"
+                      displayValue ? "text-[#E6D6E8]" : "text-[#A1A1A1]"
                     }`}
                   >
                     {!options?.length
                       ? "No options Available"
                       : displayValue || placeholder}
                   </span>
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-[#A1A1A1] opacity-70" />
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-[#A1A1A1] opacity-90" />
                 </Button>
-              </FormControl>
             </PopoverTrigger>
             {!readonly && (
               <PopoverContent
-                className="p-0 bg-[#1C1C1C] border border-[#A1A1A1] text-[#A1A1A1]"
+                className="p-0 bg-[#120e13] border border-[#3b2430] text-[#E6D6E8] rounded-[8px] overflow-hidden"
                 style={{ width: `${width}px` }}
                 onWheel={(e) => {
                   e.stopPropagation();
                 }}
               >
-                <Command className="bg-[#1C1C1C] text-[#A1A1A1]">
+                {label && (
+                  <div className="px-3 py-2 bg-[#5a2060] text-white font-medium">
+                    {label}
+                  </div>
+                )}
+                <Command className="bg-[#120e13] text-[#E6D6E8]">
                   <CommandInput
                     placeholder="Search..."
                     onValueChange={(search) => setSearch?.(search)}
-                    className="font-poppins text-sm text-[#A1A1A1] placeholder:text-[#A1A1A1]"
+                    className="font-poppins text-sm text-[#E6D6E8] placeholder:text-[#BBAEC0] bg-transparent px-3 py-2"
                   />
                   <CommandList
-                    className="max-h-[300px] overflow-y-auto"
+                    className="max-h-[300px] overflow-y-auto bg-[#120e13]"
                     onWheel={(e) => {
                       e.stopPropagation();
                     }}
@@ -206,14 +214,14 @@ const FormCombobox = ({
                             }}
                             disabled={disabled || readonly}
                             className={`cursor-pointer select-none flex items-center gap-2 p-2 font-poppins text-sm
-                              text-[#A1A1A1] hover:bg-[#2A2A2A] aria-selected:bg-[#2A2A2A] aria-selected:text-[#A1A1A1] ${
+                              text-[#E6D6E8] hover:bg-[#2a1e2a] aria-selected:bg-[#9A379682] aria-selected:text-[#E6D6E8] ${
                                 option.value === currentValue
-                                  ? "bg-primary text-white"
+                                  ? "bg-[#2a1e2a] text-white"
                                   : ""
                               }`}
                           >
                             <Check
-                              className="mr-2 h-4 w-4"
+                              className="mr-2 h-4 w-4 text-[#E6D6E8]"
                               style={{
                                 visibility:
                                   currentValue === option.value
@@ -240,7 +248,7 @@ const FormCombobox = ({
             >
               {label && (
                 <FormLabel
-                  className={`font-medium text-sm text-white flex items-center justify-end pr-2 flex-shrink-0 ${labelClassName}`}
+                  className={`font-medium text-base mb-3  text-white flex items-center justify-end pr-2 flex-shrink-0 ${labelClassName}`}
                 >
                   {label}
                   {required && (
@@ -265,7 +273,7 @@ const FormCombobox = ({
         return (
           <FormItem>
             <FormLabel
-              className={`flex gap-2 mb-1 text-base font-medium text-white ${labelClassName}`}
+              className={`flex gap-2 text-base font-medium mb-3 text-white ${labelClassName}`}
             >
               {label}
               {required && (
