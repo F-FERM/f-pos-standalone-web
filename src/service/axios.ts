@@ -20,8 +20,8 @@ const axiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // This is important for sending/receiving cookies
-  timeout: 10000, // 10 seconds timeout
+  withCredentials: true, 
+  timeout: 10000, 
 });
 
 // Request interceptor

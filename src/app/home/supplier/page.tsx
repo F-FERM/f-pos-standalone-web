@@ -47,7 +47,7 @@ export default function SupplierPage() {
   );
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-
+  const [currentPage, setCurrentPage] = useState(1);
   const filteredSuppliers = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -81,6 +81,9 @@ export default function SupplierPage() {
       },
     ]);
     setIsAddOpen(false);
+  };
+ const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   return (
@@ -147,13 +150,12 @@ export default function SupplierPage() {
         </div>
 
         <div className="mt-[14px]">
-          <Pagination
-            className="mt-[18px]"
-            page={1}
-            totalPages={totalPages}
-            totalEntries={filteredSuppliers.length}
-            pageSize={pageSize}
-            onPageChange={(val) => console.log(val)}
+         <Pagination
+            currentPage={1}
+            totalItems={10}
+         
+            itemsPerPage={pageSize}
+            onPageChange={handlePageChange}
           />
         </div>
       </div>

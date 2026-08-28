@@ -45,9 +45,8 @@ function formatDate(date: Date) {
 
 export default function CustomerPage() {
   const [search, setSearch] = useState("");
-  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(
-    10,
-  );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(10);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
 
@@ -82,6 +81,10 @@ export default function CustomerPage() {
     ]);
     setIsAddOpen(false);
   };
+ const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
 
   return (
     <main className="flex h-full flex-col overflow-hidden bg-black text-white">
@@ -101,7 +104,7 @@ export default function CustomerPage() {
           </Button>
         </div>
 
-        <div className="mt-[14px] flex justify-end">
+        <div className="mt-[22px] flex justify-end">
           <SearchInput variant="panel" className="w-full sm:ml-auto sm:w-[270px]" />
         </div>
 
@@ -143,13 +146,12 @@ export default function CustomerPage() {
         </div>
 
         <div className="mt-[14px]">
-          <Pagination
-            className="mt-[18px]"
-            page={1}
-            totalPages={totalPages}
-            totalEntries={filteredCustomers.length}
-            pageSize={pageSize}
-            onPageChange={(val) => console.log(val)}
+               <Pagination
+            currentPage={1}
+            totalItems={10}
+         
+            itemsPerPage={pageSize}
+            onPageChange={handlePageChange}
           />
         </div>
       </div>

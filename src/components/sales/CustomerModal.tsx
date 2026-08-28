@@ -25,7 +25,7 @@ export function CustomerModal({
 }: CustomerModalProps) {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
-
+  const [currentPage, setCurrentPage] = useState(1);
   if (!open) return null;
 
   const filtered = customers.filter((c) =>
@@ -33,6 +33,9 @@ export function CustomerModal({
   );
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize);
+ const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-[2px]">
@@ -92,15 +95,16 @@ export function CustomerModal({
             ))
           )}
         </div>
+<div className="mt-[14px]">
 
-        <Pagination
-          className="mt-[18px]"
-          page={page}
-          totalPages={totalPages}
-          totalEntries={filtered.length}
-          pageSize={pageSize}
-          onPageChange={setPage}
-        />
+       <Pagination
+            currentPage={1}
+            totalItems={10}
+         
+            itemsPerPage={pageSize}
+            onPageChange={handlePageChange}
+          />
+</div>
         </div>
       </div>
     </div>

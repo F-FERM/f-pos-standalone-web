@@ -44,6 +44,7 @@ export default function ExpensePage() {
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(
     10,
   );
+    const [currentPage, setCurrentPage] = useState(1);
 
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -103,6 +104,9 @@ export default function ExpensePage() {
       },
     ]);
     setIsExpenseModalOpen(false);
+  };
+ const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   return (
@@ -175,13 +179,12 @@ export default function ExpensePage() {
         </div>
 
         <div className="mt-[14px]">
-          <Pagination
-            className="mt-[18px]"
-            page={1}
-            totalPages={totalPages}
-            totalEntries={filteredExpenses.length}
-            pageSize={pageSize}
-            onPageChange={(val) => console.log(val)}
+       <Pagination
+            currentPage={1}
+            totalItems={10}
+         
+            itemsPerPage={pageSize}
+            onPageChange={handlePageChange}
           />
         </div>
       </div>

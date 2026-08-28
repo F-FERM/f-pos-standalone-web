@@ -74,7 +74,7 @@ export default function PurchasePage() {
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(
     10,
   );
-
+  const [currentPage, setCurrentPage] = useState(1);
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
 
@@ -171,6 +171,9 @@ export default function PurchasePage() {
       },
     ]);
     setIsItemModalOpen(false);
+  };
+ const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   return (
@@ -303,12 +306,11 @@ export default function PurchasePage() {
 
         <div className="mt-[14px]">
           <Pagination
-            className="mt-[18px]"
-            page={1}
-            totalPages={totalPages}
-            totalEntries={8}
-            pageSize={pageSize}
-            onPageChange={(val) => console.log(val)}
+            currentPage={1}
+            totalItems={10}
+         
+            itemsPerPage={pageSize}
+            onPageChange={handlePageChange}
           />
         </div>
       </div>

@@ -137,9 +137,9 @@ export default function AddSupplierModal({
                     label="Credit"
                  
                   />
-                  <span className="absolute right-[14px] top-1/2 -translate-y-1/2 text-[13px] text-[#C9C9C9]">
+                  {/* <span className="absolute right-[14px] top-1/2 -translate-y-1/2 text-[13px] text-[#C9C9C9]">
                     INR
-                  </span>
+                  </span> */}
                 </div>
               </label>
 

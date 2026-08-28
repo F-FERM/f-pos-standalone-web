@@ -129,7 +129,7 @@ export default function MenuPage() {
   const [isMenuTypeModalOpen, setIsMenuTypeModalOpen] = useState(false);
   const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
   const [isComboModalOpen, setIsComboModalOpen] = useState(false);
-
+  const [currentPage, setCurrentPage] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuTypes, setMenuTypes] = useState<MenuType[]>([]);
   const [foods, setFoods] = useState<Food[]>([]);
@@ -252,6 +252,9 @@ export default function MenuPage() {
       },
     ]);
     setIsComboModalOpen(false);
+  };
+ const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   return (
@@ -429,13 +432,12 @@ export default function MenuPage() {
         </div>
 
         <div className="mt-[14px]">
-          <Pagination
-            className="mt-[18px]"
-            page={1}
-            totalPages={totalPages}
-            totalEntries={rows.length}
-            pageSize={pageSize}
-            onPageChange={(val) => console.log(val)}
+         <Pagination
+            currentPage={1}
+            totalItems={10}
+         
+            itemsPerPage={pageSize}
+            onPageChange={handlePageChange}
           />
         </div>
       </div>
