@@ -74,9 +74,9 @@ export default function FposDashboard() {
     from var(--angle),
     transparent 0%,
     #444b55 12%,
-    transparent 28%,
+    transparent 48%,
     transparent 50%,
-    #4f5763 62%,
+    #444b55 62%,
     transparent 78%,
     transparent 100%
   );
@@ -89,14 +89,14 @@ export default function FposDashboard() {
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  animation: rotate-border 3.5s ease-in-out infinite;
+  // animation: rotate-border 3.5s ease-in-out infinite;
   pointer-events: none;
 }
           -webkit-mask: linear-gradient(#fff 0 0) content-box,
             linear-gradient(#fff 0 0);
           -webkit-mask-composite: xor;
           mask-composite: exclude;
-          animation: rotate-border 3.5s ease-in-out infinite;
+          // animation: rotate-border 3.5s ease-in-out infinite;
           pointer-events: none;
         }
       `}</style>
