@@ -201,25 +201,24 @@ export default function AddExpenseModal({
 
             <div className="grid grid-cols-1 gap-[12px] sm:grid-cols-2">
               <div className="rounded-[12px] bg-black px-[14px] py-[12px]">
-                <p className="mb-[8px] text-[14px] font-medium text-white">
-                  Select Supplier
-                </p>
+            
 
-                <div className="flex items-center gap-[8px]">
-                  <div className="min-w-0 flex-1">
-                    <FormInput
-                      name="supplierName"
-                      placeholder="Enter Customer Name"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] border border-[#777777] bg-[#1A0F1A] text-white"
-                    aria-label="Add supplier"
-                  >
-                    <Plus size={16} />
-                  </button>
-                </div>
+               <div className="flex items-end gap-[8px]">
+  <div className="min-w-0 flex-1">
+    <FormInput
+      name="supplierName"
+      placeholder="Enter Customer Name"
+      label="Select Supplier"
+    />
+  </div>
+  <button
+    type="button"
+    className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] border border-[#777777] bg-[#1A0F1A] text-white"
+    aria-label="Add supplier"
+  >
+    <Plus size={16} />
+  </button>
+</div>
 
                 <div className="mt-[10px] space-y-[6px] text-[16px] font-normal text-[#A1A1A1]">
                   <p>TRN: -</p>
@@ -230,40 +229,32 @@ export default function AddExpenseModal({
               <div className="rounded-[12px] bg-black px-[14px] py-[12px]">
                 <div className="grid grid-cols-2 gap-x-[12px] gap-y-[10px]">
                   <label className="block">
-                    <span className="mb-[6px] block text-[13px] text-white">
-                      Date
-                    </span>
-                    <FormInput name="date" />
+                  
+                    <FormInput name="date" label="Date" />
                   </label>
 
-                  <label className="block">
-                    <span className="mb-[6px] block text-[13px] text-white">
-                      Payment Type
-                    </span>
+                
                     <FormCombobox
                       name="paymentType"
                       placeholder="Select Or Search"
                       options={PAYMENT_TYPE_OPTIONS}
+                         label="Payment Type"
                     />
-                  </label>
+            
 
-                  <label className="block">
-                    <span className="mb-[6px] block text-[13px] text-white">
-                      Invoice No
-                    </span>
-                    <FormInput name="invoiceNo" placeholder="Enter INV No." />
-                  </label>
+               
+                    
+                    <FormInput name="invoiceNo" label="Invoice No." placeholder="Enter INV No." />
+                  
 
-                  <label className="block">
-                    <span className="mb-[6px] block text-[13px] text-white">
-                      VAT Mode
-                    </span>
+                 
                     <FormCombobox
                       name="vatMode"
                       placeholder="Select VAT Mode"
                       options={VAT_MODE_OPTIONS}
+                      label="VAT Mode"
                     />
-                  </label>
+             
                 </div>
               </div>
             </div>
@@ -280,35 +271,29 @@ export default function AddExpenseModal({
                 "
               >
                 <label className="block min-w-0">
-                  <span className="mb-[6px] block text-[13px] text-white">
-                    Account Name
-                  </span>
+                 
                   <FormCombobox
                     name="draftAccountName"
                     placeholder="Select or search"
                     options={accountOptions}
+                    label="Account Name"
                   />
                 </label>
 
                 <label className="block min-w-0">
-                  <span className="mb-[6px] block text-[13px] text-white">
-                    Note
-                  </span>
-                  <FormInput name="draftNote" placeholder="Item note" />
+                  
+                  <FormInput name="draftNote" placeholder="Item note" label="Note"/>
                 </label>
 
                 <label className="block min-w-0">
-                  <span className="mb-[6px] block text-[13px] text-white">
-                    Qty
-                  </span>
-                  <FormInput name="draftQty" placeholder="1" />
+                
+                   
+                  <FormInput name="draftQty" placeholder="1" label="Qty"/>
                 </label>
 
                 <label className="block min-w-0">
-                  <span className="mb-[6px] block text-[13px] text-white">
-                    Amount
-                  </span>
-                  <FormInput name="draftAmount" placeholder="Enter prize" />
+                  
+                  <FormInput name="draftAmount" placeholder="Enter prize" label="Amount"/>
                 </label>
 
                 <button

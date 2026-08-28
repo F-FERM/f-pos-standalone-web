@@ -33,7 +33,7 @@ const FormTextArea = ({
   return (
     <div className="w-full">
       {label && (
-        <label className="text-base font-medium block mb-2 text-white">
+        <label className="flex gap-2 text-base font-medium mb-3 text-white">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
