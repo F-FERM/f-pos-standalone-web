@@ -107,7 +107,7 @@ const FormPhoneNumberInput = ({
         <FormItem>
           {label && (
             <FormLabel
-              className={`flex gap-2 text-base font-medium mb-1 text-white ${labelClassName}`}
+              className={`flex gap-2 text-base font-medium mb-3 ${labelClassName}`}
             >
               {label}
               {required && (

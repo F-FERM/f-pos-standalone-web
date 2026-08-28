@@ -98,24 +98,21 @@ const PAYMENT_TYPE_OPTIONS: selectType[] = [
 
               <div className="flex flex-col gap-[14px]">
                 <label className="block">
-                  <span className="mb-[6px] block text-[14px] font-medium text-white">
-                    Ingredient Name
-                  </span>
+                 
                   <FormInput
                     name="ingredientName"
                     placeholder="Enter Ingredient Name"
-                    className="h-[42px] rounded-[8px] border-transparent bg-[#24101F] px-[14px] text-[14px] text-white shadow-none placeholder:text-[#8A8A8A] focus-visible:border-transparent focus-visible:ring-0"
+                    label="Ingredient Name"
                   />
                 </label>
 
                 <label className="block">
-                  <span className="mb-[6px] block text-[14px] font-medium text-white">
-                    Purchase Unit
-                  </span>
+                 
                   <FormCombobox
                   options={PAYMENT_TYPE_OPTIONS}
                     name="purchaseUnit"
                     placeholder="Select Or Search"
+                    label="Purchase Unit"
                   />
                 </label>
               </div>

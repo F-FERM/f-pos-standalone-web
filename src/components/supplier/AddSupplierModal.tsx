@@ -105,41 +105,37 @@ export default function AddSupplierModal({
 
             <div className="space-y-[14px]">
               <label className="block">
-                <span className="mb-[6px] block text-[14px] font-medium text-white">
-                  Supplier Name
-                </span>
+               
                 <FormInput
                   name="name"
                   placeholder="Enter Supplier Name"
-                  className="h-[42px] rounded-[8px] border-transparent bg-[#24101F] px-[14px] text-[14px] text-white shadow-none placeholder:text-[#8A8A8A] focus-visible:border-transparent focus-visible:ring-0"
+                  label="Supplier Name"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-[6px] block text-[14px] font-medium text-white">
-                  Customer Phone No
-                </span>
+               
                 <FormPhoneNumberInput
                   name="phone"
-                  label={""}
+                  label={"Customer Phone No"}
                   countryCode={methods.watch("countryCode")}
                   onChange={(phone: string, country: string) => {
                     methods.setValue("phone", phone);
                     methods.setValue("countryCode", country);
                   }}
                   className="h-[42px]"
+
                 />
               </label>
 
               <label className="block">
-                <span className="mb-[6px] block text-[14px] font-medium text-white">
-                  Credit
-                </span>
+              
                 <div className="relative">
                   <FormInput
                     name="credit"
                     type="number"
-                    className="h-[42px] rounded-[8px] border-transparent bg-[#24101F] px-[14px] pr-[52px] text-[14px] text-white shadow-none focus-visible:border-transparent focus-visible:ring-0"
+                    label="Credit"
+                 
                   />
                   <span className="absolute right-[14px] top-1/2 -translate-y-1/2 text-[13px] text-[#C9C9C9]">
                     INR
@@ -148,24 +144,20 @@ export default function AddSupplierModal({
               </label>
 
               <label className="block">
-                <span className="mb-[6px] block text-[14px] font-medium text-white">
-                  TRN No.
-                </span>
                 <FormInput
                   name="trnNo"
                   placeholder="Enter TRN No."
+                  label="TRN No."
                   className="h-[42px] rounded-[8px] border-transparent bg-[#24101F] px-[14px] text-[14px] text-white shadow-none placeholder:text-[#8A8A8A] focus-visible:border-transparent focus-visible:ring-0"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-[6px] block text-[14px] font-medium text-white">
-                  Address
-                </span>
+               
                 <FormTextArea
                   name="address"
                   placeholder="Enter Address"
-                  className="h-[88px] w-full resize-none rounded-[8px] border-0 bg-[#24101F] px-[14px] py-[10px] text-[14px] text-white outline-none placeholder:text-[#8A8A8A]"
+                  label="Address"
                 />
               </label>
             </div>

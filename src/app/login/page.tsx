@@ -30,7 +30,7 @@ const KEYPAD_BUTTON_CLASS =
   "w-[115px] h-[50px] rounded-[10px] ";
 
 const KEYPAD_NUMBER_TEXT_CLASS =
-  "font-[Inter,sans-serif] font-semibold text-[22px] leading-none tracking-[0%]";
+  " font-semibold text-[22px] leading-none tracking-[0%]";
 
 const loginSchema = z.object({
   role: z.string().min(1, "Role is required"),
