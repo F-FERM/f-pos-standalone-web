@@ -2,10 +2,13 @@
   "name": "f-pos-standalone-web",
   "version": "0.1.0",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
     "build": "next build",
     "start": "next start",
+    "electron": "electron .",
+    "electron:dev": "concurrently \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
     "lint": "eslint"
   },
   "dependencies": {
@@ -44,5 +47,34 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "wait-on": "^9.1.0"
+  },
+  "build": {
+    "appId": "com.fpos.standalone",
+    "productName": "F-POS",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      ".next/**/*",
+      "public/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }
