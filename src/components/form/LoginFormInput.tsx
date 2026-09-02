@@ -5,8 +5,6 @@ import { Input } from "../ui/input";
 import { cn } from "@/src/lib/utils";
 import { Eye, EyeOff } from "lucide-react";
 
-
-
 interface FormInputProps {
   name: string;
   description?: string;
@@ -28,31 +26,19 @@ interface FormInputProps {
   min?: number | string;
   max?: number | string;
   errorMessage?: string;
-  
-  variant?: "default" | "kiosk";
 }
 
-const VARIANT_CLASSES = {
-  default: `w-[304px] h-[38px] rounded-[7px] border border-[#A1A1A1]
-    bg-[#1C1C1C] text-[#A1A1A1] placeholder:text-[#A1A1A1] placeholder:text-[16px] md:placeholder:text-[16px]
-    font-poppins font-normal text-[20px] md:text-[20px] leading-none tracking-normal
-    px-5 py-1.5
-    flex items-center transition-all duration-200
-    focus-visible:ring-1 focus-visible:ring-[#A1A1A1] focus-visible:ring-offset-0
-    disabled:border-gray-700 disabled:bg-[#141414] disabled:text-gray-600`,
-  kiosk: `w-[365px] h-[50px] rounded-[10px] border border-white/30
-    bg-[#ACACAC99] text-white placeholder:text-white/70
-    font-poppins font-medium text-[20px] md:text-[20px] leading-none tracking-normal placeholder:text-[16px] md:placeholder:text-[16px]
-    px-7 py-[18px]
-    flex items-center transition-all duration-200
-    focus-visible:ring-1 focus-visible:ring-white/50 focus-visible:ring-offset-0
-    disabled:border-white/10 disabled:bg-white/10 disabled:text-white/40`,
-} as const;
 
-const ICON_COLOR_CLASSES = {
-  default: "text-[#A1A1A1]",
-  kiosk: "text-white/80",
-} as const;
+const INPUT_CLASSES = `w-[365px] h-[50px] rounded-[10px] border border-white/30
+  bg-[#ACACAC99] text-white placeholder:text-white/70
+  font-poppins font-medium text-[20px] leading-none tracking-normal placeholder:text-[16px]
+  gap-[10px]
+  pt-[12px] pr-[22px] pb-[11px] pl-[22px]
+  flex items-center transition-all duration-200
+  focus-visible:ring-1 focus-visible:ring-white/50 focus-visible:ring-offset-0
+  disabled:border-white/10 disabled:bg-white/10 disabled:text-white/40`;
+
+const ICON_COLOR_CLASSES = "text-white/80";
 
 const LoginFormInput = ({
   name,
@@ -73,7 +59,6 @@ const LoginFormInput = ({
   max,
   min,
   errorMessage,
-  variant = "default",
 }: FormInputProps) => {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -81,7 +66,6 @@ const LoginFormInput = ({
     setShowPassword(!showPassword);
   };
 
-  // Determine the actual input type
   const inputType = type === "password" && showPassword ? "text" : type;
 
   return (
@@ -91,9 +75,7 @@ const LoginFormInput = ({
         <FormItem>
           {label && (
             <FormLabel
-              className={`flex gap-2 text-base font-medium mb-1 ${
-                variant === "kiosk" ? "text-white" : ""
-              } ${labelClassName}`}
+              className={`flex gap-2 text-base font-medium mb-1 text-white ${labelClassName}`}
             >
               {label}
               {required && (
@@ -135,7 +117,7 @@ const LoginFormInput = ({
                 onCopy={(e) => {
                   if (onCopy) onCopy(e);
                 }}
-                className={cn(VARIANT_CLASSES[variant], className)}
+                className={cn(INPUT_CLASSES, className)}
                 disabled={disabled}
                 value={value ?? field.value ?? ""}
               />
@@ -145,16 +127,16 @@ const LoginFormInput = ({
                   onClick={togglePasswordVisibility}
                 >
                   {showPassword ? (
-                    <EyeOff className={cn("h-5 w-5", ICON_COLOR_CLASSES[variant])} />
+                    <EyeOff className={cn("h-5 w-5", ICON_COLOR_CLASSES)} />
                   ) : (
-                    <Eye className={cn("h-5 w-5", ICON_COLOR_CLASSES[variant])} />
+                    <Eye className={cn("h-5 w-5", ICON_COLOR_CLASSES)} />
                   )}
                 </div>
               ) : Icon ? (
                 <div
                   className={cn(
                     "pointer-events-none absolute inset-y-0 end-0 flex items-center justify-center pe-3 peer-disabled:opacity-50",
-                    ICON_COLOR_CLASSES[variant]
+                    ICON_COLOR_CLASSES
                   )}
                 >
                   {Icon}
