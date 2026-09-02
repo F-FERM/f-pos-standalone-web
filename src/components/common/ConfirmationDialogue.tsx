@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@/src/components/Button";
 import { X } from "lucide-react";
 import { useState } from "react";
+import { Button } from "../ui/button";
 
 interface ConfirmationDialogProps {
   open: boolean;

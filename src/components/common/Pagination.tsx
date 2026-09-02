@@ -8,11 +8,7 @@ type PaginationProps = {
   className?: string;
 };
 
-/**
- * Shared pagination bar ("Showing x to y of z entries" + Prev / page / Next).
- * Used anywhere a list needs paging (currently the Customers modal, but
- * built generically so Orders or Products lists can reuse it too).
- */
+
 export function Pagination({
   currentPage,
   totalItems,

@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { Minus, Plus, X, UsersRound, Table2, ClipboardList } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { products } from "./Data";
 import { FooterAction } from "./FooterSection";
 import { TableModal } from "./TableModal";
 import { OrderModal } from "./OrderModal";
 import { CustomerModal } from "./CustomerModal";
+import { Button } from "../ui/button";
 
 
 export function OrderPanel() {

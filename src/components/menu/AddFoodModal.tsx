@@ -1,13 +1,14 @@
 "use client";
 
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/src/components/Button";
+
 import FormCombobox, { selectType } from "@/src/components/form/FormCombobox";
 import FormMultiSelectInput from "@/src/components/form/FormMultiSelectInput";
 import FormInput from "@/src/components/form/FormInput";
 import { Check, ImagePlus, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
+import { Button } from "../ui/button";
 
 export type FoodType = "Veg" | "Non-Veg";
 

@@ -1,10 +1,10 @@
 "use client";
 
-import { Button } from "@/src/components/Button";
 import FormCombobox, { selectType } from "@/src/components/form/FormCombobox";
 import FormInput from "@/src/components/form/FormInput";
 import { Plus, Trash2, X } from "lucide-react";
 import { FormProvider, useFieldArray, useForm } from "react-hook-form";
+import { Button } from "../ui/button";
 
 export type VatMode = "VAT Inclusive" | "VAT Exclusive";
 

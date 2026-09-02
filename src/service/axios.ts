@@ -1,4 +1,5 @@
 import axios from "axios";
+
 import { LocalStorage } from "../utility/localStorage";
 
 let isRefreshing = false;
@@ -20,8 +21,8 @@ const axiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, 
-  timeout: 10000, 
+  withCredentials: true, // This is important for sending/receiving cookies
+  timeout: 10000, // 10 seconds timeout
 });
 
 // Request interceptor
@@ -35,7 +36,7 @@ axiosInstance.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  },
+  }
 );
 
 // Response interceptor
@@ -99,7 +100,7 @@ axiosInstance.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  },
+  }
 );
 
 export default axiosInstance;

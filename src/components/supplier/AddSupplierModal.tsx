@@ -1,11 +1,11 @@
 "use client";
 
-import { Button } from "@/src/components/Button";
 import FormInput from "@/src/components/form/FormInput";
 import FormPhoneNumberInput from "@/src/components/form/FormPhoneNumberInput";
 import FormTextArea from "@/src/components/form/FormTextArea";
 import { X } from "lucide-react";
 import { FormProvider, useForm } from "react-hook-form";
+import { Button } from "../ui/button";
 
 export type NewSupplierInput = {
   name: string;

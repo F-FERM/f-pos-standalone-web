@@ -1,10 +1,11 @@
 "use client";
 
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/src/components/Button";
+
 import FormInput from "@/src/components/form/FormInput";
 import { X } from "lucide-react";
 import { FormProvider, useForm } from "react-hook-form";
+import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
+import { Button } from "../ui/button";
 
 export type CategoryFormValues = {
   categoryName: string;

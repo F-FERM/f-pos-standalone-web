@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/src/components/Button";
 import FormInput from "@/src/components/form/FormInput";
 import FormMultiSelectInput, {
   selectType,
@@ -8,6 +7,7 @@ import FormMultiSelectInput, {
 import { Check, ImagePlus, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { Button } from "../ui/button";
 
 const COMBO_TABS = ["Add Combo", "Group Item", "Prizing"] as const;
 type ComboTab = (typeof COMBO_TABS)[number];

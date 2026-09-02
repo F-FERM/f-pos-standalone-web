@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X } from "lucide-react";
-import { SearchInput } from "../SearchInput";
+import { SearchInput } from "../common/SearchInput";
 
 
 

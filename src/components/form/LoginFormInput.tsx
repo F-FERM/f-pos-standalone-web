@@ -1,17 +1,11 @@
 "use client";
 import { ReactNode, useState } from "react";
-
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
+import { Input } from "../ui/input";
+import { cn } from "@/src/lib/utils";
 import { Eye, EyeOff } from "lucide-react";
-import { cn } from "@/lib/utils";
+
+
 
 interface FormInputProps {
   name: string;

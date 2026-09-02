@@ -1,10 +1,10 @@
 "use client";
 
-import { Button } from "@/src/components/Button";
 import FormInput from "@/src/components/form/FormInput";
 import { X } from "lucide-react";
 import { FormProvider, useForm } from "react-hook-form";
 import FormCombobox, { selectType } from "../form/FormCombobox";
+import { Button } from "../ui/button";
 
 export type NewItemInput = {
   ingredientName: string;

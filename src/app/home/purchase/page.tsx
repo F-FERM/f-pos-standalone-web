@@ -3,12 +3,12 @@
 import { useMemo, useState } from "react";
 import userPlus  from "../../../../public/images/icons/usergroup.png";
 
-import { Button } from "@/src/components/Button";
-import { Pagination } from "@/src/components/Pagination";
-import { SearchInput } from "@/src/components/SearchInput";
+import { Pagination } from "@/src/components/common/Pagination";
+import { SearchInput } from "@/src/components/common/SearchInput";
 import { POSHeader } from "@/src/components/sales/PosHeader";
 import AddPurchaseModal, { NewPurchaseInput } from "@/src/components/purchase/AddPurchaseModal";
 import AddItemModal, { NewItemInput } from "@/src/components/purchase/AddItemModal";
+import { Button } from "@/src/components/ui/button";
 
 type Purchase = {
   id: number;

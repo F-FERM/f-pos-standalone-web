@@ -1,6 +1,6 @@
 "use client";
 
-import { SearchInput } from "../SearchInput";
+import { SearchInput } from "../common/SearchInput";
 
 
 const filters = ["All", "Scoop", "Corn", "Stick"];

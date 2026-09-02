@@ -1,9 +1,9 @@
-import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import Providers from "./providers";
+import { cn } from "../lib/utils";
 
 const poppins = Poppins({
   subsets: ["latin"],

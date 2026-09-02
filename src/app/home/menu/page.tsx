@@ -3,9 +3,8 @@
 import { useMemo, useState } from "react";
 import userPlus from "../../../../public/images/icons/usergroup.png";
 
-import { Button } from "@/src/components/Button";
-import { Pagination } from "@/src/components/Pagination";
-import { SearchInput } from "@/src/components/SearchInput";
+import { Pagination } from "@/src/components/common/Pagination";
+import { SearchInput } from "@/src/components/common/SearchInput";
 import { POSHeader } from "@/src/components/sales/PosHeader";
 
 
@@ -13,6 +12,7 @@ import AddFoodModal, { NewFoodInput } from "@/src/components/menu/AddFoodModal";
 import AddCategoryModal, { NewCategoryInput } from "@/src/components/menu/AddCategoryModal";
 import AddMenuTypeModal, { NewMenuTypeInput } from "@/src/components/menu/AddMenuTypeModal";
 import AddComboModal, { NewComboInput } from "@/src/components/menu/AddComboModal";
+import { Button } from "@/src/components/ui/button";
 
 
 type Category = {

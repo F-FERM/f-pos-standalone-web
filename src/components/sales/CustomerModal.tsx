@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { X } from "lucide-react";
-import { SearchInput } from "../SearchInput";
-import { Pagination } from "../Pagination";
+import { SearchInput } from "../common/SearchInput";
+import { Pagination } from "../common/Pagination";
 import { Customer } from "./Types";
 
 

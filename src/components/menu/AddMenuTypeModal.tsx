@@ -1,13 +1,14 @@
 "use client";
 
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/src/components/Button";
+
 import FormMultiSelectInput, {
   selectType,
 } from "@/src/components/form/FormMultiSelectInput";
 import { X } from "lucide-react";
 import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
+import { Button } from "../ui/button";
 
 export type MenuTypeFormValues = {
   menuTypes: string[];

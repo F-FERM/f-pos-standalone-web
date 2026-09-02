@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { SearchInput } from "@/src/components/SearchInput";
+import { SearchInput } from "@/src/components/common/SearchInput";
 import { POSHeader } from "@/src/components/sales/PosHeader";
 
 const TABS = [
