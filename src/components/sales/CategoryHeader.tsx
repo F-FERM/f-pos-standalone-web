@@ -2,48 +2,61 @@
 
 import { SearchInput } from "../common/SearchInput";
 
-
 const filters = ["All", "Scoop", "Corn", "Stick"];
 
-export function CategoryHeader() {
+type CategoryHeaderProps = {
+  selectedFilter?: string;
+  onSelectFilter?: (filter: string) => void;
+};
+
+export function CategoryHeader({
+  selectedFilter = "All",
+  onSelectFilter,
+}: CategoryHeaderProps) {
   return (
-    <section
-      className="
-        flex
-        h-auto
-        min-h-[50px]
-        w-full
-        min-w-0
-        flex-wrap
-        items-center
-        gap-2
-        rounded-[12px]
-        bg-black
-        px-3
-        py-2
-        sm:flex-nowrap
-        sm:gap-[10px]
-        sm:px-[18px]
-        sm:py-[11px]
-      "
-    >
-      <h2 className="whitespace-nowrap text-[16px] font-semibold text-white xs:text-[18px]">
+    <div className="flex h-full w-full items-center justify-between">
+      <h2
+        className="whitespace-nowrap"
+        style={{
+          fontFamily: "Poppins, sans-serif",
+          fontWeight: 600,
+          fontSize: 22,
+          lineHeight: "100%",
+          letterSpacing: "0%",
+          color: "#000000",
+        }}
+      >
         Categories
       </h2>
 
-      <SearchInput variant="compact" className="ml-0 flex-1 sm:ml-[14px]" />
+      <SearchInput variant="compact" />
 
-      <div className="ml-auto flex items-center gap-3 overflow-x-auto text-[12px] font-medium sm:gap-[28px]">
-        {filters.map((filter) => (
-          <button
-            key={filter}
-            type="button"
-            className="shrink-0 text-white hover:text-secondary"
-          >
-            {filter}
-          </button>
-        ))}
+      <div
+        className="flex shrink-0 items-center"
+        style={{ width: 194, height: 18, justifyContent: "space-between" }}
+      >
+        {filters.map((filter) => {
+          const isActive = filter === selectedFilter;
+          return (
+            <button
+              key={filter}
+              type="button"
+              onClick={() => onSelectFilter?.(filter)}
+              className="shrink-0 hover:opacity-70"
+              style={{
+                fontFamily: "Poppins, sans-serif",
+                fontWeight: isActive ? 600 : 500,
+                fontSize: 12,
+                lineHeight: "100%",
+                letterSpacing: "0%",
+                color: isActive ? "#3B0038" : "#000000",
+              }}
+            >
+              {filter}
+            </button>
+          );
+        })}
       </div>
-    </section>
+    </div>
   );
 }

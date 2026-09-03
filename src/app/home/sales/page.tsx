@@ -8,35 +8,88 @@ import { ProductSection } from "@/src/components/sales/ProductSection";
 
 export default function POSScreen() {
   return (
-    <main className="flex flex-col overflow-x-hidden bg-black text-white">
-      <div className="hidden h-[7px]" />
-
-      {/* Navbar */}
+    <main
+      className="relative mx-auto overflow-hidden w-full h-full"
+      style={{
+        backgroundColor: "#EFEFEF",
+      }}
+    >
+      {/* Navbar — 1024x77, bg #000000 */}
       <POSHeader />
 
-      {/* Main Content */}
-      <div className="min-h-0 flex-1 bg-[#2C192B] px-3 py-[7px] md:px-[29px]">
-        <div
-          className="
-            mx-auto
-            grid
-            w-full
-            max-w-[1100px]
-            min-w-0
-            grid-cols-1
-            gap-3
-            md:grid-cols-[minmax(0,1fr)_minmax(220px,280px)]
-            md:gap-x-[10px]
-            md:gap-y-[14px]
-            lg:grid-cols-[minmax(0,1fr)_320px]
-          "
-        >
-          <CategoryHeader />
-          <InvoiceHeader />
-          <ProductSection />
-          <OrderPanel />
-        </div>
+      {/* Backdrop — 984x661, top:77 left:20, radius 15, bg #D2D2D2 */}
+      <div
+        className="absolute"
+        style={{
+          top: 77,
+          left: 20,
+          width: 984,
+          height: 661,
+          borderRadius: 15,
+          backgroundColor: "#D2D2D2",
+        }}
+      />
+
+      {/* Section 1 — Categories/search bar — 613x56 */}
+      <div
+        className="absolute flex items-center"
+        style={{
+          top: 90,
+          left: 30,
+          width: 613,
+          height: 56,
+          gap: 10,
+          borderRadius: 12,
+          paddingTop: 12,
+          paddingRight: 17,
+          paddingBottom: 11,
+          paddingLeft: 18,
+          backgroundColor: "#EFEFEF",
+        }}
+      >
+        <CategoryHeader />
       </div>
+
+      {/* Section 2 — Order/invoice info bar — 341x56 */}
+      <div
+        className="absolute flex items-center"
+        style={{
+          top: 90,
+          left: 653,
+          width: 341,
+          height: 56,
+          gap: 10,
+          borderRadius: 12,
+          paddingTop: 15,
+          paddingRight: 17,
+          paddingBottom: 14,
+          paddingLeft: 18,
+          backgroundColor: "#EFEFEF",
+        }}
+      >
+        <InvoiceHeader />
+      </div>
+
+      {/* Section 3 — Category + product panel — 613x564 */}
+      <div
+        className="absolute bg-white rounded-xl"
+        style={{
+          top: 159,
+          left: 30,
+          width: 613,
+          height: 564,
+
+          // backgroundColor: "#D2D2D2",
+        }}
+      >
+        <ProductSection />
+      </div>
+
+      {/* Section 4 — Order panel — 341x566, bordered */}
+    {/* Section 4 — Order panel — anchored at top:153 left:653 */}
+<div className="absolute" style={{ top: 153, left: 653, width: 341 }}>
+  <OrderPanel />
+</div>
     </main>
   );
 }

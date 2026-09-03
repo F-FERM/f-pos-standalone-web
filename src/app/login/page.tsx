@@ -105,7 +105,7 @@ export default function LoginPage() {
   style={{
     background: "#00000066",
     backdropFilter: "blur(2.8px)",
-    WebkitBackdropFilter: "blur(4.8px)", // Safari support
+    WebkitBackdropFilter: "blur(4.8px)", 
   }}
 />
 
@@ -140,11 +140,11 @@ export default function LoginPage() {
 
         {/* Login card — 427×539, radius 20, at top:84 left:517 */}
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-           className="absolute top-[84px] left-[517px] flex w-[427px] h-[539px] flex-col rounded-[20px]
-  border border-white/40 bg-white/8 pt-6 pr-[31px] pb-[27px] pl-[31px] shadow-2xl backdrop-blur-[2px]"
-          >
+        <form
+  onSubmit={form.handleSubmit(onSubmit)}
+  className="absolute top-[84px] left-[517px] flex w-[427px] h-[539px] flex-col rounded-[20px]
+    border border-white/40 bg-white/8 pt-6 pr-[31px] pb-[45px] pl-[31px] shadow-2xl backdrop-blur-[2px]"
+>
             <h1 className="mb-[18px] text-center font-[Poppins,sans-serif] text-[32px] font-semibold leading-none tracking-[0%] text-white">
               Login
             </h1>
@@ -167,7 +167,7 @@ export default function LoginPage() {
               className="mb-[10px]"
             />
 
-            <div className="mt-[25px] grid grid-cols-3 gap-[10px]">
+            <div className="mt-[15px] grid grid-cols-3 gap-[10px]">
               {KEYPAD_DIGITS.map((digit) => (
                 <button
                   key={digit}
@@ -216,15 +216,14 @@ export default function LoginPage() {
               </button>
             </div>
 <Link href="/home">
-            <Button
-              type="submit"
-              disabled={pin.length === 0}
-              className="mt-4 flex h-[50px] w-full items-center justify-center gap-1.5 rounded-[10px] bg-[#3EA200] cursor-pointer font-poppins text-base font-bold tracking-wide text-white
-                hover:bg-[#22C55E]/90 disabled:opacity-60"
-            >
-              LOGIN
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+  <Button
+    type="submit"
+    disabled={pin.length === 0}
+  variant={"login"}
+  >
+    LOGIN
+    <ArrowRight className="h-4 w-4" />
+  </Button>
 </Link>
           </form>
         </Form>

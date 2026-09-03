@@ -1,242 +1,111 @@
 "use client";
 
-import { ArrowLeft, UserRound } from "lucide-react";
+import { ChevronLeft, User } from "lucide-react";
 import { Button } from "../ui/button";
-
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function POSHeader() {
   return (
     <header
-      className="
-        relative
-        flex
-        w-full
-        shrink-0
-        items-center
-        bg-black
-        px-3
-        py-3
-        sm:px-4
-        md:px-6
-        lg:px-7
-        xl:px-[29px]
-      "
+      className="flex items-center justify-between bg-[#EFEFEF]"
+      style={{
+        width: 1024,
+        height: 77,
+        gap: 10,
+        paddingTop: 22,
+        paddingRight: 20,
+        paddingBottom: 22,
+        paddingLeft: 20,
+        
+
+      }}
     >
-      {/* =========================
-          LEFT - BACK BUTTON
-      ========================== */}
-      <div className="flex shrink-0 items-center">
-        <Button
-          type="button"
-          size="icon"
-          className="
-            flex
-            shrink-0
-            items-center
-            justify-center
-            rounded-[6px]
-            bg-[#292929]
-            hover:bg-[#333333]
-
-            h-[36px]
-            w-[36px]
-
-            sm:h-[42px]
-            sm:w-[42px]
-
-            md:h-[46px]
-            md:w-[46px]
-
-            lg:h-[50px]
-            lg:w-[50px]
-          "
-        >
-          <ArrowLeft
-            className="
-              h-[18px]
-              w-[18px]
-
-              sm:h-[20px]
-              sm:w-[20px]
-
-              md:h-[22px]
-              md:w-[22px]
-            "
-          />
-        </Button>
-      </div>
-
-      {/* =========================
-          CENTER - RESTAURANT
-      ========================== */}
-      <div
-        className="
-          pointer-events-none
-          absolute
-          left-1/2
-          top-1/2
-          flex
-          max-w-[45%]
-          -translate-x-1/2
-          -translate-y-1/2
-          items-center
-          gap-2
-          sm:gap-[10px]
-          md:gap-3
-        "
+      {/* Left: back button — 40x40, radius 5, padding 6, bg #B3B3B336 */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="shrink-0 rounded-[5px] p-[6px] text-black text-xl hover:bg-[#B3B3B336]"
+        style={{
+          width: 40,
+          height: 40,
+          gap: 10,
+          backgroundColor: "#B3B3B336",
+        }}
       >
-        {/* Restaurant Avatar */}
-        <div
-          className="
-            flex
-            shrink-0
-            items-center
-            justify-center
-            rounded-full
-            bg-[#D9D9D9]
+        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+      </Button>
 
-            h-[34px]
-            w-[34px]
-
-            sm:h-[40px]
-            sm:w-[40px]
-
-            md:h-[46px]
-            md:w-[46px]
-
-            lg:h-[50px]
-            lg:w-[50px]
-          "
+      {/* Center: restaurant avatar + name */}
+      <div className="flex flex-1 items-center justify-center gap-3">
+        <Avatar
+          className="flex items-center justify-center bg-[#EFEFEF]"
+          style={{
+            width: 47,
+            height: 47,
+            borderRadius: 40,
+            padding: 10,
+            boxShadow: "0px 0px 4px 0px #00000040",
+          }}
         >
-          <UserRound
-            className="
-              h-[16px]
-              w-[16px]
-              text-black
-
-              sm:h-[18px]
-              sm:w-[18px]
-
-              md:h-[20px]
-              md:w-[20px]
-            "
-          />
-        </div>
-
-        {/* Restaurant Name */}
-        <h1
-          className="
-            min-w-0
-            truncate
-            whitespace-nowrap
-            font-semibold
-            tracking-[-0.5px]
-
-            text-[16px]
-
-            sm:text-[20px]
-
-            md:text-[24px]
-
-            lg:text-[28px]
-
-            xl:text-[32px]
-          "
+          <AvatarFallback className="bg-transparent text-black font-normal">
+            <User className="h-6 w-6 " />
+          </AvatarFallback>
+        </Avatar>
+        <span
+          className="text-black"
+          style={{
+            fontFamily: "Inter, sans-serif",
+            fontWeight: 600,
+            fontSize: 32,
+            lineHeight: "100%",
+            letterSpacing: "0%",
+          }}
         >
           My Restaurant
-        </h1>
+        </span>
       </div>
 
-      {/* =========================
-          RIGHT - ADMIN
-      ========================== */}
-      <div
-        className="
-          ml-auto
-          flex
-          shrink-0
-          items-center
-          gap-2
-
-          sm:gap-[10px]
-
-          md:gap-3
-        "
-      >
-        {/* Admin Avatar */}
-        <div
-          className="
-            flex
-            shrink-0
-            items-center
-            justify-center
-            rounded-full
-            bg-[#D9D9D9]
-
-            h-[32px]
-            w-[32px]
-
-            sm:h-[38px]
-            sm:w-[38px]
-
-            md:h-[44px]
-            md:w-[44px]
-
-            lg:h-[48px]
-            lg:w-[48px]
-          "
+      {/* Right: admin profile — 150x40, gap 10 */}
+      <div className="flex shrink-0 items-center" style={{ width: 150, height: 40, gap: 10 }}>
+        <Avatar
+          className="flex items-center justify-center bg-[#EFEFEF]"
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 40,
+            padding: 10,
+            boxShadow: "0px 0px 4px 0px #00000040",
+          }}
         >
-          <UserRound
-            className="
-              h-[15px]
-              w-[15px]
-              text-black
-
-              sm:h-[17px]
-              sm:w-[17px]
-
-              md:h-[19px]
-              md:w-[19px]
-            "
-          />
-        </div>
-
-        {/* Admin Details */}
-        <div className="hidden min-w-0 sm:block">
-          <p
-            className="
-              truncate
-              font-semibold
-              leading-tight
-
-              text-[14px]
-
-              md:text-[16px]
-
-              lg:text-[18px]
-
-              xl:text-[20px]
-            "
+          <AvatarFallback className="bg-transparent text-black">
+            <User className="h-4 w-4" />
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex flex-col leading-none">
+          <span
+            className="text-black"
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontWeight: 600,
+              fontSize: 20,
+              lineHeight: "100%",
+              letterSpacing: "0%",
+            }}
           >
             Admin
-          </p>
-
-          <p
-            className="
-              truncate
-              text-[#AAAAAA]
-
-              text-[10px]
-
-              md:text-[11px]
-
-              lg:text-[12px]
-
-              xl:text-[13px]
-            "
+          </span>
+          <span
+            className="mt-1 text-[#686868]"
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontWeight: 400,
+              fontSize: 14,
+              lineHeight: "100%",
+              letterSpacing: "0%",
+            }}
           >
             Company Admin
-          </p>
+          </span>
         </div>
       </div>
     </header>

@@ -11,6 +11,7 @@ const buttonVariants = cva(
       variant: {
         default:
           "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 ",
+        login:"mt-6 mb-2 flex h-[50px] w-[365px] items-center justify-center gap-2.5 rounded-[10px] bg-[#3EA200] py-[11px] pl-[52px] pr-[52px] cursor-pointer font-poppins text-base font-bold tracking-wide text-white hover:bg-[#22C55E]/90 disabled:opacity-60",
         destructive:
           "bg-destructive text-white py-[7px] px-[30px] rounded-lg font-medium text-base min-w-[100px] hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:

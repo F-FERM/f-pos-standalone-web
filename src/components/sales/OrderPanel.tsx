@@ -2,175 +2,300 @@
 
 import { useState } from "react";
 import { Minus, Plus, X, UsersRound, Table2, ClipboardList } from "lucide-react";
-
 import { products } from "./Data";
-import { FooterAction } from "./FooterSection";
 import { TableModal } from "./TableModal";
 import { OrderModal } from "./OrderModal";
 import { CustomerModal } from "./CustomerModal";
-import { Button } from "../ui/button";
 
+const orderTypes = ["Dine", "Take Away", "Online", "Home delivery"];
+const footerActions = [
+  { icon: Table2, label: "Table" },
+  { icon: ClipboardList, label: "Order" },
+  { icon: UsersRound, label: "Customers" },
+];
+
+// panel wrapper is anchored at page top:153 left:653 — this thumb's page coords (top:231 left:657)
+// become relative offsets of top:78, left:4 within that wrapper
+const SCROLL_THUMB_TOP = 231 - 153;
+const SCROLL_THUMB_LEFT = 657 - 653;
 
 export function OrderPanel() {
+  const [selectedType, setSelectedType] = useState("Online");
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
+  const cartItems = Array(6).fill(products[0]); // placeholder — wire to real cart state
+
   return (
     <>
-      <section
-        className="
-          relative
-          h-[min(564px,calc(100vh-220px))]
-          min-h-[420px]
-          w-full
-          min-w-0
-          overflow-hidden
-          rounded-[15px]
-          border
-          border-primary
-          bg-[#170716]
-        "
-      >
-        {/* Table header */}
+      <div className="relative flex flex-col">
+        {/* Order-type toggle bar — 341x20 */}
         <div
-          className="
-            flex
-            h-[29px]
-            items-center
-            justify-between
-            rounded-t-[14px]
-            border-b
-            border-primary
-            bg-[#9A37965E]
-            px-3
-            text-[10px]
-            sm:px-[18px]
-          "
+          className="flex items-center"
+          style={{ width: 341, height: 20, borderRadius: 10, background: "#D2D2D2", justifyContent: "space-between" }}
         >
-          <span className="w-[70px] text-[10px] font-normal text-[#FF87FA] sm:w-[84px]">
-            Item
-          </span>
-          <span className="w-[60px] text-[10px] font-normal text-[#FF87FA] sm:w-[70px]">
-            Quantity
-          </span>
-          <span className="text-[10px] font-normal text-[#FF87FA]">Amount</span>
+          {orderTypes.map((type) => {
+            const active = type === selectedType;
+            return (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setSelectedType(type)}
+                className="flex items-center justify-center"
+                style={{
+                  width: 77,
+                  height: 20,
+                  borderRadius: 6,
+                  paddingTop: 8,
+                  paddingRight: 7,
+                  paddingBottom: 7,
+                  paddingLeft: 8,
+                  background: active ? "#3B0038" : "#EFEFEF",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "Poppins, sans-serif",
+                    fontWeight: 400,
+                    fontSize: 8,
+                    lineHeight: "100%",
+                    color: active ? "#FFFFFF" : "#3B0038",
+                  }}
+                >
+                  {type}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Cart item */}
+        {/* Card — 341x546 */}
         <div
-          className="
-            mx-[5px]
-            mt-[17px]
-            flex
-            h-[64px]
-            items-center
-            rounded-[6px]
-            border
-            border-secondary
-            bg-[#170716]
-            px-[5px]
-          "
+          className="flex flex-col overflow-hidden"
+          style={{
+            marginTop: 6,
+            width: 341,
+            height: 546,
+            borderRadius: 15,
+            border: "1px solid #C4C4C4",
+            background: "#EFEFEF",
+          }}
         >
-          <img
-            src={products[0].image}
-            alt=""
-            className="h-[48px] w-[48px] rounded-[5px] object-cover"
-          />
-
-          <div className="ml-[7px] min-w-0 flex-1">
-            <p className="max-w-[95px] truncate text-[10px] font-medium leading-[15px] text-white">
-              Butter scotch crunch
-            </p>
-
-            <div className="mt-[4px] flex items-center gap-[7px]">
-              <button
-                type="button"
-                className="flex h-[15px] w-[15px] items-center justify-center rounded-full bg-white"
-              >
-                <Minus size={10} className="text-black" />
-              </button>
-
-              <span className="text-[13px] text-white">1</span>
-
-              <button
-                type="button"
-                className="flex h-[15px] w-[15px] items-center justify-center rounded-full bg-secondary"
-              >
-                <Plus size={10} className="text-white" />
-              </button>
-            </div>
+          {/* Item / Quantity / Amount header */}
+          <div
+            className="flex shrink-0 items-center justify-between"
+            style={{
+              height: 29,
+              paddingTop: 8,
+              paddingRight: 18,
+              paddingBottom: 8,
+              paddingLeft: 18,
+              gap: 10,
+              background: "#9494945E",
+              borderTopLeftRadius: 15,
+              borderTopRightRadius: 15,
+            }}
+          >
+            <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 10, color: "#3B0038" }}>
+              Item
+            </span>
+            <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 10, color: "#3B0038" }}>
+              Quantity
+            </span>
+            <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 10, color: "#3B0038" }}>
+              Amount
+            </span>
           </div>
 
-          <span className="mr-[10px] shrink-0 text-[13px] font-semibold text-white sm:text-[14px]">
-            ₹200
-          </span>
+          {/* Cart rows — scrollable */}
+         {/* Cart rows — scrollable */}
+<div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#EFEFEF] " style={{ padding: 6, gap: 8 }}>
+  {cartItems.map((product, i) => (
+    <div
+      key={i}
+      className="flex shrink-0 items-center"
+      style={{
+        width: 310,
+        height: 46,
+        borderRadius: 6,
+        border: "1px solid #CECECE",
+        paddingTop: 3,
+        paddingRight: 5,
+        paddingBottom: 3,
+        paddingLeft: 5,
+      }}
+    >
+      <img
+        src={product.image}
+        alt=""
+        className="shrink-0 object-cover"
+        style={{ width: 97, height: 41, borderRadius: 5 }}
+      />
 
+      {/* tight gap to image */}
+      <div className="flex min-w-0 flex-1 flex-col justify-center" style={{ marginLeft: 8, gap: 4 }}>
+        <p
+          className="truncate"
+          style={{ fontFamily: "Poppins, sans-serif", fontWeight: 500, fontSize: 12, color: "#000000" }}
+        >
+          {product.name}
+        </p>
+
+        {/* compact inline stepper — no border box */}
+        <div className="flex items-center" style={{ gap: 7 }}>
           <button
             type="button"
-            className="flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full bg-red-500"
+            className="flex h-[15px] w-[15px] items-center justify-center rounded-full"
+            style={{ background: "white", border: "1px solid #C4C4C4" }}
           >
-            <X size={10} className="text-white" />
+            <Minus size={9} className="text-black" />
+          </button>
+          <span className="text-[13px] font-medium" style={{ color: "#000000" }}>
+            1
+          </span>
+          <button
+            type="button"
+            className="flex h-[15px] w-[15px] items-center justify-center rounded-full"
+            style={{ background: "#670063" }}
+          >
+            <Plus size={9} className="text-white" />
           </button>
         </div>
+      </div>
 
-        {/* Bottom calculation */}
-        <div className="absolute bottom-[72px] left-0 right-0 px-[7px]">
-          <div className="space-y-[7px] px-[7px]">
-            <div className="flex justify-between text-[12px] text-white">
-              <span>Items (1)</span>
-              <span>200.00</span>
+      <span
+        className="shrink-0 pl-2"
+        style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: 16, color: "#000000" }}
+      >
+        ₹{product.price}
+      </span>
+
+      <button
+        type="button"
+        className="ml-[10px] flex shrink-0 items-center justify-center"
+        style={{ width: 16, height: 16, borderRadius: 10, padding: 2, background: "#FF0F0F" }}
+      >
+        <X size={10} className="text-white" />
+      </button>
+    </div>
+  ))}
+
+  {/* Decorative scroll-position thumb — unchanged */}
+  <div
+    className="pointer-events-none absolute "
+    style={{ top: SCROLL_THUMB_TOP, left: SCROLL_THUMB_LEFT, width: 3, height: 104, borderRadius: 5 }}
+  />
+</div>
+
+          {/* Bottom stack: totals + action buttons + footer, 321 wide, gap 5 */}
+          <div className="flex shrink-0 flex-col " style={{ width: 321, margin: "0 auto", gap: 2, paddingBottom: 10 }}>
+            <div
+              className="flex justify-between"
+              style={{ fontFamily: "Poppins, sans-serif", fontWeight: 500, fontSize: 12, color: "#000000" }}
+            >
+              <span>Items ({cartItems.length})</span>
+              <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 400, fontSize: 10 }}>200.00</span>
             </div>
 
-            <div className="flex justify-between text-[12px] text-white">
+            <div
+              className="flex justify-between"
+              style={{ fontFamily: "Poppins, sans-serif", fontWeight: 500, fontSize: 12, color: "#000000" }}
+            >
               <span>Subtotal</span>
-              <span>200.00</span>
+              <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 400, fontSize: 10 }}>200.00</span>
             </div>
 
-            <div className="flex justify-between text-[12px] text-white">
+            <div
+              className="flex justify-between"
+              style={{ fontFamily: "Poppins, sans-serif", fontWeight: 500, fontSize: 12, color: "#000000" }}
+            >
               <span>VAT(0%)</span>
-              <span>0.00</span>
+              <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 400, fontSize: 10 }}>0.00</span>
             </div>
 
-            <div className="my-[7px] border-t border-[#777777]" />
+            <div className="border-t" style={{ borderColor: "#878787" }} />
 
-            <div className="flex justify-between text-[14px] font-semibold text-white">
-              <span>Total</span>
-              <span>200.00</span>
+            <div className="flex justify-between items-center">
+              <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 16, color: "#000000" }}>
+                Total
+              </span>
+              <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 16, color: "#000000" }}>
+                200.00
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <button
+                type="button"
+                className="flex items-center justify-center text-white"
+                style={{ width: 105, height: 32, borderRadius: 10, background: "#3EA200", fontSize: 12, fontWeight: 600 }}
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                className="flex items-center justify-center text-white"
+                style={{ width: 105, height: 32, borderRadius: 10, background: "#3B0038", fontSize: 12, fontWeight: 600 }}
+                onClick={() => setIsOrderModalOpen(true)}
+              >
+                Print
+              </button>
+              <button
+                type="button"
+                className="flex items-center justify-center text-white"
+                style={{ width: 105, height: 32, borderRadius: 10, background: "#FF0F0F", fontSize: 12, fontWeight: 600 }}
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div
+              className="flex items-center"
+              style={{
+                width: 321,
+                height: 64,
+                borderRadius: 10,
+                background: "#D2D2D2",
+                justifyContent: "space-between",
+                paddingTop: 8,
+                paddingRight: 10,
+                paddingBottom: 8,
+                paddingLeft: 10,
+              }}
+            >
+              {footerActions.map(({ icon: Icon, label }) => (
+                <button
+                  key={label}
+                  type="button"
+                  className="flex flex-col items-center justify-center"
+                  style={{
+                    width: 82,
+                    height: 49,
+                    borderRadius: 6,
+                    background: "#EFEFEF",
+                    paddingTop: 8,
+                    paddingRight: 7,
+                    paddingBottom: 7,
+                    paddingLeft: 8,
+                    gap: 2,
+                  }}
+                  onClick={() => {
+                    if (label === "Table") setIsTableModalOpen(true);
+                    if (label === "Order") setIsOrderModalOpen(true);
+                    if (label === "Customers") setIsCustomerModalOpen(true);
+                  }}
+                >
+                  <Icon size={18} style={{ color: "#3B0038" }} />
+                  <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 400, fontSize: 8, color: "#3B0038" }}>
+                    {label}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
-
-          {/* Action buttons */}
-          <div className="mt-[9px] grid grid-cols-3 gap-[9px]">
-            <Button className="h-[33px] rounded-[9px] bg-[#3EA200] text-[11px] hover:bg-[#3EA200]/90 sm:text-[12px]">
-              Save
-            </Button>
-
-            <Button className="h-[33px] rounded-[9px] bg-white text-[11px] text-black hover:bg-white/90 sm:text-[12px]">
-              Print
-            </Button>
-
-            <Button className="h-[33px] rounded-[9px] bg-[#FF0F0F] text-[11px] hover:bg-[#FF0F0F]/90 sm:text-[12px]">
-              Cancel
-            </Button>
-          </div>
         </div>
-
-        {/* Footer */}
-        <div className="absolute bottom-[8px] left-[7px] right-[7px] flex h-[54px] items-center justify-around rounded-[10px] bg-black xs:h-[58px]">
-          <FooterAction icon={Table2} label="Table" onClick={() => setIsTableModalOpen(true)} />
-          <FooterAction
-            icon={ClipboardList}
-            label="Order"
-            onClick={() => setIsOrderModalOpen(true)}
-          />
-          <FooterAction
-            icon={UsersRound}
-            label="Customers"
-            onClick={() => setIsCustomerModalOpen(true)}
-          />
-        </div>
-      </section>
+      </div>
 
       <TableModal open={isTableModalOpen} onClose={() => setIsTableModalOpen(false)} />
       <OrderModal open={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} />

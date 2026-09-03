@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
-
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { CategorySidebar } from "./CategorySidebar";
 import { Product } from "./Types";
 import { products } from "./Data";
+import { PanelBackground } from "./PanelGround";
 
 type ProductGridProps = {
   selectedProduct: Product;
@@ -14,8 +14,8 @@ type ProductGridProps = {
 
 function ProductGrid({ selectedProduct, onSelect }: ProductGridProps) {
   return (
-    <div className="min-w-0 flex-1 overflow-y-auto py-3 pr-2 pl-1 xs:py-4 xs:pr-3 sm:py-[29px] sm:pr-[27px] sm:pl-[8px]">
-      <div className="grid grid-cols-2 gap-2 xs:gap-3 sm:grid-cols-3 sm:gap-[18px] lg:grid-cols-4">
+    <div className="min-w-0 flex-1 overflow-y-auto py-3 pr-2 pl-1 xs:py-4 xs:pr-3 sm:py-[29px] ">
+      <div className="mx-auto flex flex-wrap content-start justify-between" style={{ width: 476, rowGap: 10 }}>
         {products.map((product) => {
           const selected = selectedProduct.id === product.id;
 
@@ -24,21 +24,13 @@ function ProductGrid({ selectedProduct, onSelect }: ProductGridProps) {
               key={product.id}
               type="button"
               onClick={() => onSelect(product)}
-              className={`
-                group
-                relative
-                h-[80px]
-                w-full
-                min-w-0
-                overflow-hidden
-                rounded-[6px]
-                text-left
-                transition-all
-                duration-200
-                xs:h-[90px]
-                sm:h-[101px]
-                ${selected ? "ring-2 ring-secondary" : "ring-1 ring-transparent"}
-              `}
+              style={{
+                width: 150,
+                height: 104,
+                borderRadius: 5,
+                border: `3px solid ${selected ? "#670063" : "#565656"}`,
+              }}
+              className="group relative shrink-0 overflow-hidden text-left"
             >
               <img
                 src={product.image}
@@ -46,15 +38,47 @@ function ProductGrid({ selectedProduct, onSelect }: ProductGridProps) {
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
 
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 100%)",
+                }}
+              />
 
-              <div className="absolute inset-x-0 bottom-0 p-[6px] xs:p-[8px]">
-                <div className="flex items-end justify-between gap-1">
-                  <span className="line-clamp-2 max-w-[80px] text-[11px] font-medium leading-[15px] text-white xs:text-[12px] xs:leading-[17px]">
+              <div
+                className="absolute inset-0 flex flex-col justify-end"
+                style={{ paddingTop: 90, paddingRight: 8, paddingBottom: 8, paddingLeft: 9 }}
+              >
+                <div
+                  className="flex items-end justify-between gap-1"
+                  style={{ width: 127, minHeight: 39 }}
+                >
+                  <span
+                    className="text-white"
+                    style={{
+                      fontFamily: "Poppins",
+                      fontWeight: 500,
+                      fontSize: 12,
+                      lineHeight: "100%",
+                      letterSpacing: "0%",
+                      whiteSpace: "normal",
+                      wordBreak: "break-word",
+                      overflow: "visible",
+                    }}
+                  >
                     {product.name}
                   </span>
 
-                  <span className="shrink-0 text-[12px] font-semibold text-white xs:text-[14px]">
+                  <span
+                    className="shrink-0 text-white"
+                    style={{
+                      fontFamily: "Inter",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      lineHeight: "100%",
+                      letterSpacing: "0%",
+                    }}
+                  >
                     ₹{product.price}
                   </span>
                 </div>
@@ -70,23 +94,39 @@ function ProductGrid({ selectedProduct, onSelect }: ProductGridProps) {
 export function ProductSection() {
   const [selectedProduct, setSelectedProduct] = useState(products[0]);
   const [selectedCategory, setSelectedCategory] = useState(4);
+  const [notchCenterY, setNotchCenterY] = useState(267.5);
+  const [size, setSize] = useState({ width: 613, height: 564 });
+
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    const update = () => setSize({ width: el.clientWidth, height: el.clientHeight });
+    update();
+
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   return (
     <section
-      className="
-        relative
-        flex
-        h-[min(564px,calc(100vh-220px))]
-        min-h-[340px]
-        w-full
-        min-w-0
-        overflow-hidden
-        rounded-[15px]
-        bg-[#170716]
-      "
+      ref={sectionRef}
+      className="relative flex h-full w-full min-w-0 overflow-hidden rounded-[15px]"
     >
-      <CategorySidebar selectedId={selectedCategory} onSelect={setSelectedCategory} />
-      <ProductGrid selectedProduct={selectedProduct} onSelect={setSelectedProduct} />
+      {/* single unified background shape — draws the sidebar/grid split AND the notch */}
+      <PanelBackground width={size.width} height={size.height} notchCenterY={notchCenterY} fill="#D2D2D2" />
+
+      <div className="relative z-10 flex h-full w-full">
+        <CategorySidebar
+          selectedId={selectedCategory}
+          onSelect={setSelectedCategory}
+          onSelectedCenterChange={setNotchCenterY}
+        />
+        <ProductGrid selectedProduct={selectedProduct} onSelect={setSelectedProduct} />
+      </div>
     </section>
   );
 }
