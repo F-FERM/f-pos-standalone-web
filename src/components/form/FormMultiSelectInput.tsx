@@ -339,6 +339,14 @@ const FormMultiSelectInput = ({
                 }}
               >
                 <PopoverTrigger className="w-full">
+                  {/*
+                    Trigger styling is matched 1:1 to FormInput's <Input /> classes:
+                    border-[#D2D2D2], bg-[#D2D2D2], text-gray-500, font-poppins font-normal
+                    text-sm leading-none tracking-normal, gap-[9px], the same padding,
+                    rounded-[7px], max-w-[742px], and the same focus ring / disabled treatment.
+                    This is intentionally identical for both themes, since FormInput has no
+                    theme prop — "light" only changes the popover/dropdown below.
+                  */}
                   <div
                     ref={triggerRef}
                     role="button"
@@ -348,19 +356,19 @@ const FormMultiSelectInput = ({
                       if (onInteract) onInteract(e);
                     }}
                     className={cn(
-                      `flex min-h-[38px] w-full items-center justify-between
-                      rounded-[7px] border
+                      `flex min-h-[38px] w-full max-w-[742px] items-center justify-between
+                      rounded-[7px] border border-[#D2D2D2]
+                      bg-[#D2D2D2] text-gray-500
                       font-poppins font-normal text-sm leading-none tracking-normal
-                      pt-[6px] pr-[20px] pb-[6px] pl-[20px]
+                      gap-[9px] pt-[6px] pr-[20px] pb-[6px] pl-[20px]
                       transition-all duration-200
                       cursor-pointer
-                      focus-visible:ring-1 focus-visible:ring-offset-0
+                      focus-visible:ring-1 focus-visible:ring-gray-300 focus-visible:ring-offset-0
                       ${
-                        isLight
-                          ? "border-[#D2D2D2] bg-[#D2D2D2] text-gray-500 focus-visible:ring-gray-300"
-                          : "border-gray-500 bg-[#D2D2D2] text-gray-500 focus-visible:ring-gray-700"
-                      }
-                      ${disabled ? "opacity-50 pointer-events-none" : ""}`,
+                        disabled
+                          ? "border-gray-300 bg-gray-300 text-gray-300 pointer-events-none"
+                          : ""
+                      }`,
                       className,
                     )}
                   >
@@ -452,17 +460,15 @@ const FormMultiSelectInput = ({
                   <div className={isLight ? "pb-2" : "p-2 border-b border-[#D2D2D2]"}>
                     <div className="relative flex items-center gap-2">
                       <Search
-                        className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${
-                          isLight ? "text-[#797979]" : "text-[#A1A1A1]"
-                        }`}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500"
                       />
                       <input
                         autoFocus
                         type="text"
                         className={
                           isLight
-                            ? "w-full h-9 pl-9 pr-8 rounded-[8px] border border-[#D2D2D2] bg-[#F5F5F5] font-poppins text-[14px] text-black placeholder:text-[#797979] focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
-                            : "w-full pl-8 pr-8 py-2 text-sm bg-transparent border border-[#D2D2D2] rounded-md text-[#E6D6E8] placeholder:text-[#BBAEC0] focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                            ? "w-full h-9 pl-9 pr-8 rounded-[8px] border border-[#D2D2D2] bg-[#F5F5F5] font-poppins font-normal text-sm text-gray-500 placeholder:text-[#797979] focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                            : "w-full pl-8 pr-8 py-2 font-poppins font-normal text-sm bg-transparent border border-[#D2D2D2] rounded-md text-gray-500 placeholder:text-[#797979] focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                         }
                         placeholder={searchPlaceholder}
                         value={searchTerm}

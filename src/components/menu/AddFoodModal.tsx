@@ -116,7 +116,7 @@ export default function AddFoodModal({
         className="
           w-full max-w-[812px] p-0
           rounded-[20px] border border-gray-600 border-[1px]
-          bg-[#2C192BE5] text-white
+          bg-[#E9E9E9] text-white
           opacity-100 shadow-[0_0_30px_rgba(0,0,0,0.35)] 
         "
       >

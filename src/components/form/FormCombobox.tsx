@@ -1,4 +1,3 @@
-
 import { Check, ChevronsUpDown } from "lucide-react";
 import {
   Dispatch,
@@ -17,6 +16,16 @@ export interface selectType {
   label: string;
   value: string;
 }
+
+// classes borrowed from FormMultiSelectInput's light theme, for dropdown-item consistency
+const LIGHT_SELECTED_ITEM_CLASSES = `w-full rounded-[8px] bg-[#D2D2D2] border border-[#9A3796]
+  px-3 py-2 font-poppins font-medium text-[15px] leading-normal tracking-normal text-black`;
+
+const LIGHT_DEFAULT_ITEM_CLASSES = `!bg-transparent !text-black
+  data-[selected=true]:!bg-transparent data-[selected=true]:!text-black
+  hover:!bg-[#F0F0F0]
+  font-poppins font-medium text-[15px] leading-normal tracking-normal
+  rounded-[8px] px-3 py-2`;
 
 interface FormComboboxProps {
   name: string;
@@ -124,55 +133,51 @@ const FormCombobox = ({
                   disabled={disabled}
                   className={cn(
                     `flex h-[38px] w-full max-w-[742px] items-center justify-between
-                    rounded-[7px] border border-gray-500
-                    bg-[#2D2D2DAB] text-[#E6D6E8]
+                    rounded-[7px] border border-[#D2D2D2]
+                    bg-[#D2D2D2] text-gray-500
                     font-poppins font-normal text-sm leading-none tracking-normal
-                    pt-[6px] pr-[20px] pb-[6px] pl-[20px]
+                    gap-[9px] pt-[6px] pr-[20px] pb-[6px] pl-[20px]
                     transition-all duration-200
                     opacity-100
-                    focus-visible:ring-1 focus-visible:ring-gray-700 focus-visible:ring-offset-0
-                    disabled:border-gray-700 disabled:bg-[#0f0f0f] disabled:text-gray-600`,
+                    focus-visible:ring-1 focus-visible:ring-gray-300 focus-visible:ring-offset-0
+                    disabled:border-gray-300 disabled:bg-gray-300 disabled:text-gray-300`,
                     className,
                   )}
                 >
                   <span
                     className={`truncate flex-1 text-left ${
-                      displayValue ? "text-[#E6D6E8]" : "text-[#A1A1A1]"
+                      displayValue ? "text-gray-500" : "text-[#797979]"
                     }`}
                   >
                     {!options?.length
                       ? "No options Available"
                       : displayValue || placeholder}
                   </span>
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-[#A1A1A1] opacity-90" />
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-gray-500 opacity-90" />
                 </Button>
             </PopoverTrigger>
             {!readonly && (
               <PopoverContent
-                className="p-0 bg-[#120e13] border border-[#3b2430] text-[#E6D6E8] rounded-[8px] overflow-hidden"
+                className="p-2 overflow-hidden rounded-[10px] border border-[#D2D2D2] bg-[#D2D2D2] text-black"
                 style={{ width: `${width}px` }}
                 onWheel={(e) => {
                   e.stopPropagation();
                 }}
               >
-                {label && (
-                  <div className="px-3 py-2 bg-[#5a2060] text-white font-medium">
-                    {label}
-                  </div>
-                )}
-                <Command className="bg-[#120e13] text-[#E6D6E8]">
+                
+                <Command className=" bg-[#D2D2D2] text-black">
                   <CommandInput
                     placeholder="Search..."
                     onValueChange={(search) => setSearch?.(search)}
-                    className="font-poppins text-sm text-[#E6D6E8] placeholder:text-[#BBAEC0] bg-transparent px-3 py-2"
+                    className="font-poppins font-normal text-sm text-gray-500 placeholder:text-[#797979] bg-transparent px-3 py-2"
                   />
                   <CommandList
-                    className="max-h-[300px] overflow-y-auto bg-[#120e13]"
+                    className="max-h-[300px] overflow-y-auto bg-[#D2D2D2] flex flex-col gap-[6px]"
                     onWheel={(e) => {
                       e.stopPropagation();
                     }}
                   >
-                    <CommandEmpty>
+                    <CommandEmpty className="px-2 py-3 text-sm text-center text-[#797979]">
                       {!options?.length
                         ? "No options available"
                         : "No results found."}
@@ -182,39 +187,41 @@ const FormCombobox = ({
                         .filter(
                           (option) => option && option.value && option.label,
                         )
-                        .map((option, index) => (
-                          <CommandItem
-                            key={`${option.value}-${index}`}
-                            value={`${option.value}-${index}`}
-                            keywords={[option.label]}
-                            onSelect={() => {
-                              // Store the selected option before updating the value
-                              setSelectedOption(option);
-                              field.onChange(option.value);
-                              onChange?.(option.value);
-                              setOpen(false);
-                              setSearch?.("");
-                            }}
-                            disabled={disabled || readonly}
-                            className={`cursor-pointer select-none flex items-center gap-2 p-2 font-poppins text-sm
-                              text-[#E6D6E8] hover:bg-[#2a1e2a] aria-selected:bg-[#9A379682] aria-selected:text-[#E6D6E8] ${
-                                option.value === currentValue
-                                  ? "bg-[#2a1e2a] text-white"
-                                  : ""
-                              }`}
-                          >
-                            <Check
-                              className="mr-2 h-4 w-4 text-[#E6D6E8]"
-                              style={{
-                                visibility:
-                                  currentValue === option.value
-                                    ? "visible"
-                                    : "hidden",
+                        .map((option, index) => {
+                          const isSelected = option.value === currentValue;
+                          return (
+                            <CommandItem
+                              key={`${option.value}-${index}`}
+                              value={`${option.value}-${index}`}
+                              keywords={[option.label]}
+                              onSelect={() => {
+                                // Store the selected option before updating the value
+                                setSelectedOption(option);
+                                field.onChange(option.value);
+                                onChange?.(option.value);
+                                setOpen(false);
+                                setSearch?.("");
                               }}
-                            />
-                            {option.label}
-                          </CommandItem>
-                        ))}
+                              disabled={disabled || readonly}
+                              className={cn(
+                                "flex cursor-pointer select-none items-center gap-2 transition-colors",
+                                isSelected
+                                  ? LIGHT_SELECTED_ITEM_CLASSES
+                                  : LIGHT_DEFAULT_ITEM_CLASSES,
+                              )}
+                            >
+                              <Check
+                                className="h-4 w-4 shrink-0"
+                                style={{
+                                  visibility: isSelected ? "visible" : "hidden",
+                                }}
+                              />
+                              <span className="flex-1 break-words whitespace-normal">
+                                {option.label}
+                              </span>
+                            </CommandItem>
+                          );
+                        })}
                     </CommandGroup>
                   </CommandList>
                 </Command>
