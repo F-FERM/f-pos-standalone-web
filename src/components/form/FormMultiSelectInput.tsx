@@ -7,13 +7,11 @@ import React, {
   useState,
 } from "react";
 
-import { ChevronDown, Plus, Search, X } from "lucide-react";
+import { Check, ChevronDown, Plus, Search, X } from "lucide-react";
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "@/src/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-
-
 
 type Status = "Active" | "Inactive" | "Pending";
 
@@ -43,17 +41,16 @@ interface formMultiSelectType {
   maxSelections?: number;
   searchPlaceholder?: string;
   setSearch?: Dispatch<SetStateAction<string>>;
-  /** Show "Select All" checkbox above the options list */
   showSelectAll?: boolean;
-  /** Label for the Select All checkbox (default: "Select all") */
   selectAllLabel?: string;
   showCheckbox?: boolean;
-  /** Show a trailing "+" affordance (create-new) like FormCombobox's search-and-create pattern */
   allowCreate?: boolean;
   onCreate?: (label: string) => void;
+  /** "dark" (default) = existing dark-panel styling used everywhere today. "light" = light-card variant, dropdown styled like LoginFormCombobox. */
+  theme?: "dark" | "light";
 }
 
-// ── Checkbox SVG (restyled to the POS palette) ──────────────────────────────
+// ── Checkbox SVG (dark theme only) ───────────────────────────────────────────
 const CheckboxIcon = ({
   checked,
   indeterminate,
@@ -65,7 +62,7 @@ const CheckboxIcon = ({
     className={`inline-flex items-center justify-center w-4 h-4 rounded shrink-0 transition-all
     ${
       checked || indeterminate
-        ? "bg-[#9A3796] text-[#E6D6E8]"
+        ? "bg-[#9A3796] text-gray-500"
         : "border border-[#5a4a58] bg-transparent"
     }`}
   >
@@ -87,6 +84,16 @@ const CheckboxIcon = ({
     )}
   </span>
 );
+
+// classes borrowed from LoginFormCombobox, adapted to the multi-select's light theme
+const LIGHT_SELECTED_ITEM_CLASSES = `w-full rounded-[8px] bg-[#D2D2D2] border border-[#9A3796]
+  px-3 py-2 font-poppins font-medium text-[15px] leading-normal tracking-normal text-black`;
+
+const LIGHT_DEFAULT_ITEM_CLASSES = `!bg-transparent !text-black
+  data-[selected=true]:!bg-transparent data-[selected=true]:!text-black
+  hover:!bg-[#F0F0F0]
+  font-poppins font-medium text-[15px] leading-normal tracking-normal
+  rounded-[8px] px-3 py-2`;
 
 // ── Component ──────────────────────────────────────────────────────────────────
 const FormMultiSelectInput = ({
@@ -115,11 +122,14 @@ const FormMultiSelectInput = ({
   className,
   allowCreate = false,
   onCreate,
+  theme = "dark",
 }: formMultiSelectType) => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [width, setWidth] = useState(0);
   const triggerRef = useRef<HTMLDivElement>(null);
+
+  const isLight = theme === "light";
 
   const [selectedCache, setSelectedCache] = useState<Record<string, string>>(
     {},
@@ -131,7 +141,6 @@ const FormMultiSelectInput = ({
     }
   }, []);
 
-  // Seed cache from valueLabels (edit mode)
   useEffect(() => {
     if (!value?.length || !valueLabels?.length) return;
 
@@ -187,7 +196,6 @@ const FormMultiSelectInput = ({
     onChange?.(newValues);
   };
 
-  // ── Select All handler ─────────────────────────────────────────────────────
   const handleSelectAll = (
     fieldOnChange: (value: string[]) => void,
     currentValues: string[],
@@ -302,14 +310,18 @@ const FormMultiSelectInput = ({
           <FormItem>
             {label && (
               <FormLabel
-                className={`flex gap-2 text-base font-medium mb-3 text-white ${labelClassName}`}
+                className={`flex gap-2 text-base font-medium mb-3 text-black ${labelClassName ?? ""}`}
               >
                 {label}
                 {required && (
                   <span className="text-red-500 text-base font-medium">*</span>
                 )}
                 {optional && (
-                  <span className="text-[#A1A1A1] text-base font-normal">
+                  <span
+                    className={`text-base font-normal ${
+                      isLight ? "text-[#797979]" : "text-[#A1A1A1]"
+                    }`}
+                  >
                     (Optional)
                   </span>
                 )}
@@ -337,13 +349,17 @@ const FormMultiSelectInput = ({
                     }}
                     className={cn(
                       `flex min-h-[38px] w-full items-center justify-between
-                      rounded-[7px] border border-gray-500
-                      bg-[#2D2D2DAB] text-[#E6D6E8]
+                      rounded-[7px] border
                       font-poppins font-normal text-sm leading-none tracking-normal
-                      pt-[6px] pr-[14px] pb-[6px] pl-[14px]
+                      pt-[6px] pr-[20px] pb-[6px] pl-[20px]
                       transition-all duration-200
                       cursor-pointer
-                      focus-visible:ring-1 focus-visible:ring-gray-700 focus-visible:ring-offset-0
+                      focus-visible:ring-1 focus-visible:ring-offset-0
+                      ${
+                        isLight
+                          ? "border-[#D2D2D2] bg-[#D2D2D2] text-gray-500 focus-visible:ring-gray-300"
+                          : "border-gray-500 bg-[#D2D2D2] text-gray-500 focus-visible:ring-gray-700"
+                      }
                       ${disabled ? "opacity-50 pointer-events-none" : ""}`,
                       className,
                     )}
@@ -357,7 +373,11 @@ const FormMultiSelectInput = ({
                             <Tooltip key={selectedValue}>
                               <TooltipTrigger>
                                 <div
-                                  className="flex items-center bg-[#9A379682] rounded-[6px] px-2 py-[3px] text-xs max-w-[200px] cursor-help text-[#E6D6E8]"
+                                  className={`flex items-center rounded-[6px] px-2 py-[3px] text-xs max-w-[200px] cursor-help ${
+                                    isLight
+                                      ? "bg-[#9A379633] text-[#450042]"
+                                      : "bg-[#9A379682] text-[#E6D6E8]"
+                                  }`}
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   {active && (
@@ -390,25 +410,37 @@ const FormMultiSelectInput = ({
                           );
                         })
                       ) : (
-                        <span className="text-[#A1A1A1] text-sm font-normal">
+                        <span
+                          className={`text-sm font-normal ${
+                            isLight ? "text-[#797979]" : "text-[#A1A1A1]"
+                          }`}
+                        >
                           {placeholder}
                         </span>
                       )}
                     </div>
                     {allowCreate ? (
                       <Plus
-                        className={`h-4 w-4 shrink-0 ml-2 text-[#A1A1A1] opacity-90 transition-transform ${open ? "rotate-45" : ""}`}
+                        className={`h-4 w-4 shrink-0 ml-2 opacity-90 transition-transform ${
+                          isLight ? "text-[#797979]" : "text-[#A1A1A1]"
+                        } ${open ? "rotate-45" : ""}`}
                       />
                     ) : (
                       <ChevronDown
-                        className={`h-4 w-4 shrink-0 ml-2 text-[#A1A1A1] opacity-90 transition-transform ${open ? "rotate-180" : ""}`}
+                        className={`h-4 w-4 shrink-0 ml-2 opacity-90 transition-transform ${
+                          isLight ? "text-[#797979]" : "text-[#A1A1A1]"
+                        } ${open ? "rotate-180" : ""}`}
                       />
                     )}
                   </div>
                 </PopoverTrigger>
 
                 <PopoverContent
-                  className="p-0 overflow-hidden bg-[#120e13] border border-[#3b2430] text-[#E6D6E8] rounded-[8px]"
+                  className={
+                    isLight
+                      ? "p-2 overflow-hidden rounded-[10px] border border-[#D2D2D2] bg-white text-black"
+                      : "p-0 overflow-hidden rounded-[8px] border border-[#D2D2D2] bg-[#D2D2D2] text-[#E6D6E8]"
+                  }
                   style={{
                     width: width
                       ? `${width}px`
@@ -417,13 +449,21 @@ const FormMultiSelectInput = ({
                   onWheel={(e) => e.stopPropagation()}
                 >
                   {/* Search / create row */}
-                  <div className="p-2 border-b border-[#3b2430]">
+                  <div className={isLight ? "pb-2" : "p-2 border-b border-[#D2D2D2]"}>
                     <div className="relative flex items-center gap-2">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-[#A1A1A1]" />
+                      <Search
+                        className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${
+                          isLight ? "text-[#797979]" : "text-[#A1A1A1]"
+                        }`}
+                      />
                       <input
                         autoFocus
                         type="text"
-                        className="w-full pl-8 pr-8 py-2 text-sm bg-transparent border border-[#3b2430] rounded-md text-[#E6D6E8] placeholder:text-[#BBAEC0] focus:outline-none focus:ring-1 focus:ring-[#9A3796] focus:border-[#9A3796]"
+                        className={
+                          isLight
+                            ? "w-full h-9 pl-9 pr-8 rounded-[8px] border border-[#D2D2D2] bg-[#F5F5F5] font-poppins text-[14px] text-black placeholder:text-[#797979] focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                            : "w-full pl-8 pr-8 py-2 text-sm bg-transparent border border-[#D2D2D2] rounded-md text-[#E6D6E8] placeholder:text-[#BBAEC0] focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                        }
                         placeholder={searchPlaceholder}
                         value={searchTerm}
                         onChange={(e) => handleSearchChange(e.target.value)}
@@ -443,7 +483,9 @@ const FormMultiSelectInput = ({
                           onClick={() =>
                             handleCreate(field.onChange, currentValues)
                           }
-                          className="absolute right-2 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded text-[#E6D6E8] disabled:opacity-30 hover:text-[#9A3796]"
+                          className={`absolute right-2 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded disabled:opacity-30 hover:text-[#9A3796] ${
+                            isLight ? "text-black" : "text-gray-500"
+                          }`}
                         >
                           <Plus className="h-4 w-4" />
                         </button>
@@ -455,9 +497,20 @@ const FormMultiSelectInput = ({
                   {showSelectAll &&
                     filteredOptions.length > 0 &&
                     !maxSelections && (
-                      <div className="px-2 pt-2 pb-1 border-b border-[#3b2430]">
+                      <div
+                        className={
+                          isLight
+                            ? "pb-2 mb-1 border-b border-[#EDEDED]"
+                            : "px-2 pt-2 pb-1 border-b border-[#3b2430]"
+                        }
+                      >
                         <div
-                          className="flex items-center gap-2 px-2 py-1.5 rounded-sm cursor-pointer hover:bg-[#2a1e2a] select-none"
+                          className={cn(
+                            "flex items-center gap-2 cursor-pointer select-none",
+                            isLight
+                              ? LIGHT_DEFAULT_ITEM_CLASSES
+                              : "px-2 py-1.5 rounded-sm hover:bg-[#2a1e2a]",
+                          )}
                           onClick={() =>
                             handleSelectAll(
                               field.onChange,
@@ -466,15 +519,29 @@ const FormMultiSelectInput = ({
                             )
                           }
                         >
-                          <CheckboxIcon
-                            checked={allFilteredSelected}
-                            indeterminate={someFilteredSelected}
-                          />
-                          <span className="text-sm font-medium text-[#E6D6E8]">
-                            {selectAllLabel}
-                          </span>
+                          {isLight ? (
+                            <Check
+                              className="h-4 w-4 shrink-0"
+                              style={{
+                                visibility:
+                                  allFilteredSelected || someFilteredSelected
+                                    ? "visible"
+                                    : "hidden",
+                              }}
+                            />
+                          ) : (
+                            <CheckboxIcon
+                              checked={allFilteredSelected}
+                              indeterminate={someFilteredSelected}
+                            />
+                          )}
+                          <span>{selectAllLabel}</span>
                           {currentValues.length > 0 && (
-                            <span className="ml-auto text-xs text-[#A1A1A1]">
+                            <span
+                              className={`ml-auto text-xs font-normal ${
+                                isLight ? "text-[#797979]" : "text-[#A1A1A1]"
+                              }`}
+                            >
                               {currentValues.length} selected
                             </span>
                           )}
@@ -482,19 +549,30 @@ const FormMultiSelectInput = ({
                       </div>
                     )}
 
-                  {/* Options */}
+                  {/* Options — light theme mirrors LoginFormCombobox's item styling */}
                   <div
-                    className="max-h-48 overflow-y-auto p-1"
+                    className={cn(
+                      "max-h-48 overflow-y-auto",
+                      isLight ? "flex flex-col gap-[6px]" : "p-1",
+                    )}
                     onWheel={(e) => e.stopPropagation()}
                   >
                     {selectLabel && (
-                      <div className="px-2 py-1.5 text-sm font-semibold text-[#E6D6E8]">
+                      <div
+                        className={`px-2 py-1.5 text-sm font-semibold ${
+                          isLight ? "text-black" : "text-gray-500"
+                        }`}
+                      >
                         {selectLabel}
                       </div>
                     )}
 
                     {filteredOptions.length === 0 ? (
-                      <div className="px-2 py-3 text-sm text-[#A1A1A1] text-center">
+                      <div
+                        className={`px-2 py-3 text-sm text-center ${
+                          isLight ? "text-[#797979]" : "text-[#A1A1A1]"
+                        }`}
+                      >
                         {searchTerm && !allowCreate
                           ? `No results found for "${searchTerm}"`
                           : searchTerm && allowCreate
@@ -509,13 +587,46 @@ const FormMultiSelectInput = ({
                           !isSelected &&
                           currentValues.length >= maxSelections;
 
+                        if (isLight) {
+                          return (
+                            <div
+                              key={item.value}
+                              className={cn(
+                                "flex cursor-pointer select-none items-center gap-2 transition-colors",
+                                isSelected
+                                  ? LIGHT_SELECTED_ITEM_CLASSES
+                                  : LIGHT_DEFAULT_ITEM_CLASSES,
+                                isDisabledOption && "opacity-50 cursor-not-allowed",
+                              )}
+                              onClick={() => {
+                                if (!isDisabledOption) {
+                                  handleValueToggle(
+                                    item.value,
+                                    item.label,
+                                    field.onChange,
+                                    currentValues,
+                                  );
+                                }
+                              }}
+                            >
+                              <Check
+                                className="h-4 w-4 shrink-0"
+                                style={{ visibility: isSelected ? "visible" : "hidden" }}
+                              />
+                              <span className="flex-1 break-words whitespace-normal">
+                                {item.label}
+                              </span>
+                            </div>
+                          );
+                        }
+
                         return (
                           <div
                             key={item.value}
                             className={`relative flex cursor-pointer select-none rounded-sm px-2 py-2 text-sm transition-colors
-      text-[#E6D6E8] hover:bg-[#2a1e2a]
-      ${isSelected ? "bg-[#2a1e2a] text-white" : ""}
-      ${isDisabledOption ? "opacity-50 cursor-not-allowed" : ""}`}
+                            text-gray-500 hover:bg-[#2a1e2a]
+                            ${isSelected ? "bg-[#2a1e2a] text-white" : ""}
+                            ${isDisabledOption ? "opacity-50 cursor-not-allowed" : ""}`}
                             onClick={() => {
                               if (!isDisabledOption) {
                                 handleValueToggle(
@@ -532,9 +643,7 @@ const FormMultiSelectInput = ({
                                 showCheckbox ? "gap-3" : ""
                               }`}
                             >
-                              {showCheckbox && (
-                                <CheckboxIcon checked={isSelected} />
-                              )}
+                              {showCheckbox && <CheckboxIcon checked={isSelected} />}
                               <span className="flex-1 break-words whitespace-normal leading-snug">
                                 {item.label}
                               </span>
@@ -549,12 +658,12 @@ const FormMultiSelectInput = ({
             </FormControl>
 
             {description && (
-              <FormDescription className="text-[#A1A1A1]">
+              <FormDescription className={isLight ? "text-[#797979]" : "text-[#A1A1A1]"}>
                 {description}
               </FormDescription>
             )}
             {maxSelections && (
-              <FormDescription className="text-sm text-[#A1A1A1]">
+              <FormDescription className={`text-sm ${isLight ? "text-[#797979]" : "text-[#A1A1A1]"}`}>
                 Maximum {maxSelections} selections allowed. Selected:{" "}
                 {currentValues.length}
               </FormDescription>

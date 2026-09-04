@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Minus, Plus, X, UsersRound, Table2, ClipboardList } from "lucide-react";
 import { products } from "./Data";
 import { TableModal } from "./TableModal";
@@ -14,11 +14,6 @@ const footerActions = [
   { icon: UsersRound, label: "Customers" },
 ];
 
-// panel wrapper is anchored at page top:153 left:653 — this thumb's page coords (top:231 left:657)
-// become relative offsets of top:78, left:4 within that wrapper
-const SCROLL_THUMB_TOP = 231 - 153;
-const SCROLL_THUMB_LEFT = 657 - 653;
-
 export function OrderPanel() {
   const [selectedType, setSelectedType] = useState("Online");
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
@@ -26,6 +21,45 @@ export function OrderPanel() {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
   const cartItems = Array(6).fill(products[0]); // placeholder — wire to real cart state
+
+  // --- cart scroll indicator (same pattern as CategorySidebar) ---
+  const cartScrollRef = useRef<HTMLDivElement>(null);
+  const [cartThumbTop, setCartThumbTop] = useState<number | null>(null);
+
+  const THUMB_HEIGHT = 104;
+  const THUMB_MIN_TOP = 8;
+
+  useEffect(() => {
+    const scrollEl = cartScrollRef.current;
+    if (!scrollEl) return;
+
+    const updateThumb = () => {
+      const { scrollTop: st, scrollHeight, clientHeight } = scrollEl;
+
+      // nothing to scroll — hide the thumb entirely
+      if (scrollHeight <= clientHeight + 1) {
+        setCartThumbTop(null);
+        return;
+      }
+
+      const maxTop = clientHeight - THUMB_HEIGHT - THUMB_MIN_TOP;
+      const scrollRatio = st / (scrollHeight - clientHeight);
+      const top = THUMB_MIN_TOP + scrollRatio * Math.max(maxTop, 0);
+
+      setCartThumbTop(top);
+    };
+
+    updateThumb();
+
+    scrollEl.addEventListener("scroll", updateThumb);
+    const ro = new ResizeObserver(updateThumb);
+    ro.observe(scrollEl);
+
+    return () => {
+      scrollEl.removeEventListener("scroll", updateThumb);
+      ro.disconnect();
+    };
+  }, [cartItems.length]);
 
   return (
     <>
@@ -108,88 +142,107 @@ export function OrderPanel() {
             </span>
           </div>
 
-          {/* Cart rows — scrollable */}
-         {/* Cart rows — scrollable */}
-<div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#EFEFEF] " style={{ padding: 6, gap: 8 }}>
-  {cartItems.map((product, i) => (
-    <div
-      key={i}
-      className="flex shrink-0 items-center"
-      style={{
-        width: 310,
-        height: 46,
-        borderRadius: 6,
-        border: "1px solid #CECECE",
-        paddingTop: 3,
-        paddingRight: 5,
-        paddingBottom: 3,
-        paddingLeft: 5,
-      }}
-    >
-      <img
-        src={product.image}
-        alt=""
-        className="shrink-0 object-cover"
-        style={{ width: 97, height: 41, borderRadius: 5 }}
-      />
+          {/* Cart rows — scrollable, native scrollbar hidden, JS-driven indicator instead */}
+          <div className="relative min-h-0 flex-1">
+            {/* purple scroll-position indicator on the left edge */}
+            {cartThumbTop !== null && (
+              <span
+                className="pointer-events-none absolute left-0 z-10 transition-[top] duration-150"
+                style={{
+                  top: cartThumbTop,
+                  width: 3,
+                  height: THUMB_HEIGHT,
+                  borderRadius: 5,
+                  backgroundColor: "#3B0038",
+                  opacity: 1,
+                }}
+              />
+            )}
+            <div
+              ref={cartScrollRef}
+              className="
+                flex h-full flex-col overflow-y-auto bg-[#EFEFEF]
+                [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden
+              "
+              style={{ padding: "10px 6px 6px 10px", gap: 8 }}
+            >
+              {cartItems.map((product, i) => (
+                <div
+                  key={i}
+                  className="flex shrink-0 items-center"
+                  style={{
+                    width: 310,
+                    height: 46,
+                    borderRadius: 6,
+                    border: "1px solid #CECECE",
+                    paddingTop: 3,
+                    paddingRight: 5,
+                    paddingBottom: 3,
+                    paddingLeft: 5,
+                  }}
+                >
+                  <img
+                    src={product.image}
+                    alt=""
+                    className="shrink-0 object-cover"
+                    style={{ width: 97, height: 41, borderRadius: 5 }}
+                  />
 
-      {/* tight gap to image */}
-      <div className="flex min-w-0 flex-1 flex-col justify-center" style={{ marginLeft: 8, gap: 4 }}>
-        <p
-          className="truncate"
-          style={{ fontFamily: "Poppins, sans-serif", fontWeight: 500, fontSize: 12, color: "#000000" }}
-        >
-          {product.name}
-        </p>
+                  <div className="flex min-w-0 flex-1 flex-col justify-center" style={{ marginLeft: 8, gap: 2 }}>
+                    <p
+                      className="truncate"
+                      style={{ fontFamily: "Poppins, sans-serif", fontWeight: 500, fontSize: 12, color: "#000000" }}
+                    >
+                      {product.name}
+                    </p>
 
-        {/* compact inline stepper — no border box */}
-        <div className="flex items-center" style={{ gap: 7 }}>
-          <button
-            type="button"
-            className="flex h-[15px] w-[15px] items-center justify-center rounded-full"
-            style={{ background: "white", border: "1px solid #C4C4C4" }}
-          >
-            <Minus size={9} className="text-black" />
-          </button>
-          <span className="text-[13px] font-medium" style={{ color: "#000000" }}>
-            1
-          </span>
-          <button
-            type="button"
-            className="flex h-[15px] w-[15px] items-center justify-center rounded-full"
-            style={{ background: "#670063" }}
-          >
-            <Plus size={9} className="text-white" />
-          </button>
-        </div>
-      </div>
+                    <div className="flex items-center" style={{ gap: 7 }}>
+                      <button
+                        type="button"
+                        className="flex h-[15px] w-[15px] items-center justify-center rounded-full"
+                        style={{ background: "white", border: "1px solid #C4C4C4" }}
+                      >
+                        <Minus size={9} className="text-black" />
+                      </button>
+                      <span className="text-[13px] font-medium" style={{ color: "#000000" }}>
+                        1
+                      </span>
+                      <button
+                        type="button"
+                        className="flex h-[15px] w-[15px] items-center justify-center rounded-full"
+                        style={{ background: "#670063" }}
+                      >
+                        <Plus size={9} className="text-white" />
+                      </button>
+                    </div>
+                  </div>
 
-      <span
-        className="shrink-0 pl-2"
-        style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: 16, color: "#000000" }}
-      >
-        ₹{product.price}
-      </span>
+                  <span
+                    className="shrink-0 pl-2"
+                    style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: 16, color: "#000000" }}
+                  >
+                    ₹{product.price}
+                  </span>
 
-      <button
-        type="button"
-        className="ml-[10px] flex shrink-0 items-center justify-center"
-        style={{ width: 16, height: 16, borderRadius: 10, padding: 2, background: "#FF0F0F" }}
-      >
-        <X size={10} className="text-white" />
-      </button>
-    </div>
-  ))}
+                  <button
+                    type="button"
+                    className="ml-[10px] flex shrink-0 items-center justify-center"
+                    style={{ width: 16, height: 16, borderRadius: 10, padding: 2, background: "#FF0F0F" }}
+                  >
+                    <X size={10} className="text-white" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
 
-  {/* Decorative scroll-position thumb — unchanged */}
-  <div
-    className="pointer-events-none absolute "
-    style={{ top: SCROLL_THUMB_TOP, left: SCROLL_THUMB_LEFT, width: 3, height: 104, borderRadius: 5 }}
-  />
-</div>
+          {/* small gap + hairline before totals */}
+          <div style={{ height: 4 }} />
+          <div className=" shrink-0" style={{ width: 321, margin: "0 auto", borderColor: "#CECECE" }} />
+          <div style={{ height: 6 }} />
 
           {/* Bottom stack: totals + action buttons + footer, 321 wide, gap 5 */}
-          <div className="flex shrink-0 flex-col " style={{ width: 321, margin: "0 auto", gap: 2, paddingBottom: 10 }}>
+          <div className="flex shrink-0 flex-col" style={{ width: 321, margin: "0 auto", gap: 2, paddingBottom: 10 }}>
             <div
               className="flex justify-between"
               style={{ fontFamily: "Poppins, sans-serif", fontWeight: 500, fontSize: 12, color: "#000000" }}
@@ -214,7 +267,7 @@ export function OrderPanel() {
               <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 400, fontSize: 10 }}>0.00</span>
             </div>
 
-            <div className="border-t" style={{ borderColor: "#878787" }} />
+            <div className="border-t mt-1 mb-1" style={{ borderColor: "#878787" }} />
 
             <div className="flex justify-between items-center">
               <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 16, color: "#000000" }}>
@@ -225,7 +278,7 @@ export function OrderPanel() {
               </span>
             </div>
 
-            <div className="flex justify-between">
+            <div className="flex justify-between mb-2">
               <button
                 type="button"
                 className="flex items-center justify-center text-white"

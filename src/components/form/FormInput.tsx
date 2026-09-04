@@ -65,7 +65,7 @@ const FormInput = ({
         <FormItem>
           {label && (
             <FormLabel
-              className={`flex gap-2 text-base font-medium mb-3 ${labelClassName}`}
+              className={`flex gap-2 text-base font-medium mb-3 text-black ${labelClassName}`}
             >
               {label}
               {required && (
@@ -107,14 +107,14 @@ const FormInput = ({
                 onCopy={(e) => {
                   if (onCopy) onCopy(e);
                 }}
-                className={`${className ? className : ""} w-full max-w-[742px] h-[38px] rounded-[7px] border border-gray-500
-    bg-[#2D2D2DAB] text-[#E6D6E8] placeholder:text-[#A1A1A1]
+                className={`${className ? className : ""} w-full max-w-[742px] h-[38px] rounded-[7px] border border-[#D2D2D2]
+    bg-[#D2D2D2] text-gray-500 placeholder:text-[#797979]
     font-poppins font-normal text-sm leading-none tracking-normal
     gap-[9px] pt-[6px] pr-[20px] pb-[6px] pl-[20px]
     flex items-center transition-all duration-200
     opacity-100
-    focus-visible:ring-1 focus-visible:ring-gray-700 focus-visible:ring-offset-0
-    disabled:border-gray-700 disabled:bg-[#0f0f0f] disabled:text-gray-600`}
+    focus-visible:ring-1 focus-visible:ring-gray-300 focus-visible:ring-offset-0
+    disabled:border-gray-300 disabled:bg-gray-300 disabled:text-gray-300`}
                 disabled={disabled}
                 value={value ?? field.value ?? ""}
               />

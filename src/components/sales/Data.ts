@@ -132,4 +132,16 @@ export const products: Product[] = [
     price: 200,
     image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500",
   },
+    {
+    id: 16,
+    name: "Mango",
+    price: 60,
+    image: "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=500",
+  },
+  {
+    id: 17,
+    name: "Caramel crunch",
+    price: 200,
+    image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500",
+  },
 ];

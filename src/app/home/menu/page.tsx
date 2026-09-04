@@ -7,13 +7,11 @@ import { Pagination } from "@/src/components/common/Pagination";
 import { SearchInput } from "@/src/components/common/SearchInput";
 import { POSHeader } from "@/src/components/sales/PosHeader";
 
-
 import AddFoodModal, { NewFoodInput } from "@/src/components/menu/AddFoodModal";
 import AddCategoryModal, { NewCategoryInput } from "@/src/components/menu/AddCategoryModal";
 import AddMenuTypeModal, { NewMenuTypeInput } from "@/src/components/menu/AddMenuTypeModal";
 import AddComboModal, { NewComboInput } from "@/src/components/menu/AddComboModal";
 import { Button } from "@/src/components/ui/button";
-
 
 type Category = {
   id: number;
@@ -170,7 +168,6 @@ export default function MenuPage() {
     Combo: filteredCombos,
   };
   const rows = rowsByTab[activeTab];
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize) || 0);
 
   const openAddModal = () => {
     switch (activeTab) {
@@ -253,17 +250,78 @@ export default function MenuPage() {
     ]);
     setIsComboModalOpen(false);
   };
- const handlePageChange = (page: number) => {
+
+  const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
+  const CARD_TOP = 0;
+  const CARD_LEFT = 20;
+  const CARD_WIDTH = 984;
+  const CARD_HEIGHT = 661;
+
   return (
-    <main className="flex h-full flex-col overflow-hidden bg-black text-white">
+    <main className="flex h-full flex-col overflow-y-auto bg-black text-black">
       <POSHeader />
 
-      <div className="flex min-h-0 flex-1 flex-col bg-[#2C192B] px-[29px] pb-[18px] pt-[22px]">
-        <div className="flex items-center justify-between">
-          <h2 className="text-[26px] font-semibold">{activeTab}</h2>
+      {/* relative canvas — explicit min-height guarantees the card + footer always fit and render */}
+      <div
+        className="relative flex-1 bg-[#EFEFEF]"
+        style={{ minHeight: CARD_TOP + CARD_HEIGHT + 40 }}
+      >
+        {/* content card — exact spec: 984x661, radius15, bg #D2D2D2, pulled up right under the header */}
+        <div
+          className="absolute"
+          style={{
+            top: CARD_TOP,
+            left: CARD_LEFT,
+            width: CARD_WIDTH,
+            height: CARD_HEIGHT,
+            borderRadius: 15,
+            background: "#D2D2D2",
+          }}
+        />
+
+        <div
+          className="absolute flex items-center justify-between"
+          style={{ top: CARD_TOP + 20, left: 30, width: 964 }}
+        >
+          <div className="flex flex-wrap items-center gap-[12px]">
+            {TABS.map((tab) => {
+              const selected = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(tab);
+                    setSearch("");
+                  }}
+                  className="flex shrink-0 items-center justify-center whitespace-nowrap transition-colors"
+                  style={{
+                    width: 120,
+                    height: 50,
+                    borderRadius: 12,
+                    border: selected ? "1px solid transparent" : "1px solid #9C9C9C",
+                    background: selected ? "#450042" : "#D2D2D2",
+                    paddingTop: 15,
+                    paddingRight: 17,
+                    paddingBottom: 14,
+                    paddingLeft: 18,
+                    gap: 10,
+                    fontFamily: "Poppins, sans-serif",
+                    fontWeight: 600,
+                    fontSize: 18,
+                    lineHeight: "100%",
+                    letterSpacing: 0,
+                    color: selected ? "#FFFFFF" : "#000000",
+                  }}
+                >
+                  {tab}
+                </button>
+              );
+            })}
+          </div>
 
           <Button
             variant="addcustomer"
@@ -276,169 +334,201 @@ export default function MenuPage() {
           </Button>
         </div>
 
-        <div className="mt-[16px] flex flex-wrap items-center gap-[12px]">
-          {TABS.map((tab) => {
-            const selected = activeTab === tab;
-
-            return (
-             <button
-  key={tab}
-  type="button"
-  onClick={() => {
-    setActiveTab(tab);
-    setSearch("");
-  }}
-  className={`
-    flex
-    h-[50px]
-    min-w-[120px]
-    items-center
-    justify-center
-    gap-[10px]
-    rounded-[12px]
-    border
-    px-[18px]
-    pt-[15px]
-    pr-[17px]
-    pb-[14px]
-    pl-[18px]
-    text-[18px]
-    font-semibold
-    whitespace-nowrap
-    transition-colors
-    ${
-      selected
-        ? "border-[#D4CCD4] bg-[#FFFFFF29] text-white"
-        : "border-transparent bg-black text-white"
-    }
-  `}
->
-  {tab}
-</button>
-            );
-          })}
-
+        <div
+          className="absolute"
+          style={{ top: CARD_TOP + 88, left: 30, width: 964, display: "flex" }}
+        >
           <SearchInput
             variant="panel"
             value={search}
             onChange={(value) => setSearch(value)}
-            className="w-full sm:ml-auto sm:w-[280px]"
+            className="ml-auto"
           />
         </div>
 
-        <div className="mt-[14px] flex min-h-0 flex-1 flex-col overflow-hidden rounded-[12px]">
-          <div
-            className={`hidden items-center justify-between gap-2 bg-black px-[18px] py-[12px] text-[13px] font-normal text-white sm:flex sm:text-[16px] ${meta.grid}`}
-          >
-            {meta.columns.map((column) => (
-              <span key={column}>{column}</span>
+        {/* header row — exact spec: 964x40, radius10, bg #EFEFEF */}
+       {/* header row — exact spec: 964x40, radius10, bg #EFEFEF */}
+{/* header row — exact spec: 964x40, radius10, bg #EFEFEF */}
+<div
+  className="absolute hidden items-center sm:flex"
+  style={{
+    top: CARD_TOP + 139,
+    left: 30,
+    width: 964,
+    height: 40,
+    justifyContent: "space-between",
+    borderRadius: 10,
+    background: "#EFEFEF",
+    paddingRight: 11,
+    paddingLeft: 11,
+  }}
+>
+  {meta.columns.map((column) => (
+    <span
+      key={column}
+      className="truncate text-center"
+      style={{
+        fontFamily: "Poppins, sans-serif",
+        fontWeight: 400,
+        fontSize: 12,
+        lineHeight: "normal",
+        letterSpacing: 0,
+        color: "#000000",
+      }}
+    >
+      {column}
+    </span>
+  ))}
+</div>
+
+        {/* list — exact spec: 964x255, radius10, bg #B8B8B8, padding 20/0 */}
+        <div
+          className="absolute flex flex-col overflow-y-auto"
+          style={{
+            top: CARD_TOP + 184,
+            left: 30,
+            width: 964,
+            height: 255,
+            justifyContent: "space-between",
+            borderRadius: 10,
+            background: "#B8B8B8",
+            paddingTop: 20,
+            paddingBottom: 20,
+          }}
+        >
+          {rows.length === 0 && (
+            <p
+              className="px-[16px]"
+              style={{
+                fontFamily: "Poppins, sans-serif",
+                fontWeight: 400,
+                fontSize: 14,
+                lineHeight: "100%",
+                letterSpacing: 0,
+                color: "#5D5D5D",
+              }}
+            >
+              No data Data Available
+            </p>
+          )}
+
+          {activeTab === "Category" &&
+            filteredCategories.slice(0, pageSize).map((category, index) => (
+              <div
+                key={category.id}
+                className={`grid border-b border-black/5 px-[16px] py-[10px] text-[12px] text-black ${CATEGORY_GRID}`}
+              >
+                <span>{index + 1}</span>
+                <span className="truncate">{category.name}</span>
+                <span className="truncate">{category.createdBy}</span>
+                <span>{category.createdDate}</span>
+                <span>{category.updatedDate}</span>
+                <span />
+              </div>
             ))}
-          </div>
 
-          <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#82367F4D]">
-            {rows.length === 0 && (
-              <p className="px-[16px] py-[18px] text-[14px] text-white/80">
-                No Data Available
-              </p>
-            )}
+          {activeTab === "Menu Type" &&
+            filteredMenuTypes.slice(0, pageSize).map((menuType, index) => (
+              <div
+                key={menuType.id}
+                className={`grid border-b border-black/5 px-[16px] py-[10px] text-[12px] text-black ${MENU_TYPE_GRID}`}
+              >
+                <span>{index + 1}</span>
+                <span className="truncate">{menuType.name}</span>
+                <span className="truncate">{menuType.createdBy}</span>
+                <span>{menuType.createdDate}</span>
+                <span>{menuType.updatedDate}</span>
+                <span />
+              </div>
+            ))}
 
-            {activeTab === "Category" &&
-              filteredCategories.slice(0, pageSize).map((category, index) => (
-                <div
-                  key={category.id}
-                  className={`grid border-b border-white/5 px-[16px] py-[12px] text-[12px] text-white/90 ${CATEGORY_GRID}`}
-                >
-                  <span>{index + 1}</span>
-                  <span className="truncate">{category.name}</span>
-                  <span className="truncate">{category.createdBy}</span>
-                  <span>{category.createdDate}</span>
-                  <span>{category.updatedDate}</span>
-                  <span />
-                </div>
-              ))}
+          {activeTab === "Food" &&
+            filteredFoods.slice(0, pageSize).map((food, index) => (
+              <div
+                key={food.id}
+                className={`grid items-center border-b border-black/5 px-[16px] py-[10px] text-[12px] text-black ${FOOD_GRID}`}
+              >
+                <span>{index + 1}</span>
+                <span>
+                  {food.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={food.image}
+                      alt={food.name}
+                      className="h-8 w-8 rounded-[6px] object-cover"
+                    />
+                  ) : (
+                    <span className="block h-8 w-8 rounded-[6px] bg-black/10" />
+                  )}
+                </span>
+                <span className="truncate">{food.name}</span>
+                <span className="truncate">{food.category}</span>
+                <span className="truncate">{food.kitchen}</span>
+                <span className="truncate">{food.foodType}</span>
+                <span className="truncate">{food.createdBy}</span>
+                <span>{food.createdAt}</span>
+                <span />
+              </div>
+            ))}
 
-            {activeTab === "Menu Type" &&
-              filteredMenuTypes.slice(0, pageSize).map((menuType, index) => (
-                <div
-                  key={menuType.id}
-                  className={`grid border-b border-white/5 px-[16px] py-[12px] text-[12px] text-white/90 ${MENU_TYPE_GRID}`}
-                >
-                  <span>{index + 1}</span>
-                  <span className="truncate">{menuType.name}</span>
-                  <span className="truncate">{menuType.createdBy}</span>
-                  <span>{menuType.createdDate}</span>
-                  <span>{menuType.updatedDate}</span>
-                  <span />
-                </div>
-              ))}
-
-            {activeTab === "Food" &&
-              filteredFoods.slice(0, pageSize).map((food, index) => (
-                <div
-                  key={food.id}
-                  className={`grid items-center border-b border-white/5 px-[16px] py-[12px] text-[12px] text-white/90 ${FOOD_GRID}`}
-                >
-                  <span>{index + 1}</span>
-                  <span>
-                    {food.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={food.image}
-                        alt={food.name}
-                        className="h-8 w-8 rounded-[6px] object-cover"
-                      />
-                    ) : (
-                      <span className="block h-8 w-8 rounded-[6px] bg-white/10" />
-                    )}
-                  </span>
-                  <span className="truncate">{food.name}</span>
-                  <span className="truncate">{food.category}</span>
-                  <span className="truncate">{food.kitchen}</span>
-                  <span className="truncate">{food.foodType}</span>
-                  <span className="truncate">{food.createdBy}</span>
-                  <span>{food.createdAt}</span>
-                  <span />
-                </div>
-              ))}
-
-            {activeTab === "Combo" &&
-              filteredCombos.slice(0, pageSize).map((combo, index) => (
-                <div
-                  key={combo.id}
-                  className={`grid items-center border-b border-white/5 px-[16px] py-[12px] text-[12px] text-white/90 ${COMBO_GRID}`}
-                >
-                  <span>{index + 1}</span>
-                  <span>
-                    {combo.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={combo.image}
-                        alt={combo.name}
-                        className="h-8 w-8 rounded-[6px] object-cover"
-                      />
-                    ) : (
-                      <span className="block h-8 w-8 rounded-[6px] bg-white/10" />
-                    )}
-                  </span>
-                  <span className="truncate">{combo.name}</span>
-                  <span>{combo.price.toFixed(2)}</span>
-                  <span className="truncate">{combo.createdBy}</span>
-                  <span>{combo.createdAt}</span>
-                  <span>{combo.updatedAt}</span>
-                  <span />
-                </div>
-              ))}
-          </div>
+          {activeTab === "Combo" &&
+            filteredCombos.slice(0, pageSize).map((combo, index) => (
+              <div
+                key={combo.id}
+                className={`grid items-center border-b border-black/5 px-[16px] py-[10px] text-[12px] text-black ${COMBO_GRID}`}
+              >
+                <span>{index + 1}</span>
+                <span>
+                  {combo.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={combo.image}
+                      alt={combo.name}
+                      className="h-8 w-8 rounded-[6px] object-cover"
+                    />
+                  ) : (
+                    <span className="block h-8 w-8 rounded-[6px] bg-black/10" />
+                  )}
+                </span>
+                <span className="truncate">{combo.name}</span>
+                <span>{combo.price.toFixed(2)}</span>
+                <span className="truncate">{combo.createdBy}</span>
+                <span>{combo.createdAt}</span>
+                <span>{combo.updatedAt}</span>
+                <span />
+              </div>
+            ))}
         </div>
 
-        <div className="mt-[14px]">
-         <Pagination
-            currentPage={1}
-            totalItems={10}
-         
+        <div
+          className="absolute"
+          style={{ top: CARD_TOP + 184 + 255 + 14, left: 30, width: 964 }}
+        >
+          <Pagination
+            currentPage={currentPage}
+            totalItems={rows.length}
             itemsPerPage={pageSize}
             onPageChange={handlePageChange}
           />
+        </div>
+
+        {/* footer copyright — sits BELOW the card, outside its background, not overlapping it */}
+        <div
+          className="absolute flex items-center justify-center"
+          style={{ top: CARD_TOP + CARD_HEIGHT + 14, left: CARD_LEFT, width: CARD_WIDTH }}
+        >
+          <span
+            style={{
+              fontFamily: "Poppins, sans-serif",
+              fontWeight: 500,
+              fontSize: 12,
+              lineHeight: "100%",
+              letterSpacing: 0,
+              color: "#939393",
+            }}
+          >
+            © 2026 Techon Innovations. All rights reserved.
+          </span>
         </div>
       </div>
 
@@ -471,3 +561,4 @@ export default function MenuPage() {
     </main>
   );
 }
+

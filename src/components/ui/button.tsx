@@ -37,9 +37,9 @@ const buttonVariants = cva(
         viewicon:
           "h-4 p-1 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 cursor-pointer hover:bg-gray-200",
         addcustomer:
-          "w-[200px] h-[50px] gap-[10px] rounded-[12px] border border-[#D4CCD4] bg-[#FFFFFF29] pt-[15px] pr-[17px] pb-[14px] pl-[18px] text-[18px] font-medium text-white opacity-100 hover:bg-[#FFFFFF3D]",
+          "w-[200px] h-[50px] gap-[10px] rounded-[12px] border border-[#D4CCD4] bg-[#450042] pt-[15px] pr-[17px] pb-[14px] pl-[18px] text-[18px] font-medium text-white opacity-100 hover:bg-[#FFFFFF3D]",
         add:
-          "w-[157px] h-[50px] gap-[10px] rounded-[12px] border border-secondary bg-[#000000] pt-[15px] pr-[58px] pb-[14px] pl-[58px] text-[18px] font-semibold tracking-wide text-secondary transition-colors duration-200 hover:bg-[#5C0D5C] hover:text-white",
+          "w-[157px] h-[50px] gap-[10px] rounded-[12px] border border-secondary bg-[#450042] pt-[15px] pr-[58px] pb-[14px] pl-[58px] text-[18px] font-semibold tracking-wide text-white transition-colors duration-200 hover:bg-[#5C0D5C] hover:text-white",
       },
       size: {
         default: " px-4 py-2 has-[>svg]:px-3",

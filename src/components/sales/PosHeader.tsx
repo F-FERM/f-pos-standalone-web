@@ -3,14 +3,16 @@
 import { ChevronLeft, User } from "lucide-react";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-
+type POSHeaderProps = {
+  variant?: "default" | "compact";
+};
 export function POSHeader() {
   return (
     <header
       className="flex items-center justify-between bg-[#EFEFEF]"
       style={{
         width: 1024,
-        height: 77,
+        height: 66,
         gap: 10,
         paddingTop: 22,
         paddingRight: 20,

@@ -27,39 +27,40 @@ export function SearchInput({
 
   return (
     <div
-      className={`relative min-w-0 ${isPanel ? "w-full sm:w-[270px]" : ""} ${className}`}
-      style={!isPanel ? { width: 212, height: 33 } : undefined}
+      className={`relative min-w-0 shrink-0 ${className}`}
+      style={{ width: isPanel ? 292 : 212, height: 38 }}
     >
       <Search
-        size={18}
-        className={`pointer-events-none absolute left-[10px] top-1/2 z-10 -translate-y-1/2 ${
-          isPanel ? "text-[#AAAAAA]" : "text-[#848484]"
-        }`}
+        size={isPanel ? 24 : 14}
+        className={`pointer-events-none absolute left-[20px]  ${isPanel ? "top-1/2" : "top-[45%]"} -translate-y-1/2 `}
+        style={{ color: "#848484" }}
       />
 
       <Input
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
         placeholder={placeholder}
-        className={
-          isPanel
-            ? `
-              h-[38px]
-              rounded-[6px]
-              border-[#D9D9D9]/70
-              bg-[#474747AB]
-              pl-[34px]
-              text-[13px] text-white
-              placeholder:text-[#AAAAAA]
-              focus-visible:ring-1
-              focus-visible:ring-secondary
-              sm:text-[15px]
-            `
-            : ""
-        }
         style={
-          !isPanel
+          isPanel
             ? {
+                width: 292,
+                height: 38,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: "#AEAEAE",
+                backgroundColor: "#E5E5E5",
+                paddingTop: 6,
+                paddingRight: 20,
+                paddingBottom: 6,
+                paddingLeft: 53, // 20 (left padding) + 24 (icon) + 9 (gap)
+                fontFamily: "Poppins, sans-serif",
+                fontWeight: 400,
+                fontSize: 16,
+                lineHeight: "100%",
+                letterSpacing: "0%",
+                color: "#848484",
+              }
+            : {
                 width: 212,
                 height: 33,
                 borderRadius: 8,
@@ -77,7 +78,6 @@ export function SearchInput({
                 letterSpacing: "0%",
                 color: "#848484",
               }
-            : undefined
         }
       />
     </div>

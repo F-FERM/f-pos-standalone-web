@@ -4,8 +4,6 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { SearchInput } from "../common/SearchInput";
 
-
-
 type OrderModalProps = {
   open: boolean;
   onClose: () => void;
@@ -14,6 +12,42 @@ type OrderModalProps = {
 const orderTabs = ["On Going", "Completed Order", "Canceled Order"];
 const orderTypes = ["Dine In", "Take Away", "Home Delivery", "Online"];
 
+type FilterButtonProps = {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  width?: number;
+};
+
+function FilterButton({ label, active, onClick, width }: FilterButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex shrink-0 items-center justify-center whitespace-nowrap"
+      style={{
+        width,
+        height: 38,
+        borderRadius: 7,
+        border: active ? "1px solid #BFBFBF" : "1px solid #9C9C9C",
+        background: active ? "#450042" : "#EFEFEF",
+        boxShadow: active ? "0px 0px 14px 0px #BD29B740" : "none",
+        paddingTop: 6,
+        paddingRight: 14,
+        paddingBottom: 6,
+        paddingLeft: 14,
+        gap: 9,
+        fontFamily: "Poppins, sans-serif",
+        fontWeight: 600,
+        fontSize: 16,
+        color: active ? "#FFFFFF" : "#000000",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
 export function OrderModal({ open, onClose }: OrderModalProps) {
   const [activeTab, setActiveTab] = useState(orderTabs[0]);
   const [activeType, setActiveType] = useState(orderTypes[0]);
@@ -21,63 +55,122 @@ export function OrderModal({ open, onClose }: OrderModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-[2px]">
-      <div className="relative w-full max-w-[900px]">
+    <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-[2px]">
+      {/* outer positioned wrapper — no overflow clipping, so the close button can sit outside the card */}
+      <div
+        className="relative"
+        style={{
+          position: "absolute",
+          top: 111,
+          left: 106,
+          width: 812,
+          height: 558,
+        }}
+      >
+        {/* close button — sits on the outer wrapper, never clipped */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute z-10 right-2 top-2 flex h-[36px] w-[36px] items-center justify-center rounded-full border border-white bg-[#2B102B]/60 text-[#FF3B3B] shadow-lg sm:right-[-18px] sm:top-[-18px] sm:h-[42px] sm:w-[42px]"
+          className="flex items-center justify-center"
+          style={{
+            position: "absolute",
+            top: -14,
+            right: -14,
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            background: "#FFFFFF",
+            border: "1px solid #E0E0E0",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            color: "#FF3B3B",
+            zIndex: 10,
+          }}
           aria-label="Close orders modal"
         >
           <X size={20} strokeWidth={2.5} />
         </button>
 
-        <div className="max-h-[90vh] w-full overflow-y-auto rounded-[20px] border border-gray-600 bg-[#2C192BE5] px-4 py-6 shadow-[0_0_30px_rgba(0,0,0,0.35)] sm:px-[34px] sm:py-[26px]">
-          <div className="mb-[18px] flex items-center justify-between">
-            <h3 className="text-[18px] font-semibold text-white sm:text-[22px]">Orders</h3>
+        {/* card — 812x558, radius20, bg #EFEFEF, padding 26/34, gap16, clips its own content only */}
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            background: "#EFEFEF",
+            border: "1px solid #EFEFEF",
+            borderRadius: 20,
+            backdropFilter: "blur(4px)",
+            paddingTop: 26,
+            paddingRight: 34,
+            paddingBottom: 26,
+            paddingLeft: 34,
+            display: "flex",
+            flexDirection: "column",
+            gap: 16,
+            overflow: "hidden",
+          }}
+        >
+          {/* title */}
+          <h3
+            style={{
+              fontFamily: "Poppins, sans-serif",
+              fontWeight: 600,
+              fontSize: 22,
+              lineHeight: "100%",
+              letterSpacing: 0,
+              color: "#000000",
+            }}
+          >
+            Orders
+          </h3>
+
+          {/* order status tabs */}
+          <div className="flex flex-wrap items-center" style={{ gap: 9 }}>
+            {orderTabs.map((tab) => (
+              <FilterButton
+                key={tab}
+                label={tab}
+                active={activeTab === tab}
+                onClick={() => setActiveTab(tab)}
+                width={164}
+              />
+            ))}
           </div>
 
-        <div className="mb-[18px] flex flex-wrap items-center gap-[9px]">
-          {orderTabs.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`flex items-center justify-center rounded-[7px] border px-[10px] py-[7px] text-[13px] font-medium transition sm:px-[12px] sm:py-[9px] sm:text-[18px] ${
-                activeTab === tab
-                  ? "border-[#D9D9D9] bg-[#FFFFFF29] text-white"
-                  : "border-[#D9D9D9]/70 bg-transparent text-white"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+          {/* order type filters + search — grid: buttons auto-sized, search fixed width at the end */}
+          <div
+            className="grid items-center"
+            style={{
+              gridTemplateColumns: "repeat(4, auto) 1fr",
+              gap: 9,
+            }}
+          >
+            {orderTypes.map((type) => (
+              <FilterButton
+                key={type}
+                label={type}
+                active={activeType === type}
+                onClick={() => setActiveType(type)}
+              />
+            ))}
 
-        <div className="mb-[18px] flex flex-wrap items-center gap-[9px]">
-          {orderTypes.map((type) => (
-            <button
-              key={type}
-              type="button"
-              onClick={() => setActiveType(type)}
-              className={`flex items-center justify-center rounded-[7px] border px-[10px] py-[7px] text-[13px] font-medium transition sm:px-[12px] sm:py-[9px] sm:text-[18px] ${
-                activeType === type
-                  ? "border-[#D9D9D9] bg-[#FFFFFF29] text-white"
-                  : "border-[#D9D9D9]/70 bg-transparent text-white"
-              }`}
-            >
-              {type}
-            </button>
-          ))}
-
-          <SearchInput variant="panel" className="w-full sm:ml-auto sm:w-[270px]" />
-        </div>
-
-        <div className="rounded-[14px] bg-[#2D0D2F]/40 p-[14px]">
-          <div className="flex min-h-[160px] items-center justify-center text-[14px] font-normal text-[#9A9A9A] sm:min-h-[200px] sm:text-[18px]">
-            No orders for {activeType}
+            <SearchInput variant="panel" className="justify-self-end" />
           </div>
-        </div>
+
+          {/* orders list / empty state — small gap, blends with bg */}
+          <div className="flex items-center justify-center mt-4">
+            <span
+              style={{
+                fontFamily: "Poppins, sans-serif",
+                fontWeight: 400,
+                fontSize: 14,
+                lineHeight: "100%",
+                letterSpacing: 0,
+                color: "#848484",
+              }}
+            >
+              No orders for {activeType}
+            </span>
+          </div>
         </div>
       </div>
     </div>
