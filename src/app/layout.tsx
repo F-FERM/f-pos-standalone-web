@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   description: "F-POS Standalone Application",
 };
 const STAGE_WIDTH = 1024;
-const STAGE_HEIGHT = 768;
+const STAGE_HEIGHT = 780;
 
 export default function RootLayout({
   children,
@@ -29,7 +29,7 @@ export default function RootLayout({
         <Providers>
           <div className="fixed inset-0 flex items-center justify-center overflow-hidden">
             <div
-              className="relative shrink-0 origin-center w-[1024px] h-[768px] bg-black"
+              className="relative shrink-0 origin-center w-[1024px] h-[780px] bg-black"
               style={{
                 transform: `scale(min(1, min(calc(100vw / ${STAGE_WIDTH}px), calc(100dvh / ${STAGE_HEIGHT}px))))`,
               }}

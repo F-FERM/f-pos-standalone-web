@@ -12,6 +12,7 @@ import AddCategoryModal, { NewCategoryInput } from "@/src/components/menu/AddCat
 import AddMenuTypeModal, { NewMenuTypeInput } from "@/src/components/menu/AddMenuTypeModal";
 import AddComboModal, { NewComboInput } from "@/src/components/menu/AddComboModal";
 import { Button } from "@/src/components/ui/button";
+import MenuItemCard from "@/src/components/menu/item";
 
 type Category = {
   id: number;
@@ -551,6 +552,7 @@ export default function MenuPage() {
         categoryOptions={categories.map((c) => ({ label: c.name, value: c.name }))}
         menuTypeOptions={menuTypes.map((m) => ({ label: m.name, value: m.name }))}
       />
+       
 
       <AddComboModal
         isOpen={isComboModalOpen}
@@ -558,6 +560,8 @@ export default function MenuPage() {
         onAdd={handleAddCombo}
         foodOptions={foods.map((f) => ({ label: f.name, value: f.name }))}
       />
+
+   
     </main>
   );
 }

@@ -19,11 +19,11 @@ export default function DeliveryPage() {
   const [activeTab, setActiveTab] = useState<DeliveryTab>("All");
 
   return (
-    <main className="flex h-full flex-col overflow-hidden bg-black text-white">
+    <main className="flex h-full flex-col overflow-hidden bg-black text-black">
       {/* Navbar */}
-          <POSHeader />
+      <POSHeader />
 
-      <div className="flex min-h-0 flex-1 flex-col bg-[#2C192B] px-[29px] pt-[22px]">
+      <div className="flex min-h-0 flex-1 flex-col bg-[#D2D2D2] px-[29px] pt-[22px] pb-[18px]">
         <div className="grid grid-cols-4 items-center gap-[9px]">
           {TABS.map((tab) => {
             const selected = activeTab === tab;
@@ -47,8 +47,8 @@ export default function DeliveryPage() {
                   transition
                   ${
                     selected
-                      ? "border-[#D9D9D9] bg-[#FFFFFF29] text-white"
-                      : "border-[#D9D9D9]/70 bg-transparent text-white"
+                      ? "border-[#450042] bg-[#450042] text-white"
+                      : "border-[#9C9C9C] bg-transparent text-black"
                   }
                 `}
               >
@@ -58,6 +58,20 @@ export default function DeliveryPage() {
           })}
         </div>
 
+        <div className="mt-auto flex items-center justify-center pt-[14px]">
+          <span
+            style={{
+              fontFamily: "Poppins, sans-serif",
+              fontWeight: 500,
+              fontSize: 12,
+              lineHeight: "100%",
+              letterSpacing: 0,
+              color: "#939393",
+            }}
+          >
+            © 2026 Techon Innovations. All rights reserved.
+          </span>
+        </div>
       </div>
     </main>
   );

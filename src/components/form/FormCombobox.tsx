@@ -18,7 +18,7 @@ export interface selectType {
 }
 
 // classes borrowed from FormMultiSelectInput's light theme, for dropdown-item consistency
-const LIGHT_SELECTED_ITEM_CLASSES = `w-full rounded-[8px] bg-[#D2D2D2] border border-[#9A3796]
+const LIGHT_SELECTED_ITEM_CLASSES = `w-full rounded-[8px] bg-[#D2D2D2] border border-[#9C9C9C]
   px-3 py-2 font-poppins font-medium text-[15px] leading-normal tracking-normal text-black`;
 
 const LIGHT_DEFAULT_ITEM_CLASSES = `!bg-transparent !text-black
@@ -134,18 +134,18 @@ const FormCombobox = ({
                   className={cn(
                     `flex h-[38px] w-full max-w-[742px] items-center justify-between
                     rounded-[7px] border border-[#D2D2D2]
-                    bg-[#D2D2D2] text-gray-500
-                    font-poppins font-normal text-sm leading-none tracking-normal
+                    bg-[#D2D2D2] text-gray-500 placeholder:text-[#797979]
+                    font-poppins font-normal text-sm leading-normal tracking-normal
                     gap-[9px] pt-[6px] pr-[20px] pb-[6px] pl-[20px]
                     transition-all duration-200
-                    opacity-100
+                    opacity-100 hover:bg-[#D2D2D2]
                     focus-visible:ring-1 focus-visible:ring-gray-300 focus-visible:ring-offset-0
                     disabled:border-gray-300 disabled:bg-gray-300 disabled:text-gray-300`,
                     className,
                   )}
                 >
                   <span
-                    className={`truncate flex-1 text-left ${
+                    className={`truncate flex-1 text-left leading-normal ${
                       displayValue ? "text-gray-500" : "text-[#797979]"
                     }`}
                   >
@@ -169,7 +169,7 @@ const FormCombobox = ({
                   <CommandInput
                     placeholder="Search..."
                     onValueChange={(search) => setSearch?.(search)}
-                    className="font-poppins font-normal text-sm text-gray-500 placeholder:text-[#797979] bg-transparent px-3 py-2"
+                    className="font-poppins font-normal text-[16px] leading-normal text-gray-500 placeholder:text-[#797979] bg-transparent px-3 py-2"
                   />
                   <CommandList
                     className="max-h-[300px] overflow-y-auto bg-[#D2D2D2] flex flex-col gap-[6px]"
@@ -238,7 +238,7 @@ const FormCombobox = ({
             >
               {label && (
                 <FormLabel
-                  className={`font-medium text-base mb-3  text-white flex items-center justify-end pr-2 flex-shrink-0 ${labelClassName}`}
+                  className={`font-medium text-base mb-3  text-black flex items-center justify-end pr-2 flex-shrink-0 ${labelClassName}`}
                 >
                   {label}
                   {required && (
@@ -263,7 +263,7 @@ const FormCombobox = ({
         return (
           <FormItem>
             <FormLabel
-              className={`flex gap-2 text-base font-medium mb-3 text-white ${labelClassName}`}
+              className={`flex gap-2 text-base font-medium mb-3 text-black ${labelClassName}`}
             >
               {label}
               {required && (

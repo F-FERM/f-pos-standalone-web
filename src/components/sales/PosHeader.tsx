@@ -12,7 +12,7 @@ export function POSHeader() {
       className="flex items-center justify-between bg-[#EFEFEF]"
       style={{
         width: 1024,
-        height: 66,
+        height: 77,
         gap: 10,
         paddingTop: 22,
         paddingRight: 20,

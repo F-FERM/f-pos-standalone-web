@@ -7,6 +7,11 @@ import { POSHeader } from "@/src/components/sales/PosHeader";
 import { ProductSection } from "@/src/components/sales/ProductSection";
 
 export default function POSScreen() {
+  const CARD_TOP = 77;
+  const CARD_LEFT = 20;
+  const CARD_WIDTH = 984;
+  const CARD_HEIGHT = 661;
+
   return (
     <main
       className="relative mx-auto overflow-hidden w-full h-full"
@@ -21,10 +26,10 @@ export default function POSScreen() {
       <div
         className="absolute"
         style={{
-          top: 77,
-          left: 20,
-          width: 984,
-          height: 661,
+          top: CARD_TOP,
+          left: CARD_LEFT,
+          width: CARD_WIDTH,
+          height: CARD_HEIGHT,
           borderRadius: 15,
           backgroundColor: "#D2D2D2",
         }}
@@ -78,18 +83,34 @@ export default function POSScreen() {
           left: 30,
           width: 613,
           height: 564,
-
-          // backgroundColor: "#D2D2D2",
         }}
       >
         <ProductSection />
       </div>
 
-      {/* Section 4 — Order panel — 341x566, bordered */}
-    {/* Section 4 — Order panel — anchored at top:153 left:653 */}
-<div className="absolute" style={{ top: 153, left: 653, width: 341 }}>
-  <OrderPanel />
-</div>
+      {/* Section 4 — Order panel — anchored at top:153 left:653 */}
+      <div className="absolute" style={{ top: 153, left: 653, width: 341 }}>
+        <OrderPanel />
+      </div>
+
+      {/* Footer copyright — sits BELOW the backdrop card, not overlapping it */}
+      <div
+        className="absolute flex items-center justify-center"
+        style={{ top: CARD_TOP + CARD_HEIGHT + 14, left: CARD_LEFT, width: CARD_WIDTH }}
+      >
+        <span
+          style={{
+            fontFamily: "Poppins, sans-serif",
+            fontWeight: 500,
+            fontSize: 12,
+            lineHeight: "100%",
+            letterSpacing: 0,
+            color: "#939393",
+          }}
+        >
+          © 2026 Techon Innovations. All rights reserved.
+        </span>
+      </div>
     </main>
   );
 }
