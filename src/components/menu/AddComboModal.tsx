@@ -148,7 +148,7 @@ export default function AddComboModal({
           <button
             type="button"
             onClick={handleClose}
-            className="absolute right-[-18px] top-[-18px] z-10 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E0E0E0] bg-white text-[#FF3B3B] shadow-lg"
+            className="absolute right-[-18px] top-[-18px] z-10 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B] shadow-lg"
             aria-label="Close food modal"
           >
             <X size={20} strokeWidth={2.5} />

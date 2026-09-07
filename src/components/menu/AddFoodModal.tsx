@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { Check, Plus, X } from "lucide-react";
 import { Controller, FormProvider, useFieldArray, useForm } from "react-hook-form";
 
 import FormInput from "@/src/components/form/FormInput";
@@ -160,7 +160,7 @@ export default function AddFoodModal({
         <button
           type="button"
           onClick={handleClose}
-          className="absolute right-[-18px] top-[-18px] z-10 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E0E0E0] bg-white text-[#FF3B3B] shadow-lg"
+          className="absolute right-[-18px] top-[-18px] z-10 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B] shadow-lg"
           aria-label="Close food modal"
         >
           <X size={20} strokeWidth={2.5} />
@@ -171,7 +171,7 @@ export default function AddFoodModal({
         </DialogTitle>
 
         <FormProvider {...methods}>
-          <div className="flex flex-1 min-h-0 flex-col gap-[16px] overflow-y-auto pr-1">
+          <div className="flex flex-1 min-h-0 flex-col gap-[10px] overflow-y-auto pr-1">
             {/* Food Name + Food Image */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -289,14 +289,25 @@ export default function AddFoodModal({
                 Portions
               </label>
               <label className="flex items-center gap-2 text-base text-[#A1A1A1]">
-                <input
-                  type="checkbox"
-                  checked={hasPortions}
-                  onChange={(e) => handlePortionsToggle(e.target.checked)}
-                  className="w-4 h-4 bg-transparent border border-black"
-                />
-                Portions
-              </label>
+  <span
+    onClick={() => handlePortionsToggle(!hasPortions)}
+    className={`flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm border border-black ${
+      hasPortions
+        ? "border-[#450042] bg-[#450042]"
+        : "border-black bg-[#E9E9E9]"
+    }`}
+  >
+    {hasPortions && (
+      <Check
+        size={12}
+        strokeWidth={3}
+        className="text-white"
+      />
+    )}
+  </span>
+
+  Portions
+</label>
 
               {hasPortions && (
                 <div className="mt-3">
@@ -349,7 +360,7 @@ export default function AddFoodModal({
                           <button
                             type="button"
                             onClick={() => removePortion(index)}
-                            className="flex h-[38px] w-[38px] items-center justify-center rounded-[8px] border border-[#E0E0E0] bg-white text-[#FF3B3B]"
+                            className="flex h-[38px] w-[38px] items-center justify-center rounded-[8px] border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B]"
                             aria-label="Remove potion"
                           >
                             <X size={16} />
@@ -415,15 +426,33 @@ labelClassName="mb-0 text-gray-500 text-sm font-medium "                  />
               </div>
             </div>
 
-            {/* Offer */}
-            <label className="flex items-center gap-2 text-base font-medium text-[#A1A1A1]">
-              <input
-                type="checkbox"
-                {...methods.register("hasOffer")}
-                className="w-4 h-4 bg-transparent border border-black"
-              />
-              Offer
-            </label>
+         
+
+   
+              <label className="flex items-center gap-2 text-base text-[#A1A1A1]">
+  <span
+ onClick={() =>
+      methods.setValue(
+        "hasOffer",
+        !methods.getValues("hasOffer")
+      )
+    }    className={`flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm border border-black ${
+      hasOffer
+        ? "border-[#450042] bg-[#450042]"
+        : "border-black bg-[#E9E9E9]"
+    }`}
+  >
+   {methods.watch("hasOffer") && (
+      <Check
+        size={12}
+        strokeWidth={3}
+        className="text-white"
+      />
+    )}
+  </span>
+
+  Offer
+</label>
 
             {hasOffer && (
               <>
