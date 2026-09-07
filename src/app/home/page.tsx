@@ -13,6 +13,7 @@ import saleIcon from "../../../public/images/icons/sale.png";
 import settingsIcon from "../../../public/images/icons/settings.png";
 import userIcon from "../../../public/images/icons/user.png";
 import logo from "../../../public/images/login/fposlogo.png";
+import Link from "next/link";
 interface MenuItem {
   label: string;
   icon: string | StaticImageData;
@@ -139,8 +140,9 @@ export default function RestaurantDashboard() {
               style={{ width: "718px", height: "115px" }}
             >
               {row.map((item) => (
-                <button
+                <Link
                   key={item.label}
+                  href={item.href}
                   className="flex flex-col items-center justify-center rounded-[20px] bg-[#D2D2D2] transition hover:brightness-95"
                   style={{
                     width: "150px",
@@ -170,7 +172,7 @@ export default function RestaurantDashboard() {
                   >
                     {item.label}
                   </span>
-                </button>
+                </Link>
               ))}
             </div>
           ))}

@@ -430,7 +430,7 @@ export default function AddComboModal({
             }}
           >
             <span
-              className="flex shrink-0 items-start"
+              className="flex shrink-0 items-center"
               style={{
                 width: 68,
                 height: 24,
