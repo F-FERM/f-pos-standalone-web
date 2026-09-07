@@ -1,13 +1,25 @@
 "use client";
 
+import { forwardRef, useCallback, useImperativeHandle, useLayoutEffect, useRef } from "react";
+
+export type PanelBackgroundHandle = {
+  /** repositions the notch immediately, without going through a React render */
+  setNotchCenterY: (centerY: number) => void;
+};
+
 type PanelBackgroundProps = {
   width: number;
   height: number;
-  /** vertical center (in px, relative to this panel) where the notch should sit */
-  notchCenterY: number;
+  /** vertical center (in px, relative to this panel) the notch starts at */
+  defaultNotchCenterY: number;
   fill?: string;
   borderColor?: string;
 };
+
+const r = 15; // corner radius, matches 587->602 / 15 / 549->564 in the source
+// circular-arc control-point ratios lifted from the source path (6.7157/15, 8.2843/15)
+const K1 = 0.4477;
+const K2 = 0.5523;
 
 /**
  * Reproduces the exact shape from the provided SVG:
@@ -21,60 +33,115 @@ type PanelBackgroundProps = {
  *   C62.4212 243.544 67 242.035 67 239.003
  *   V15 C67 6.71574 73.7157 0 82 0 H587 Z
  *
- * All notch Y coordinates below are stored as deltas from the original
- * 267.5 center so the whole notch can be re-centered on any selected
- * sidebar item via `notchCenterY`, instead of being frozen in place.
+ * All notch Y coordinates are stored as deltas from the original 267.5 center
+ * so the whole notch can be re-centered on any selected sidebar item, instead
+ * of being frozen in place.
+ *
+ * The notch center is NOT clamped: the sidebar reports the live position of
+ * the selected item, so as that item scrolls the notch travels with it and
+ * slides off the top/bottom edge. To keep the path valid at those extremes the
+ * two left-hand corner radii collapse as the notch reaches them, and anything
+ * past the edge is cut by the svg viewport.
  */
-export function PanelBackground({
-  width,
-  height,
-  notchCenterY,
-  fill = "#D2D2D2",
-  borderColor = "#EFEFEF",
-}: PanelBackgroundProps) {
-  const cy = notchCenterY;
-  const r = 15; // corner radius, matches 587->602 / 15 / 549->564 in the source
+function buildPath(w: number, h: number, cy: number) {
+  // where the notch meets the panel's straight left edge
+  const topStop = cy - 28.497;
+  const botStop = cy + 28.497;
 
-  const buildPath = (w: number, h: number) => `
+  // shrink the left corners as the notch runs into them, so the left edge is
+  // never asked to travel backwards (which would fold the path onto itself)
+  const rTop = Math.min(r, Math.max(0, topStop));
+  const rBottom = Math.min(r, Math.max(0, h - botStop));
+
+  return `
     M ${w - r} 0
-    C ${w - 6.7157} 0 ${w} 6.7157 ${w} 15
-    V ${h - 15}
-    C ${w} ${h - 6.7157} ${w - 6.7157} ${h} ${w - r} ${h}
-    H 82
-    C 73.7157 ${h} 67 ${h - 6.7157} 67 ${h - 15}
-    V ${cy + 28.497}
+    C ${w - r * K1} 0 ${w} ${r * K1} ${w} ${r}
+    V ${h - r}
+    C ${w} ${h - r * K1} ${w - r * K1} ${h} ${w - r} ${h}
+    H ${67 + rBottom}
+    C ${67 + rBottom * K2} ${h} 67 ${h - rBottom * K1} 67 ${h - rBottom}
+    V ${botStop}
     C 67 ${cy + 25.464} 62.4211 ${cy + 23.955} 60.1444 ${cy + 25.959}
     C 53.7588 ${cy + 31.577} 45.2911 ${cy + 35} 36 ${cy + 35}
     C 16.1177 ${cy + 35} 0 ${cy + 19.33} 0 ${cy}
     C 0 ${cy - 19.33} 16.1177 ${cy - 35} 36 ${cy - 35}
     C 45.2909 ${cy - 35} 53.7588 ${cy - 31.578} 60.1445 ${cy - 25.959}
-    C 62.4212 ${cy - 23.956} 67 ${cy - 25.465} 67 ${cy - 28.497}
-    V 15
-    C 67 6.71574 73.7157 0 82 0
+    C 62.4212 ${cy - 23.956} 67 ${cy - 25.465} 67 ${topStop}
+    V ${rTop}
+    C 67 ${rTop - rTop * K2} ${67 + rTop * K1} 0 ${67 + rTop} 0
     H ${w - r}
     Z
   `;
-
-  const d = buildPath(width, height);
-  const maskId = "panel-notch-inset";
-
-  return (
-    <svg
-      className="pointer-events-none absolute inset-0 h-full w-full"
-      viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="none"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <mask id={maskId} fill="white">
-        <path d={d} />
-      </mask>
-
-      {/* base fill */}
-      <path d={d} fill={fill} />
-
-      {/* thin inner highlight ring, reproducing the masked border from the source svg */}
-      <path d={d} fill="none" stroke={borderColor} strokeWidth={6} mask={`url(#${maskId})`} />
-    </svg>
-  );
 }
+
+export const PanelBackground = forwardRef<PanelBackgroundHandle, PanelBackgroundProps>(
+  function PanelBackground(
+    { width, height, defaultNotchCenterY, fill = "#D2D2D2", borderColor = "#EFEFEF" },
+    ref,
+  ) {
+    const cyRef = useRef(defaultNotchCenterY);
+    // the mask path, the fill and the highlight ring all share one geometry
+    const pathRefs = useRef<(SVGPathElement | null)[]>([]);
+
+    // written straight to the DOM: the notch has to land in the same frame as
+    // the scroll that moved the selected item, so a React render is too late
+    const setNotchCenterY = useCallback(
+      (centerY: number) => {
+        cyRef.current = centerY;
+        const d = buildPath(width, height, centerY);
+        for (const path of pathRefs.current) path?.setAttribute("d", d);
+      },
+      [width, height],
+    );
+
+    useImperativeHandle(ref, () => ({ setNotchCenterY }), [setNotchCenterY]);
+
+    // a resize re-renders with the stale `d` below — re-apply the live center
+    useLayoutEffect(() => {
+      setNotchCenterY(cyRef.current);
+    }, [setNotchCenterY]);
+
+    const d = buildPath(width, height, cyRef.current);
+    const maskId = "panel-notch-inset";
+
+    return (
+      <svg
+        className="pointer-events-none absolute inset-0 h-full w-full"
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="none"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <mask id={maskId} fill="white">
+          <path
+            ref={(el) => {
+              pathRefs.current[0] = el;
+            }}
+            d={d}
+          />
+        </mask>
+
+        {/* base fill */}
+        <path
+          ref={(el) => {
+            pathRefs.current[1] = el;
+          }}
+          d={d}
+          fill={fill}
+        />
+
+        {/* thin inner highlight ring, reproducing the masked border from the source svg */}
+        <path
+          ref={(el) => {
+            pathRefs.current[2] = el;
+          }}
+          d={d}
+          fill="none"
+          stroke={borderColor}
+          strokeWidth={6}
+          mask={`url(#${maskId})`}
+        />
+      </svg>
+    );
+  },
+);

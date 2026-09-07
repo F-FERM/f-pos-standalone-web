@@ -1,14 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { categories } from "./Data";
 
 type CategorySidebarProps = {
   selectedId: number;
   onSelect: (id: number) => void;
-  /** reports the vertical center (px, relative to the sidebar container) of the selected item */
+  /**
+   * reports the vertical center (px, relative to the sidebar container) of the
+   * selected item. Called synchronously on every scroll event, so the handler
+   * must write to the DOM directly rather than set React state.
+   */
   onSelectedCenterChange?: (centerY: number) => void;
 };
+
+const THUMB_HEIGHT = 104;
+const THUMB_MIN_TOP = 16;
 
 export function CategorySidebar({
   selectedId,
@@ -17,88 +24,61 @@ export function CategorySidebar({
 }: CategorySidebarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const thumbRef = useRef<HTMLSpanElement>(null);
   const itemRefs = useRef<Record<number, HTMLDivElement | null>>({});
-  const [scrollTop, setScrollTop] = useState<number | null>(null);
 
-  const THUMB_HEIGHT = 104;
-  const THUMB_MIN_TOP = 16;
-
-  // track scroll position to drive the purple indicator bar on the left edge
+  // Keeps the notch locked onto the selected item wherever it currently sits,
+  // and drives the purple scroll indicator. The list is never auto-scrolled to
+  // the selection — the notch travels with the item instead, sliding off the
+  // panel edge once the item scrolls away.
+  //
+  // Everything here is written straight to the DOM inside the scroll event:
+  // routing it through React state costs at least a frame, which reads as the
+  // notch lagging behind the item it is supposed to be welded to.
   useEffect(() => {
+    const container = containerRef.current;
     const scrollEl = scrollRef.current;
-    if (!scrollEl) return;
+    if (!container || !scrollEl) return;
 
-    const updateThumb = () => {
-      const { scrollTop: st, scrollHeight, clientHeight } = scrollEl;
+    const update = () => {
+      const containerRect = container.getBoundingClientRect();
 
-      // nothing to scroll — hide the thumb entirely
-      if (scrollHeight <= clientHeight + 1) {
-        setScrollTop(null);
-        return;
+      const item = itemRefs.current[selectedId];
+      if (item) {
+        const itemRect = item.getBoundingClientRect();
+        onSelectedCenterChange?.(itemRect.top - containerRect.top + itemRect.height / 2);
       }
 
-      const maxTop = clientHeight - THUMB_HEIGHT - THUMB_MIN_TOP;
-      const scrollRatio = st / (scrollHeight - clientHeight);
-      const top = THUMB_MIN_TOP + scrollRatio * Math.max(maxTop, 0);
+      const thumb = thumbRef.current;
+      if (thumb) {
+        const { scrollTop, scrollHeight, clientHeight } = scrollEl;
 
-      setScrollTop(top);
+        // nothing to scroll — hide the thumb entirely
+        if (scrollHeight <= clientHeight + 1) {
+          thumb.style.opacity = "0";
+        } else {
+          const maxTop = clientHeight - THUMB_HEIGHT - THUMB_MIN_TOP;
+          const scrollRatio = scrollTop / (scrollHeight - clientHeight);
+
+          thumb.style.opacity = "1";
+          thumb.style.top = `${THUMB_MIN_TOP + scrollRatio * Math.max(maxTop, 0)}px`;
+        }
+      }
     };
 
-    updateThumb();
+    update();
 
-    scrollEl.addEventListener("scroll", updateThumb);
-    const ro = new ResizeObserver(updateThumb);
+    const ro = new ResizeObserver(update);
+    ro.observe(container);
     ro.observe(scrollEl);
 
-    return () => {
-      scrollEl.removeEventListener("scroll", updateThumb);
-      ro.disconnect();
-    };
-  }, []);
-
-  // scroll the newly selected item into view first, so the notch measurement
-  // below reflects its final on-screen position rather than a pre-scroll one
-  useEffect(() => {
-    const item = itemRefs.current[selectedId];
-    item?.scrollIntoView({ block: "center", behavior: "smooth" });
-  }, [selectedId]);
-
-  useEffect(() => {
-    const measure = () => {
-      const container = containerRef.current;
-      const item = itemRefs.current[selectedId];
-      if (!container || !item) return;
-
-      const containerRect = container.getBoundingClientRect();
-      const itemRect = item.getBoundingClientRect();
-      const rawCenterY = itemRect.top - containerRect.top + itemRect.height / 2;
-
-      // clamp so the notch curve (which needs ~35-40px of room on either side)
-      // never gets a center so close to the top/bottom edge that the bezier
-      // math would produce an invalid/self-intersecting shape
-      const margin = 40;
-      const centerY = Math.min(Math.max(rawCenterY, margin), containerRect.height - margin);
-
-      onSelectedCenterChange?.(centerY);
-    };
-
-    measure();
-
-    const ro = new ResizeObserver(measure);
-    if (containerRef.current) ro.observe(containerRef.current);
-
-    const scrollEl = scrollRef.current;
-    scrollEl?.addEventListener("scroll", measure);
-    window.addEventListener("resize", measure);
-
-    // catch the post scrollIntoView position once the smooth scroll settles
-    const settleTimer = window.setTimeout(measure, 350);
+    scrollEl.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
 
     return () => {
       ro.disconnect();
-      scrollEl?.removeEventListener("scroll", measure);
-      window.removeEventListener("resize", measure);
-      window.clearTimeout(settleTimer);
+      scrollEl.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
     };
   }, [selectedId, onSelectedCenterChange]);
 
@@ -108,19 +88,18 @@ export function CategorySidebar({
       className="relative z-20 h-full w-[56px] shrink-0 xs:w-[64px] sm:w-[72px] md:w-[78px]"
     >
       {/* purple scroll-position indicator on the left edge */}
-      {scrollTop !== null && (
-        <span
-          className="pointer-events-none absolute left-0 z-30 transition-[top] duration-150"
-          style={{
-            top: scrollTop,
-            width: 3,
-            height: 104,
-            borderRadius: 5,
-            backgroundColor: "#3B0038",
-            opacity: 1,
-          }}
-        />
-      )}
+      <span
+        ref={thumbRef}
+        className="pointer-events-none absolute left-0 z-30"
+        style={{
+          top: THUMB_MIN_TOP,
+          width: 3,
+          height: THUMB_HEIGHT,
+          borderRadius: 5,
+          backgroundColor: "#3B0038",
+          opacity: 0,
+        }}
+      />
       <div
         ref={scrollRef}
         className="

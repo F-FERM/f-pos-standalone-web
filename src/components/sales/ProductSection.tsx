@@ -1,11 +1,11 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 import { CategorySidebar } from "./CategorySidebar";
 import { Product } from "./Types";
 import { products } from "./Data";
-import { PanelBackground } from "./PanelGround";
+import { PanelBackground, PanelBackgroundHandle } from "./PanelGround";
 
 type ProductGridProps = {
   selectedProduct: Product;
@@ -94,10 +94,16 @@ function ProductGrid({ selectedProduct, onSelect }: ProductGridProps) {
 export function ProductSection() {
   const [selectedProduct, setSelectedProduct] = useState(products[0]);
   const [selectedCategory, setSelectedCategory] = useState(4);
-  const [notchCenterY, setNotchCenterY] = useState(267.5);
   const [size, setSize] = useState({ width: 613, height: 564 });
 
   const sectionRef = useRef<HTMLElement>(null);
+  const panelRef = useRef<PanelBackgroundHandle>(null);
+
+  // deliberately not state: the sidebar calls this on every scroll event and
+  // the notch has to move in that same frame, so it goes straight to the svg
+  const handleNotchCenterChange = useCallback((centerY: number) => {
+    panelRef.current?.setNotchCenterY(centerY);
+  }, []);
 
   useLayoutEffect(() => {
     const el = sectionRef.current;
@@ -117,13 +123,19 @@ export function ProductSection() {
       className="relative flex h-full w-full min-w-0 overflow-hidden rounded-[15px]"
     >
       {/* single unified background shape — draws the sidebar/grid split AND the notch */}
-      <PanelBackground width={size.width} height={size.height} notchCenterY={notchCenterY} fill="#D2D2D2" />
+      <PanelBackground
+        ref={panelRef}
+        width={size.width}
+        height={size.height}
+        defaultNotchCenterY={267.5}
+        fill="#D2D2D2"
+      />
 
       <div className="relative z-10 flex h-full w-full">
         <CategorySidebar
           selectedId={selectedCategory}
           onSelect={setSelectedCategory}
-          onSelectedCenterChange={setNotchCenterY}
+          onSelectedCenterChange={handleNotchCenterChange}
         />
         <ProductGrid selectedProduct={selectedProduct} onSelect={setSelectedProduct} />
       </div>
