@@ -1,10 +1,8 @@
 "use client";
 
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, CornerDownLeft, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
-
 import { z } from "zod";
 
 import LoginFormCombobox from "@/src/components/form/LoginFormCombobox";
@@ -13,9 +11,8 @@ import FposLogo from "@/src/components/login/LoginLogo";
 import { Button } from "@/src/components/ui/button";
 import { Form } from "@/src/components/ui/form";
 import { cn } from "@/src/lib/utils";
-import Link from "next/link";
 import { useForm } from "react-hook-form";
-
+import { useLogin } from "@/src/api/login/hooks/hook";
 
 const MAX_PIN_LENGTH = 6;
 const KEYPAD_DIGITS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
@@ -25,8 +22,6 @@ const ROLES = [
   { value: "manager", label: "Manager" },
   { value: "cashier", label: "Cashier" },
 ];
-
-
 
 const KEYPAD_BUTTON_CLASS =
   "w-[115px] h-[50px] rounded-[10px] ";
@@ -46,10 +41,12 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const [now, setNow] = useState<Date | null>(null);
+  const { mutate: userLogin, isPending } = useLogin();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { role: "admin", pin: "" },
+    mode: "onChange",
   });
 
   const pin = form.watch("pin");
@@ -77,7 +74,10 @@ export default function LoginPage() {
     form.setValue("pin", "", { shouldValidate: true });
 
   const onSubmit = (values: LoginFormValues) => {
-    console.log("Logging in", values);
+    userLogin({
+      username: values.role,
+      password: values.pin,
+    });
   };
 
   const timeLabel = now
@@ -110,29 +110,29 @@ export default function LoginPage() {
 />
 
         {/* Left: brand + live clock — top-aligned with the card at y=84 */}
-        <section className="absolute left-16 top-[140px] flex w-[480px] flex-col">
+        <section className="absolute left-4 top-[80px] flex w-[90vw] max-w-[480px] flex-col md:left-16 md:top-[140px] md:w-[480px]">
        
           <div className="flex flex-col items-start">
             <FposLogo />
           </div>
-            <span className="font-[GROCHES] text-[26px] font-normal leading-[100%] tracking-[0%] text-white ">
+            <span className="font-[GROCHES] text-[20px] md:text-[26px] font-normal leading-[100%] tracking-[0%] text-white ">
               SERVE FAST SELL SMART
             </span>
 
           {/* Gap to clock block — adjust this value to match Figma exactly */}
-          <div className="mt-[80px] flex flex-col gap-1 text-white">
+          <div className="mt-[40px] md:mt-[80px] flex flex-col gap-1 text-white">
             <div className="flex items-baseline gap-2 pl-3">
-              <span className="font-[Inter,sans-serif] text-[82px] font-semibold leading-none tracking-[0%]">
+              <span className="font-[Inter,sans-serif] text-[52px] md:text-[82px] font-semibold leading-none tracking-[0%]">
                 {timeValue}
               </span>
-              <span className="font-[Inter,sans-serif] text-[28px] font-semibold leading-none tracking-[0%] text-white">
+              <span className="font-[Inter,sans-serif] text-[20px] md:text-[28px] font-semibold leading-none tracking-[0%] text-white">
                 {meridiem}
               </span>
             </div>
-            <p className="font-[Poppins,sans-serif] text-[22px] font-normal leading-[120%] tracking-[0%]">
+            <p className="font-[Poppins,sans-serif] text-[16px] md:text-[22px] font-normal leading-[120%] tracking-[0%]">
               {dayLabel}
             </p>
-            <p className="font-[Poppins,sans-serif] text-[22px] font-normal leading-[120%] tracking-[0%]">
+            <p className="font-[Poppins,sans-serif] text-[16px] md:text-[22px] font-normal leading-[120%] tracking-[0%]">
               {dateLabel}
             </p>
           </div>
@@ -142,8 +142,9 @@ export default function LoginPage() {
         <Form {...form}>
         <form
   onSubmit={form.handleSubmit(onSubmit)}
-  className="absolute top-[84px] left-[517px] flex w-[427px] h-[539px] flex-col rounded-[20px]
-    border border-white/40 bg-white/8 pt-6 pr-[31px] pb-[45px] pl-[31px] shadow-2xl backdrop-blur-[2px]"
+  className="absolute top-[84px] left-1/2 -translate-x-1/2 flex w-[90vw] max-w-[427px] min-h-[539px] flex-col rounded-[20px]
+    border border-white/40 bg-white/8 pt-6 pr-[31px] pb-[15px] pl-[31px] shadow-2xl backdrop-blur-[2px]
+    md:left-[517px] md:translate-x-0 md:w-[427px]"
 >
             <h1 className="mb-[18px] text-center font-[Poppins,sans-serif] text-[32px] font-semibold leading-none tracking-[0%] text-white">
               Login
@@ -163,7 +164,7 @@ export default function LoginPage() {
               type="password"
               value={pin}
               readOnly
-              placeholder="Enter PIN"
+              placeholder="Enter PIN using keypad"
               className="mb-[10px]"
             />
 
@@ -173,9 +174,10 @@ export default function LoginPage() {
                   key={digit}
                   type="button"
                   onClick={() => handleDigit(digit)}
+                  disabled={isPending}
                   className={cn(
                     KEYPAD_BUTTON_CLASS,
-                    "flex items-center justify-center bg-white text-[#1a1a1a] shadow-sm transition hover:bg-white/90 active:scale-[0.98]"
+                    "flex items-center justify-center bg-white text-[#1a1a1a] shadow-sm transition hover:bg-white/90 active:scale-[0.98] disabled:opacity-60"
                   )}
                 >
                   <span className={KEYPAD_NUMBER_TEXT_CLASS}>{digit}</span>
@@ -185,9 +187,10 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => handleDigit("0")}
+                disabled={isPending}
                 className={cn(
                   KEYPAD_BUTTON_CLASS,
-                  "flex items-center justify-center bg-white text-[#1a1a1a] shadow-sm transition hover:bg-white/90 active:scale-[0.98]"
+                  "flex items-center justify-center bg-white text-[#1a1a1a] shadow-sm transition hover:bg-white/90 active:scale-[0.98] disabled:opacity-60"
                 )}
               >
                 <span className={KEYPAD_NUMBER_TEXT_CLASS}>0</span>
@@ -196,9 +199,10 @@ export default function LoginPage() {
                 type="button"
                 onClick={handleClear}
                 aria-label="Clear PIN"
+                disabled={isPending}
                 className={cn(
                   KEYPAD_BUTTON_CLASS,
-                  "flex items-center justify-center bg-[#3B82F6] text-white shadow-sm transition hover:bg-[#3B82F6]/90 active:scale-[0.98]"
+                  "flex items-center justify-center bg-[#3B82F6] text-white shadow-sm transition hover:bg-[#3B82F6]/90 active:scale-[0.98] disabled:opacity-60"
                 )}
               >
                <RefreshCw  />
@@ -207,24 +211,24 @@ export default function LoginPage() {
                 type="button"
                 onClick={handleBackspace}
                 aria-label="Backspace"
+                disabled={isPending}
                 className={cn(
                   KEYPAD_BUTTON_CLASS,
-                  "flex items-center justify-center bg-[#EF4444] text-white shadow-sm transition hover:bg-[#EF4444]/90 active:scale-[0.98]"
+                  "flex items-center justify-center bg-[#EF4444] text-white shadow-sm transition hover:bg-[#EF4444]/90 active:scale-[0.98] disabled:opacity-60"
                 )}
               >
               <CornerDownLeft />
               </button>
             </div>
-<Link href="/home">
-  <Button
-    type="submit"
-    disabled={pin.length === 0}
-  variant={"login"}
-  >
-    LOGIN
-    <ArrowRight className="h-4 w-4" />
-  </Button>
-</Link>
+
+            <Button
+              type="submit"
+              disabled={pin.length === 0 || isPending}
+              variant={"login"}
+            >
+              {isPending ? "Logging in…" : "LOGIN"}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           </form>
         </Form>
     </div>

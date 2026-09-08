@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { Category, Product } from "./Types";
 
-
+import butterscotch from "../../../public/images/icons/butterscotch.jpg"
 
 export const categories: Category[] = [
   { id: 1, name: "Combo", icon: ShoppingBasket },
@@ -44,104 +44,22 @@ export const categories: Category[] = [
 export const products: Product[] = [
   {
     id: 1,
-    name: "Butter scotch",
+    name: "Butter scotch crunch",
     price: 200,
-    image: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=500",
+    image: butterscotch,
   },
   {
     id: 2,
-    name: "Vanilla Classic",
-    price: 80,
-    image: "https://images.unsplash.com/photo-1576506295286-5cda18df43e7?w=500",
+    name: "Butter scotch crunch",
+    price: 200,
+    image: butterscotch,
   },
   {
     id: 3,
-    name: "Chocolate chip",
+    name: "Butter scotch crunch",
     price: 200,
-    image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500",
+    image: butterscotch,
   },
-  {
-    id: 4,
-    name: "Cookies and cream",
-    price: 180,
-    image: "https://images.unsplash.com/photo-1567206563064-6f60f40a2b57?w=500",
-  },
-  {
-    id: 5,
-    name: "Rocky road",
-    price: 220,
-    image: "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=500",
-  },
-  {
-    id: 6,
-    name: "Peanut butter",
-    price: 90,
-    image: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=500",
-  },
-  {
-    id: 7,
-    name: "Pistachio",
-    price: 100,
-    image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500",
-  },
-  {
-    id: 8,
-    name: "Mint chocolate",
-    price: 100,
-    image: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=500",
-  },
-  {
-    id: 9,
-    name: "Tender coconut",
-    price: 60,
-    image: "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=500",
-  },
-  {
-    id: 10,
-    name: "Cherry garcia",
-    price: 220,
-    image: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=500",
-  },
-  {
-    id: 11,
-    name: "Mango",
-    price: 60,
-    image: "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=500",
-  },
-  {
-    id: 12,
-    name: "Caramel crunch",
-    price: 200,
-    image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500",
-  },
-  {
-    id: 13,
-    name: "Cherry garcia",
-    price: 220,
-    image: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=500",
-  },
-  {
-    id: 14,
-    name: "Mango",
-    price: 60,
-    image: "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=500",
-  },
-  {
-    id: 15,
-    name: "Caramel crunch",
-    price: 200,
-    image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500",
-  },
-    {
-    id: 16,
-    name: "Mango",
-    price: 60,
-    image: "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=500",
-  },
-  {
-    id: 17,
-    name: "Caramel crunch",
-    price: 200,
-    image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500",
-  },
+ 
+  
 ];
