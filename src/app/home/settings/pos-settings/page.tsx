@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import userPlus from "../../../../public/images/icons/usergroup.png";
+import userPlus from "../../../../../public/images/icons/usergroup.png";
 
 import { Pagination } from "@/src/components/common/Pagination";
 import { SearchInput } from "@/src/components/common/SearchInput";

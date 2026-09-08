@@ -49,6 +49,18 @@ type AddUserModalProps = {
   onAdd: (user: NewUserInput) => void;
 };
 
+// shared visual style for the two field cards
+const fieldCardStyle: React.CSSProperties = {
+  flex: 1,
+  borderRadius: 10,
+  border: "1px solid #B5B5B5",
+  background: "#E9E9E9",
+  padding: 10,
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
+};
+
 export default function AddUserModal({ isOpen, onClose, onAdd }: AddUserModalProps) {
   const methods = useForm<UserFormValues>({ defaultValues: emptyForm });
 
@@ -122,23 +134,25 @@ export default function AddUserModal({ isOpen, onClose, onAdd }: AddUserModalPro
             Add User
           </h3>
 
-          <div
-            style={{
-              width: 742,
-              borderRadius: 10,
-              border: "1px solid #B5B5B5",
-              background: "#E9E9E9",
-              padding: 10,
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-            }}
-          >
-            <div className="grid grid-cols-2 gap-x-[12px] gap-y-[10px]">
+          {/* Two field cards side by side */}
+          <div style={{ display: "flex", gap: 12 }}>
+            {/* Card 1: User Name, Access Name, PIN */}
+            <div style={fieldCardStyle}>
               <label className="block">
                 <FormInput name="userName" placeholder="Enter User Name" label="User Name" />
               </label>
 
+              <label className="block">
+                <FormInput name="accessName" placeholder="Enter Access Name" label="Access Name" />
+              </label>
+
+              <label className="block">
+                <FormInput name="pin" type="password" placeholder="Enter PIN" label="PIN" />
+              </label>
+            </div>
+
+            {/* Card 2: Phone No, Select Permission, Confirm PIN */}
+            <div style={fieldCardStyle}>
               <label className="block">
                 <FormPhoneNumberInput
                   name="phone"
@@ -152,20 +166,12 @@ export default function AddUserModal({ isOpen, onClose, onAdd }: AddUserModalPro
               </label>
 
               <label className="block">
-                <FormInput name="accessName" placeholder="Enter Access Name" label="Access Name" />
-              </label>
-
-              <label className="block">
                 <FormCombobox
                   name="permission"
                   placeholder="Select or search"
                   options={PERMISSION_OPTIONS}
                   label="Select Permission"
                 />
-              </label>
-
-              <label className="block">
-                <FormInput name="pin" type="password" placeholder="Enter PIN" label="PIN" />
               </label>
 
               <label className="block">
@@ -179,7 +185,7 @@ export default function AddUserModal({ isOpen, onClose, onAdd }: AddUserModalPro
             </div>
           </div>
 
-          <div className=" flex justify-end">
+          <div className="flex justify-end">
             <Button type="button" variant="add" size="none" onClick={handleSubmit}>
               ADD
             </Button>

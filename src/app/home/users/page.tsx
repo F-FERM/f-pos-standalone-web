@@ -77,7 +77,7 @@ export default function UsersPage() {
       <POSHeader />
 
       <div
-        className="relative flex-1 bg-[#EFEFEF]"
+        className="relative flex-1 bg-[#E9E9E9]"
         style={{ minHeight: CARD_TOP + CARD_HEIGHT + 40 }}
       >
         <div
