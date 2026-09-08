@@ -1,4 +1,5 @@
 import axios from "axios";
+
 import { LocalStorage } from "../utility/localStorage";
 
 let isRefreshing = false;
@@ -35,7 +36,7 @@ axiosInstance.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  },
+  }
 );
 
 // Response interceptor
@@ -99,7 +100,7 @@ axiosInstance.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  },
+  }
 );
 
 export default axiosInstance;

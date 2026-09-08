@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/src/components/Button";
 import FormCombobox, { selectType } from "@/src/components/form/FormCombobox";
 import FormInput from "@/src/components/form/FormInput";
 import { Plus, Trash2, X } from "lucide-react";
 import { FormProvider, useForm } from "react-hook-form";
+import { Button } from "../ui/button";
 
 export type VatMode = "VAT Inclusive" | "VAT Exclusive";
 
@@ -168,13 +168,13 @@ export default function AddExpenseModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#2C192BE5] p-4 py-6 backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 py-6 backdrop-blur-[2px]">
       <FormProvider {...methods}>
         <div className="relative my-auto w-full max-w-[920px]">
           <button
             type="button"
             onClick={handleClose}
-            className="absolute z-10 right-2 top-2 flex h-[36px] w-[36px] items-center justify-center rounded-full border border-white bg-[#2B102B]/60 text-[#FF3B3B] shadow-lg sm:right-[-18px] sm:top-[-18px] sm:h-[42px] sm:w-[42px]"
+            className="absolute right-[-18px] top-[-18px] z-10 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B] shadow-lg"
             aria-label="Close expense modal"
           >
             <X size={20} strokeWidth={2.5} />
@@ -182,96 +182,79 @@ export default function AddExpenseModal({
 
           <div
             className="
-              h-auto
-              w-full
-              rounded-[20px]
-              border
-              border-gray-600
-              bg-[#2C192BE5]
-              px-4
-              py-6
-              shadow-[0_0_30px_rgba(0,0,0,0.35)]
-              sm:px-[34px]
-              sm:py-[26px]
+              h-auto w-full rounded-[20px] border border-[#A6A6A6]
+              bg-[#E9E9E9] px-4 py-6 shadow-[0_0_30px_rgba(0,0,0,0.35)]
+              sm:px-[34px] sm:py-[26px]
             "
           >
-            <h3 className="mb-[14px] text-[18px] font-semibold text-white sm:text-[26px]">
+            <h3 className="mb-[14px] text-[18px] font-semibold text-black sm:text-[26px]">
               Expense
             </h3>
 
             <div className="grid grid-cols-1 gap-[12px] sm:grid-cols-2">
-              <div className="rounded-[12px] bg-black px-[14px] py-[12px]">
-            
+              <div className="rounded-[12px] border border-[#D2D2D2] bg-[#E9E9E9] px-[14px] py-[12px]">
+                <div className="flex items-end gap-[8px]">
+                  <div className="min-w-0 flex-1">
+                    <FormInput
+                      name="supplierName"
+                      placeholder="Enter Customer Name"
+                      label="Select Supplier"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] border border-[#9C9C9C] bg-[#D2D2D2] text-black"
+                    aria-label="Add supplier"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
 
-               <div className="flex items-end gap-[8px]">
-  <div className="min-w-0 flex-1">
-    <FormInput
-      name="supplierName"
-      placeholder="Enter Customer Name"
-      label="Select Supplier"
-    />
-  </div>
-  <button
-    type="button"
-    className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] border border-[#777777] bg-[#1A0F1A] text-white"
-    aria-label="Add supplier"
-  >
-    <Plus size={16} />
-  </button>
-</div>
-
-                <div className="mt-[10px] space-y-[6px] text-[16px] font-normal text-[#A1A1A1]">
+                <div className="mt-[10px] space-y-[6px] text-[16px] font-normal text-[#6B6B6B]">
                   <p>TRN: -</p>
                   <p>Address: -</p>
                 </div>
               </div>
 
-              <div className="rounded-[12px] bg-black px-[14px] py-[12px]">
+              <div className="rounded-[12px] border border-[#D2D2D2] bg-[#E9E9E9] px-[14px] py-[12px]">
                 <div className="grid grid-cols-2 gap-x-[12px] gap-y-[10px]">
                   <label className="block">
-                  
                     <FormInput name="date" label="Date" />
                   </label>
 
-                
+                  <label className="block">
                     <FormCombobox
                       name="paymentType"
                       placeholder="Select Or Search"
                       options={PAYMENT_TYPE_OPTIONS}
-                         label="Payment Type"
+                      label="Payment Type"
                     />
-            
+                  </label>
 
-               
-                    
+                  <label className="block">
                     <FormInput name="invoiceNo" label="Invoice No." placeholder="Enter INV No." />
-                  
+                  </label>
 
-                 
+                  <label className="block">
                     <FormCombobox
                       name="vatMode"
                       placeholder="Select VAT Mode"
                       options={VAT_MODE_OPTIONS}
                       label="VAT Mode"
                     />
-             
+                  </label>
                 </div>
               </div>
             </div>
 
-            <div className="mt-[12px] rounded-[12px] bg-black px-[14px] py-[12px]">
+            <div className="mt-[12px] rounded-[12px] border border-[#D2D2D2] bg-[#E9E9E9] px-[14px] py-[12px]">
               <div
                 className="
-                  grid
-                  grid-cols-1
-                  items-end
-                  gap-[10px]
-                  sm:grid-cols-[1.4fr_1.4fr_0.7fr_1fr_42px]
-                  sm:gap-[10px]
+                  grid grid-cols-1 items-end gap-[10px]
+                  sm:grid-cols-[1.4fr_1.4fr_0.7fr_1fr_42px] sm:gap-[10px]
                 "
               >
                 <label className="block min-w-0">
-                 
                   <FormCombobox
                     name="draftAccountName"
                     placeholder="Select or search"
@@ -281,25 +264,21 @@ export default function AddExpenseModal({
                 </label>
 
                 <label className="block min-w-0">
-                  
-                  <FormInput name="draftNote" placeholder="Item note" label="Note"/>
+                  <FormInput name="draftNote" placeholder="Item note" label="Note" />
                 </label>
 
                 <label className="block min-w-0">
-                
-                   
-                  <FormInput name="draftQty" placeholder="1" label="Qty"/>
+                  <FormInput name="draftQty" placeholder="1" label="Qty" />
                 </label>
 
                 <label className="block min-w-0">
-                  
-                  <FormInput name="draftAmount" placeholder="Enter prize" label="Amount"/>
+                  <FormInput name="draftAmount" placeholder="Enter prize" label="Amount" />
                 </label>
 
                 <button
                   type="button"
                   onClick={handleAddLine}
-                  className="mb-[1px] flex h-[38px] w-[38px] items-center justify-center rounded-[8px] border border-[#777777] bg-[#1A0F1A] text-white"
+                  className="mb-[1px] flex h-[38px] w-[38px] items-center justify-center rounded-[8px] border border-[#9C9C9C] bg-[#D2D2D2] text-black"
                   aria-label="Add line item"
                 >
                   <Plus size={16} />
@@ -308,40 +287,29 @@ export default function AddExpenseModal({
             </div>
 
             <div className="mt-[12px] flex flex-col gap-2">
-              <div className="hidden grid-cols-[1.4fr_1fr_1fr_1fr_1fr_1fr_80px] rounded-[10px] bg-black px-[14px] py-[10px] text-[12px] font-medium text-white sm:grid">
+              <div className="hidden grid-cols-[1.4fr_1fr_1fr_1fr_1fr_1fr_80px] rounded-[10px] bg-[#E9E9E9] border border-[#D2D2D2] px-[14px] py-[10px] text-[12px] font-medium text-black sm:grid">
                 {MODAL_ITEM_COLUMNS.map((column) => (
                   <span key={column}>{column}</span>
                 ))}
               </div>
 
               {lineItems.length === 0 ? (
-                <div className="min-h-0 rounded-[10px] bg-[#82367F4D] px-[14px] py-[14px] text-[13px] text-white/80">
+                <div className="min-h-0 rounded-[10px] bg-[#D2D2D2] px-[14px] py-[14px] text-[13px] text-[#5D5D5D]">
                   No Data Available
                 </div>
               ) : (
                 <div className="flex flex-col gap-[6px]">
                   {lineItems.map((line) => {
-                    const { base, vat, total } = getLineTotals(
-                      line.qty,
-                      line.amount,
-                    );
+                    const { base, vat, total } = getLineTotals(line.qty, line.amount);
 
                     return (
                       <div
                         key={line.id}
                         className="
-                          grid
-                          grid-cols-[1fr_60px]
-                          items-center
-                          gap-[8px]
-                          rounded-[10px]
-                          bg-[#82367F4D]
-                          px-[14px]
-                          py-[10px]
-                          text-[13px]
-                          text-white
-                          sm:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_1fr_80px]
-                          sm:gap-0
+                          grid grid-cols-[1fr_60px] items-center gap-[8px]
+                          rounded-[10px] bg-[#B8B8B8] px-[14px] py-[10px]
+                          text-[13px] text-black
+                          sm:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_1fr_80px] sm:gap-0
                         "
                       >
                         <span className="truncate">{line.accountName}</span>
@@ -349,12 +317,8 @@ export default function AddExpenseModal({
                         <span className="hidden sm:block">
                           {line.amount ? line.amount.toFixed(2) : "-"}
                         </span>
-                        <span className="hidden sm:block">
-                          {base.toFixed(2)}
-                        </span>
-                        <span className="hidden sm:block">
-                          {vat.toFixed(2)}
-                        </span>
+                        <span className="hidden sm:block">{base.toFixed(2)}</span>
+                        <span className="hidden sm:block">{vat.toFixed(2)}</span>
                         <span className="hidden font-medium sm:block">
                           {total.toFixed(2)}
                         </span>
@@ -362,14 +326,13 @@ export default function AddExpenseModal({
                           <button
                             type="button"
                             onClick={() => handleRemoveLine(line.id)}
-                            className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] border border-[#777777] bg-[#1A0F1A] text-white"
+                            className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] border border-[#9C9C9C] bg-[#D2D2D2] text-black"
                             aria-label={`Remove ${line.accountName}`}
                           >
                             <Trash2 size={14} />
                           </button>
                         </div>
-                        {/* Qty/Amount/Total stacked for mobile where the grid collapses */}
-                        <div className="col-span-2 flex flex-wrap gap-[12px] text-[12px] text-white/70 sm:hidden">
+                        <div className="col-span-2 flex flex-wrap gap-[12px] text-[12px] text-[#5D5D5D] sm:hidden">
                           <span>Qty: {line.qty || "-"}</span>
                           <span>
                             Amount: {line.amount ? line.amount.toFixed(2) : "-"}
@@ -386,12 +349,7 @@ export default function AddExpenseModal({
             </div>
 
             <div className="mt-[16px] flex justify-end">
-              <Button
-                type="button"
-                variant="add"
-                size="none"
-                onClick={handleSubmit}
-              >
+              <Button type="button" variant="add" size="none" onClick={handleSubmit}>
                 ADD
               </Button>
             </div>

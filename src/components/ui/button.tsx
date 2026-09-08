@@ -1,8 +1,8 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
 import { StaticImageData } from "next/image";
+import { cn } from "@/src/lib/utils";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 [&_img]:pointer-events-none [&_img]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
@@ -11,6 +11,7 @@ const buttonVariants = cva(
       variant: {
         default:
           "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 ",
+        login:"mt-6 mb-2 flex h-[50px] w-[365px] items-center justify-center gap-2.5 rounded-[10px] bg-[#3EA200] py-[11px] pl-[52px] pr-[52px] cursor-pointer font-poppins text-base font-bold tracking-wide text-white hover:bg-[#22C55E]/90 disabled:opacity-60",
         destructive:
           "bg-destructive text-white py-[7px] px-[30px] rounded-lg font-medium text-base min-w-[100px] hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
@@ -36,9 +37,9 @@ const buttonVariants = cva(
         viewicon:
           "h-4 p-1 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 cursor-pointer hover:bg-gray-200",
         addcustomer:
-          "w-[200px] h-[50px] gap-[10px] rounded-[12px] border border-[#D4CCD4] bg-[#FFFFFF29] pt-[15px] pr-[17px] pb-[14px] pl-[18px] text-[18px] font-medium text-white opacity-100 hover:bg-[#FFFFFF3D]",
+          "w-[200px] h-[50px] gap-[10px] rounded-[12px] border border-[#D4CCD4] bg-[#450042] pt-[15px] pr-[17px] pb-[14px] pl-[18px] text-[18px] font-medium text-white opacity-100 hover:bg-[#5C0D5C] hover:text-white",
         add:
-          "w-[157px] h-[50px] gap-[10px] rounded-[12px] border border-secondary bg-[#000000] pt-[15px] pr-[58px] pb-[14px] pl-[58px] text-[18px] font-semibold tracking-wide text-secondary transition-colors duration-200 hover:bg-[#5C0D5C] hover:text-white",
+          "w-[157px] h-[50px] gap-[10px] rounded-[12px] border border-secondary bg-[#450042] pt-[15px] pr-[58px] pb-[14px] pl-[58px] text-[18px] font-semibold tracking-wide text-white transition-colors duration-200 hover:bg-[#5C0D5C] hover:text-white",
       },
       size: {
         default: " px-4 py-2 has-[>svg]:px-3",

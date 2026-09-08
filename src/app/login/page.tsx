@@ -1,18 +1,20 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
-import { cn } from "@/lib/utils";
+
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Delete, RotateCcw } from "lucide-react";
+import { ArrowRight, CornerDownLeft, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+
 import { z } from "zod";
 
 import LoginFormCombobox from "@/src/components/form/LoginFormCombobox";
 import LoginFormInput from "@/src/components/form/LoginFormInput";
 import FposLogo from "@/src/components/login/LoginLogo";
+import { Button } from "@/src/components/ui/button";
+import { Form } from "@/src/components/ui/form";
+import { cn } from "@/src/lib/utils";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
 
 
 const MAX_PIN_LENGTH = 6;
@@ -95,20 +97,27 @@ export default function LoginPage() {
 
   return (
     <div className="relative w-full h-full">
-        {/* Background photo */}
-        <div className="absolute inset-0 bg-[#141018] bg-cover bg-center bg-[url('/images/login/login-fpos.jpg')]" />
-        {/* Darken + tint so the UI stays legible over the photo */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/20" />
+   {/* Background photo */}
+<div className="absolute inset-0 bg-[#141018] bg-cover bg-center bg-[url('/images/login/login-fpos.jpg')]" />
+{/* Darken + blur so the UI stays legible over the photo */}
+<div
+  className="absolute inset-0"
+  style={{
+    background: "#00000066",
+    backdropFilter: "blur(2.8px)",
+    WebkitBackdropFilter: "blur(4.8px)", 
+  }}
+/>
 
         {/* Left: brand + live clock — top-aligned with the card at y=84 */}
-        <section className="absolute left-16 top-[140px] flex w-[420px] flex-col">
+        <section className="absolute left-16 top-[140px] flex w-[480px] flex-col">
        
           <div className="flex flex-col items-start">
             <FposLogo />
-            <p className="font-[GROCHES] text-[26px] font-normal leading-none tracking-[0%] text-white">
-              SERVE FAST SELL SMART
-            </p>
           </div>
+            <span className="font-[GROCHES] text-[26px] font-normal leading-[100%] tracking-[0%] text-white ">
+              SERVE FAST SELL SMART
+            </span>
 
           {/* Gap to clock block — adjust this value to match Figma exactly */}
           <div className="mt-[80px] flex flex-col gap-1 text-white">
@@ -120,10 +129,10 @@ export default function LoginPage() {
                 {meridiem}
               </span>
             </div>
-            <p className="font-[Poppins,sans-serif] text-[22px] font-normal leading-none tracking-[0%]">
+            <p className="font-[Poppins,sans-serif] text-[22px] font-normal leading-[120%] tracking-[0%]">
               {dayLabel}
             </p>
-            <p className="font-[Poppins,sans-serif] text-[22px] font-normal leading-none tracking-[0%]">
+            <p className="font-[Poppins,sans-serif] text-[22px] font-normal leading-[120%] tracking-[0%]">
               {dateLabel}
             </p>
           </div>
@@ -131,11 +140,11 @@ export default function LoginPage() {
 
         {/* Login card — 427×539, radius 20, at top:84 left:517 */}
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="absolute top-[84px] left-[517px] flex w-[427px] h-[570px] flex-col rounded-[20px]
-              border border-white/40 bg-white/8 pt-6 pr-[31px] pb-[27px] pl-[31px] shadow-2xl backdrop-blur-[2px]"
-          >
+        <form
+  onSubmit={form.handleSubmit(onSubmit)}
+  className="absolute top-[84px] left-[517px] flex w-[427px] h-[539px] flex-col rounded-[20px]
+    border border-white/40 bg-white/8 pt-6 pr-[31px] pb-[45px] pl-[31px] shadow-2xl backdrop-blur-[2px]"
+>
             <h1 className="mb-[18px] text-center font-[Poppins,sans-serif] text-[32px] font-semibold leading-none tracking-[0%] text-white">
               Login
             </h1>
@@ -144,7 +153,6 @@ export default function LoginPage() {
               name="role"
               placeholder="Select role"
               options={ROLES}
-              variant="kiosk"
               className="mb-[10px]"
             />
             
@@ -156,11 +164,10 @@ export default function LoginPage() {
               value={pin}
               readOnly
               placeholder="Enter PIN"
-              variant="kiosk"
               className="mb-[10px]"
             />
 
-            <div className="mt-[25px] grid grid-cols-3 gap-[10px]">
+            <div className="mt-[15px] grid grid-cols-3 gap-[10px]">
               {KEYPAD_DIGITS.map((digit) => (
                 <button
                   key={digit}
@@ -194,7 +201,7 @@ export default function LoginPage() {
                   "flex items-center justify-center bg-[#3B82F6] text-white shadow-sm transition hover:bg-[#3B82F6]/90 active:scale-[0.98]"
                 )}
               >
-               <RotateCcw  />
+               <RefreshCw  />
               </button>
               <button
                 type="button"
@@ -205,19 +212,18 @@ export default function LoginPage() {
                   "flex items-center justify-center bg-[#EF4444] text-white shadow-sm transition hover:bg-[#EF4444]/90 active:scale-[0.98]"
                 )}
               >
-                <Delete />
+              <CornerDownLeft />
               </button>
             </div>
 <Link href="/home">
-            <Button
-              type="submit"
-              disabled={pin.length === 0}
-              className="mt-[29px] flex h-[50px] w-full items-center justify-center gap-1.5 rounded-[10px] bg-[#3EA200] cursor-pointer font-poppins text-base font-bold tracking-wide text-white
-                hover:bg-[#22C55E]/90 disabled:opacity-60"
-            >
-              LOGIN
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+  <Button
+    type="submit"
+    disabled={pin.length === 0}
+  variant={"login"}
+  >
+    LOGIN
+    <ArrowRight className="h-4 w-4" />
+  </Button>
 </Link>
           </form>
         </Form>
