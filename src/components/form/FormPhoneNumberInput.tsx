@@ -1,22 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Input } from "../ui/input";
 
 interface CountryCode {
   code: string;
@@ -107,7 +93,7 @@ const FormPhoneNumberInput = ({
         <FormItem>
           {label && (
             <FormLabel
-              className={`flex gap-2 text-base font-medium mb-1 text-white ${labelClassName}`}
+              className={`flex gap-2 text-base font-medium mb-3 text-black ${labelClassName}`}
             >
               {label}
               {required && (
@@ -116,7 +102,11 @@ const FormPhoneNumberInput = ({
             </FormLabel>
           )}
           <FormControl>
-            <div className="flex gap-[9px]">
+            <div
+              className={`${className ? className : ""} flex h-[38px] w-full max-w-[742px] items-center rounded-[7px] border border-[#D2D2D2] bg-[#D2D2D2] pr-[20px] transition-all duration-200 focus-within:ring-1 focus-within:ring-gray-300 focus-within:ring-offset-0 ${
+                disabled ? "border-gray-300 bg-gray-300" : ""
+              }`}
+            >
               {/* Country Code Selector */}
               <Select
                 value={selectedCountryCode}
@@ -124,32 +114,31 @@ const FormPhoneNumberInput = ({
                 disabled={disabled}
               >
                 <SelectTrigger
-                  className="w-[100px] h-[38px] rounded-[7px] border border-[#A1A1A1]
-                    bg-[#1C1C1C] text-[#A1A1A1] hover:bg-[#1C1C1C]
+                  className="h-full w-fit shrink-0 gap-1 border-0 border-r border-[#B5B5B5] bg-transparent
+                    text-gray-500 hover:bg-black/5
                     font-poppins font-normal text-sm leading-none tracking-normal
-                    px-5 py-1.5
-                    focus:ring-1 focus:ring-[#A1A1A1] focus:ring-offset-0
-                    disabled:border-gray-700 disabled:bg-[#141414] disabled:text-gray-600"
+                    rounded-l-[7px] rounded-r-none
+                    pl-[14px] pr-[10px]
+                    focus:ring-0 focus:ring-offset-0
+                    disabled:text-gray-300"
                 >
                   <SelectValue>
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-normal text-[#A1A1A1]">
-                        {selectedCountryCode}
-                      </span>
-                    </div>
+                    <span className="text-base leading-none">
+                      {countryCodes.find((c) => c.code === selectedCountryCode)?.flag}
+                    </span>
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="h-72 overflow-y-scroll bg-[#1C1C1C] border border-[#A1A1A1] text-[#A1A1A1]">
+                <SelectContent className="h-72 overflow-y-scroll rounded-[10px] border border-[#D2D2D2] bg-white p-0 text-gray-500">
                   {countryCodes.map((country) => (
                     <SelectItem
                       key={country.code}
                       value={country.code}
-                      className="font-poppins text-sm text-[#A1A1A1] focus:bg-[#2A2A2A] focus:text-[#A1A1A1] data-[state=checked]:bg-[#2A2A2A]"
+                      className="cursor-pointer rounded-none font-poppins text-sm text-gray-700 focus:bg-[#F0EAF0] focus:text-black data-[state=checked]:bg-[#F0EAF0] data-[state=checked]:text-black"
                     >
-                      <div className="flex items-center gap-2 ">
+                      <div className="flex items-center gap-2">
                         <span>{country.flag}</span>
                         <span className="text-sm">{country.code}</span>
-                        <span className="text-sm text-[#A1A1A1]/70">
+                        <span className="text-sm text-[#797979]">
                           {country.country}
                         </span>
                       </div>
@@ -177,15 +166,12 @@ const FormPhoneNumberInput = ({
                 onCopy={(e) => {
                   if (onCopy) onCopy(e);
                 }}
-                className={`${
-                  className ? className : ""
-                } h-[38px] flex-1 rounded-[7px] border border-[#A1A1A1]
-                  bg-[#1C1C1C] text-[#A1A1A1] placeholder:text-[#A1A1A1]
+                className="h-full flex-1 border-0 bg-transparent text-gray-500 placeholder:text-[#797979]
                   font-poppins font-normal text-sm leading-none tracking-normal
-                  px-5 py-1.5
-                  transition-all duration-200
-                  focus-visible:ring-1 focus-visible:ring-[#A1A1A1] focus-visible:ring-offset-0
-                  disabled:border-gray-700 disabled:bg-[#141414] disabled:text-gray-600`}
+                  pl-[12px] pr-0
+                  shadow-none
+                  focus-visible:ring-0 focus-visible:ring-offset-0
+                  disabled:text-gray-300"
                 disabled={disabled}
                 value={value ?? field.value ?? ""}
                 maxLength={15} // Maximum phone number length

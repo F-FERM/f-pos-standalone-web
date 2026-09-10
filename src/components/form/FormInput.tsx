@@ -1,16 +1,10 @@
 "use client";
 import { ReactNode, useState } from "react";
 
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+
 import { Eye, EyeOff } from "lucide-react";
+import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
+import { Input } from "../ui/input";
 
 interface FormInputProps {
   name: string;
@@ -22,7 +16,7 @@ interface FormInputProps {
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   className?: string;
-  type: string;
+  type?: string;
   value?: string | number;
   Icon?: ReactNode;
   labelClassName?: string;
@@ -61,8 +55,8 @@ const FormInput = ({
     setShowPassword(!showPassword);
   };
 
-  // Determine the actual input type
-  const inputType = type === "password" && showPassword ? "text" : type;
+  // Determine the actual input type (default to text)
+  const inputType = type === "password" && showPassword ? "text" : type || "text";
 
   return (
     <FormField
@@ -71,7 +65,7 @@ const FormInput = ({
         <FormItem>
           {label && (
             <FormLabel
-              className={`flex gap-2 text-base font-medium mb-1 ${labelClassName}`}
+              className={`flex gap-2 text-base font-medium mb-3 text-black ${labelClassName}`}
             >
               {label}
               {required && (
@@ -113,15 +107,14 @@ const FormInput = ({
                 onCopy={(e) => {
                   if (onCopy) onCopy(e);
                 }}
-                className={`${
-                  className ? className : ""
-                } w-[304px] h-[38px] rounded-[7px] border border-[#A1A1A1]
-    bg-[#1C1C1C] text-[#A1A1A1] placeholder:text-[#A1A1A1]
+                className={`${className ? className : ""} w-full max-w-[742px] h-[38px] rounded-[7px] border border-[#D2D2D2]
+    bg-[#D2D2D2] text-gray-500 placeholder:text-[#797979]
     font-poppins font-normal text-sm leading-none tracking-normal
-    px-5 py-1.5
+    gap-[9px] pt-[6px] pr-[20px] pb-[6px] pl-[20px]
     flex items-center transition-all duration-200
-    focus-visible:ring-1 focus-visible:ring-[#A1A1A1] focus-visible:ring-offset-0
-    disabled:border-gray-700 disabled:bg-[#141414] disabled:text-gray-600`}
+    opacity-100
+    focus-visible:ring-1 focus-visible:ring-gray-300 focus-visible:ring-offset-0
+    disabled:border-gray-300 disabled:bg-gray-300 disabled:text-gray-300`}
                 disabled={disabled}
                 value={value ?? field.value ?? ""}
               />
@@ -131,13 +124,13 @@ const FormInput = ({
                   onClick={togglePasswordVisibility}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-[#A1A1A1]" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-[#A1A1A1]" />
-                  )}
+                      <EyeOff className="h-5 w-5 text-[#E6D6E8]" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-[#E6D6E8]" />
+                    )}
                 </div>
               ) : Icon ? (
-                <div className="pointer-events-none absolute inset-y-0 end-0 flex items-center justify-center pe-3 text-[#A1A1A1] peer-disabled:opacity-50">
+                <div className="pointer-events-none absolute inset-y-0 end-0 flex items-center justify-center pe-3 text-[#E6D6E8] peer-disabled:opacity-50">
                   {Icon}
                 </div>
               ) : null}

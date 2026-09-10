@@ -1,4 +1,5 @@
 import axios from "axios";
+
 import { LocalStorage } from "../utility/localStorage";
 
 let isRefreshing = false;
@@ -27,7 +28,7 @@ const axiosInstance = axios.create({
 // Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
-    const accessToken = LocalStorage.getItem("accessToken");
+    const accessToken = LocalStorage.getItem("access_token");
     if (accessToken && config.headers) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
@@ -35,7 +36,7 @@ axiosInstance.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  },
+  }
 );
 
 // Response interceptor
@@ -79,7 +80,7 @@ axiosInstance.interceptors.response.use(
         const { accessToken, refreshToken: newRefreshToken } =
           response.data.tokens;
 
-        LocalStorage.setItem("accessToken", accessToken);
+        LocalStorage.setItem("access_token", accessToken);
         LocalStorage.setItem("refreshToken", newRefreshToken);
 
         axiosInstance.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
@@ -99,7 +100,7 @@ axiosInstance.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  },
+  }
 );
 
 export default axiosInstance;

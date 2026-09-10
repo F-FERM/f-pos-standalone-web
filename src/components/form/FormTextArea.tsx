@@ -1,7 +1,8 @@
+"use client";
 import React from "react";
 import { useFormContext, Controller } from "react-hook-form";
-import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
+import { Textarea } from "../ui/textarea";
+import { cn } from "@/src/lib/utils";
 
 interface FormTextAreaProps {
   name: string;
@@ -33,12 +34,12 @@ const FormTextArea = ({
   return (
     <div className="w-full">
       {label && (
-        <label className="text-base font-medium block mb-2 text-white">
+        <label className="flex gap-2 text-base font-medium mb-3 text-black">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
-      <div className="relative w-full">
+      <div className="relative w-full max-w-[742px]">
         <Controller
           name={name}
           control={control}
@@ -48,14 +49,15 @@ const FormTextArea = ({
               readOnly={readOnly}
               placeholder={placeholder}
               className={cn(
-                "min-h-[100px] resize-none w-full box-border rounded-[7px] border border-[#A1A1A1]",
-                "bg-[#1C1C1C] text-[#A1A1A1] placeholder:text-[#A1A1A1]",
+                "min-h-[100px] resize-none w-full box-border rounded-[7px] !border !border-[#D2D2D2]",
+                "bg-[#D2D2D2] text-gray-500 placeholder:text-[#797979]",
                 "font-poppins font-normal text-sm leading-[100%] tracking-normal",
-                "px-5 py-1.5 pb-6",
+                "px-[20px] py-3 pb-8",
+                "opacity-100",
                 "transition-all duration-200",
-                "focus-visible:ring-1 focus-visible:ring-[#A1A1A1] focus-visible:ring-offset-0",
-                "disabled:border-gray-700 disabled:bg-[#141414] disabled:text-gray-600",
-                className,
+                "focus-visible:ring-1 focus-visible:ring-gray-300 focus-visible:ring-offset-0",
+                "disabled:border-gray-300 disabled:bg-gray-300 disabled:text-gray-300",
+                className
               )}
               value={fieldValue}
               onChange={(e) => {
@@ -71,7 +73,7 @@ const FormTextArea = ({
             />
           )}
         />
-        <div className="absolute bottom-3 right-3 text-xs text-[#A1A1A1] bg-[#1C1C1C] px-1 font-poppins">
+        <div className="absolute bottom-3 right-3 text-xs text-[#797979] bg-[#D2D2D2] px-2 py-0.5 rounded-[6px] border border-[#C4C4C4] font-poppins">
           {currentLength} / {maxLength}
         </div>
       </div>

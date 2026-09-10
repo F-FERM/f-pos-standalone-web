@@ -1,25 +1,3 @@
-import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Check, ChevronsUpDown } from "lucide-react";
 import {
   Dispatch,
@@ -28,11 +6,26 @@ import {
   useRef,
   useState,
 } from "react";
+import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Button } from "../ui/button";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command";
+import { cn } from "@/src/lib/utils";
 
 export interface selectType {
   label: string;
   value: string;
 }
+
+// classes borrowed from FormMultiSelectInput's light theme, for dropdown-item consistency
+const LIGHT_SELECTED_ITEM_CLASSES = `w-full rounded-[8px] bg-[#D2D2D2] border border-[#9C9C9C]
+  px-3 py-2 font-poppins font-medium text-[15px] leading-normal tracking-normal text-black`;
+
+const LIGHT_DEFAULT_ITEM_CLASSES = `!bg-transparent !text-black
+  data-[selected=true]:!bg-transparent data-[selected=true]:!text-black
+  hover:!bg-[#F0F0F0]
+  font-poppins font-medium text-[15px] leading-normal tracking-normal
+  rounded-[8px] px-3 py-2`;
 
 interface FormComboboxProps {
   name: string;
@@ -125,63 +118,66 @@ const FormCombobox = ({
         const comboboxComponent = (
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger
+              render={<FormControl />}
               onClick={() => {
                 if (!open) {
                   setSearch?.("");
                 }
               }}
             >
-              <FormControl>
-                <Button
-                  ref={buttonRef}
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={open}
+              <Button
+                ref={buttonRef}
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
                   disabled={disabled}
-                  className={`h-[38px] flex justify-between items-center gap-[9px] ${
-                    className ? className : ""
-                  } w-full rounded-[7px] border border-[#A1A1A1]
-                    bg-[#1C1C1C] text-[#A1A1A1] hover:bg-[#1C1C1C] hover:text-[#A1A1A1]
-                    font-poppins font-normal text-sm leading-none tracking-normal
-                    px-5 py-1.5
+                  className={cn(
+                    `flex h-[38px] w-full max-w-[742px] items-center justify-between
+                    rounded-[7px] border border-[#D2D2D2]
+                    bg-[#D2D2D2] text-gray-500 placeholder:text-[#797979]
+                    font-poppins font-normal text-sm leading-normal tracking-normal
+                    gap-[9px] pt-[6px] pr-[20px] pb-[6px] pl-[20px]
                     transition-all duration-200
-                    focus-visible:ring-1 focus-visible:ring-[#A1A1A1] focus-visible:ring-offset-0
-                    disabled:border-gray-700 disabled:bg-[#141414] disabled:text-gray-600`}
+                    opacity-100 hover:bg-[#D2D2D2]
+                    focus-visible:ring-1 focus-visible:ring-gray-300 focus-visible:ring-offset-0
+                    disabled:border-gray-300 disabled:bg-gray-300 disabled:text-gray-300`,
+                    className,
+                  )}
                 >
                   <span
-                    className={`truncate flex-1 text-left ${
-                      displayValue ? "text-[#A1A1A1]" : "text-[#A1A1A1]"
+                    className={`truncate flex-1 text-left leading-normal ${
+                      displayValue ? "text-gray-500" : "text-[#797979]"
                     }`}
                   >
                     {!options?.length
                       ? "No options Available"
                       : displayValue || placeholder}
                   </span>
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-[#A1A1A1] opacity-70" />
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-gray-500 opacity-90" />
                 </Button>
-              </FormControl>
             </PopoverTrigger>
             {!readonly && (
               <PopoverContent
-                className="p-0 bg-[#1C1C1C] border border-[#A1A1A1] text-[#A1A1A1]"
+                className="p-2 overflow-hidden rounded-[10px] border border-[#D2D2D2] bg-[#D2D2D2] text-black"
                 style={{ width: `${width}px` }}
                 onWheel={(e) => {
                   e.stopPropagation();
                 }}
               >
-                <Command className="bg-[#1C1C1C] text-[#A1A1A1]">
+                
+                <Command className=" bg-[#D2D2D2] text-black">
                   <CommandInput
                     placeholder="Search..."
                     onValueChange={(search) => setSearch?.(search)}
-                    className="font-poppins text-sm text-[#A1A1A1] placeholder:text-[#A1A1A1]"
+                    className="font-poppins font-normal text-[16px] leading-normal text-gray-500 placeholder:text-[#797979] bg-transparent px-3 py-2"
                   />
                   <CommandList
-                    className="max-h-[300px] overflow-y-auto"
+                    className="max-h-[300px] overflow-y-auto bg-[#D2D2D2] flex flex-col gap-[6px]"
                     onWheel={(e) => {
                       e.stopPropagation();
                     }}
                   >
-                    <CommandEmpty>
+                    <CommandEmpty className="px-2 py-3 text-sm text-center text-[#797979]">
                       {!options?.length
                         ? "No options available"
                         : "No results found."}
@@ -191,39 +187,41 @@ const FormCombobox = ({
                         .filter(
                           (option) => option && option.value && option.label,
                         )
-                        .map((option, index) => (
-                          <CommandItem
-                            key={`${option.value}-${index}`}
-                            value={`${option.value}-${index}`}
-                            keywords={[option.label]}
-                            onSelect={() => {
-                              // Store the selected option before updating the value
-                              setSelectedOption(option);
-                              field.onChange(option.value);
-                              onChange?.(option.value);
-                              setOpen(false);
-                              setSearch?.("");
-                            }}
-                            disabled={disabled || readonly}
-                            className={`cursor-pointer select-none flex items-center gap-2 p-2 font-poppins text-sm
-                              text-[#A1A1A1] hover:bg-[#2A2A2A] aria-selected:bg-[#2A2A2A] aria-selected:text-[#A1A1A1] ${
-                                option.value === currentValue
-                                  ? "bg-primary text-white"
-                                  : ""
-                              }`}
-                          >
-                            <Check
-                              className="mr-2 h-4 w-4"
-                              style={{
-                                visibility:
-                                  currentValue === option.value
-                                    ? "visible"
-                                    : "hidden",
+                        .map((option, index) => {
+                          const isSelected = option.value === currentValue;
+                          return (
+                            <CommandItem
+                              key={`${option.value}-${index}`}
+                              value={`${option.value}-${index}`}
+                              keywords={[option.label]}
+                              onSelect={() => {
+                                // Store the selected option before updating the value
+                                setSelectedOption(option);
+                                field.onChange(option.value);
+                                onChange?.(option.value);
+                                setOpen(false);
+                                setSearch?.("");
                               }}
-                            />
-                            {option.label}
-                          </CommandItem>
-                        ))}
+                              disabled={disabled || readonly}
+                              className={cn(
+                                "flex cursor-pointer select-none items-center gap-2 transition-colors",
+                                isSelected
+                                  ? LIGHT_SELECTED_ITEM_CLASSES
+                                  : LIGHT_DEFAULT_ITEM_CLASSES,
+                              )}
+                            >
+                              <Check
+                                className="h-4 w-4 shrink-0"
+                                style={{
+                                  visibility: isSelected ? "visible" : "hidden",
+                                }}
+                              />
+                              <span className="flex-1 break-words whitespace-normal">
+                                {option.label}
+                              </span>
+                            </CommandItem>
+                          );
+                        })}
                     </CommandGroup>
                   </CommandList>
                 </Command>
@@ -240,7 +238,7 @@ const FormCombobox = ({
             >
               {label && (
                 <FormLabel
-                  className={`font-medium text-sm text-white flex items-center justify-end pr-2 flex-shrink-0 ${labelClassName}`}
+                  className={`font-medium text-base mb-3  text-black flex items-center justify-end pr-2 flex-shrink-0 ${labelClassName}`}
                 >
                   {label}
                   {required && (
@@ -265,7 +263,7 @@ const FormCombobox = ({
         return (
           <FormItem>
             <FormLabel
-              className={`flex gap-2 mb-1 text-base font-medium text-white ${labelClassName}`}
+              className={`flex gap-2 text-base font-medium mb-3 text-black ${labelClassName}`}
             >
               {label}
               {required && (

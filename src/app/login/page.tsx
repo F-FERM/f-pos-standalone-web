@@ -1,0 +1,236 @@
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRight, CornerDownLeft, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { z } from "zod";
+
+import LoginFormCombobox from "@/src/components/form/LoginFormCombobox";
+import LoginFormInput from "@/src/components/form/LoginFormInput";
+import FposLogo from "@/src/components/login/LoginLogo";
+import { Button } from "@/src/components/ui/button";
+import { Form } from "@/src/components/ui/form";
+import { cn } from "@/src/lib/utils";
+import { useForm } from "react-hook-form";
+import { useLogin } from "@/src/api/login/hooks/hook";
+
+const MAX_PIN_LENGTH = 6;
+const KEYPAD_DIGITS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
+
+const ROLES = [
+  { value: "admin", label: "Admin" },
+  { value: "manager", label: "Manager" },
+  { value: "cashier", label: "Cashier" },
+];
+
+const KEYPAD_BUTTON_CLASS =
+  "w-[115px] h-[50px] rounded-[10px] ";
+
+const KEYPAD_NUMBER_TEXT_CLASS =
+  " font-semibold text-[22px] leading-none tracking-[0%]";
+
+const loginSchema = z.object({
+  role: z.string().min(1, "Role is required"),
+  pin: z
+    .string()
+    .min(4, "PIN must be at least 4 digits")
+    .max(MAX_PIN_LENGTH, `PIN can't exceed ${MAX_PIN_LENGTH} digits`),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+
+export default function LoginPage() {
+  const [now, setNow] = useState<Date | null>(null);
+  const { mutate: userLogin, isPending } = useLogin();
+
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { role: "admin", pin: "" },
+    mode: "onChange",
+  });
+
+  const pin = form.watch("pin");
+
+  // Live clock — mounted client-side only to avoid hydration mismatches.
+  useEffect(() => {
+    setNow(new Date());
+    const timer = setInterval(() => setNow(new Date()), 1000 * 30);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleDigit = (digit: string) => {
+    const current = form.getValues("pin");
+    if (current.length >= MAX_PIN_LENGTH) return;
+    form.setValue("pin", current + digit, { shouldValidate: true });
+  };
+
+  const handleBackspace = () => {
+    form.setValue("pin", form.getValues("pin").slice(0, -1), {
+      shouldValidate: true,
+    });
+  };
+
+  const handleClear = () =>
+    form.setValue("pin", "", { shouldValidate: true });
+
+  const onSubmit = (values: LoginFormValues) => {
+    userLogin({
+      username: values.role,
+      password: values.pin,
+    });
+  };
+
+  const timeLabel = now
+    ? now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+    : "--:--";
+  const [timeValue, meridiem] = timeLabel.split(" ");
+  const dayLabel = now
+    ? now.toLocaleDateString("en-US", { weekday: "long" })
+    : "";
+  const dateLabel = now
+    ? now.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "";
+
+  return (
+    <div className="relative w-full h-full">
+   {/* Background photo */}
+<div className="absolute inset-0 bg-[#141018] bg-cover bg-center bg-[url('/images/login/login-fpos.jpg')]" />
+{/* Darken + blur so the UI stays legible over the photo */}
+<div
+  className="absolute inset-0"
+  style={{
+    background: "#00000066",
+    backdropFilter: "blur(2.8px)",
+    WebkitBackdropFilter: "blur(4.8px)", 
+  }}
+/>
+
+        {/* Left: brand + live clock — top-aligned with the card at y=84 */}
+        <section className="absolute left-4 top-[80px] flex w-[90vw] max-w-[480px] flex-col md:left-16 md:top-[140px] md:w-[480px]">
+       
+          <div className="flex flex-col items-start">
+            <FposLogo />
+          </div>
+            <span className="font-[GROCHES] text-[20px] md:text-[26px] font-normal leading-[100%] tracking-[0%] text-white ">
+              SERVE FAST SELL SMART
+            </span>
+
+          {/* Gap to clock block — adjust this value to match Figma exactly */}
+          <div className="mt-[40px] md:mt-[80px] flex flex-col gap-1 text-white">
+            <div className="flex items-baseline gap-2 pl-3">
+              <span className="font-[Inter,sans-serif] text-[52px] md:text-[82px] font-semibold leading-none tracking-[0%]">
+                {timeValue}
+              </span>
+              <span className="font-[Inter,sans-serif] text-[20px] md:text-[28px] font-semibold leading-none tracking-[0%] text-white">
+                {meridiem}
+              </span>
+            </div>
+            <p className="font-[Poppins,sans-serif] text-[16px] md:text-[22px] font-normal leading-[120%] tracking-[0%]">
+              {dayLabel}
+            </p>
+            <p className="font-[Poppins,sans-serif] text-[16px] md:text-[22px] font-normal leading-[120%] tracking-[0%]">
+              {dateLabel}
+            </p>
+          </div>
+        </section>
+
+        {/* Login card — 427×539, radius 20, at top:84 left:517 */}
+        <Form {...form}>
+        <form
+  onSubmit={form.handleSubmit(onSubmit)}
+  className="absolute top-[84px] left-1/2 -translate-x-1/2 flex w-[90vw] max-w-[427px] min-h-[539px] flex-col rounded-[20px]
+    border border-white/40 bg-white/8 pt-6 pr-[31px] pb-[15px] pl-[31px] shadow-2xl backdrop-blur-[2px]
+    md:left-[517px] md:translate-x-0 md:w-[427px]"
+>
+            <h1 className="mb-[18px] text-center font-[Poppins,sans-serif] text-[32px] font-semibold leading-none tracking-[0%] text-white">
+              Login
+            </h1>
+
+            <LoginFormCombobox
+              name="role"
+              placeholder="Select role"
+              options={ROLES}
+              className="mb-[10px]"
+            />
+            
+
+           
+            <LoginFormInput
+              name="pin"
+              type="password"
+              value={pin}
+              // readOnly
+              placeholder="Enter PIN using keypad"
+              className="mb-[10px]"
+            />
+
+            <div className="mt-[15px] grid grid-cols-3 gap-[10px]">
+              {KEYPAD_DIGITS.map((digit) => (
+                <button
+                  key={digit}
+                  type="button"
+                  onClick={() => handleDigit(digit)}
+                  disabled={isPending}
+                  className={cn(
+                    KEYPAD_BUTTON_CLASS,
+                    "flex items-center justify-center bg-white text-[#1a1a1a] shadow-sm transition hover:bg-white/90 active:scale-[0.98] disabled:opacity-60"
+                  )}
+                >
+                  <span className={KEYPAD_NUMBER_TEXT_CLASS}>{digit}</span>
+                </button>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => handleDigit("0")}
+                disabled={isPending}
+                className={cn(
+                  KEYPAD_BUTTON_CLASS,
+                  "flex items-center justify-center bg-white text-[#1a1a1a] shadow-sm transition hover:bg-white/90 active:scale-[0.98] disabled:opacity-60"
+                )}
+              >
+                <span className={KEYPAD_NUMBER_TEXT_CLASS}>0</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleClear}
+                aria-label="Clear PIN"
+                disabled={isPending}
+                className={cn(
+                  KEYPAD_BUTTON_CLASS,
+                  "flex items-center justify-center bg-[#3B82F6] text-white shadow-sm transition hover:bg-[#3B82F6]/90 active:scale-[0.98] disabled:opacity-60"
+                )}
+              >
+               <RefreshCw  />
+              </button>
+              <button
+                type="button"
+                onClick={handleBackspace}
+                aria-label="Backspace"
+                disabled={isPending}
+                className={cn(
+                  KEYPAD_BUTTON_CLASS,
+                  "flex items-center justify-center bg-[#EF4444] text-white shadow-sm transition hover:bg-[#EF4444]/90 active:scale-[0.98] disabled:opacity-60"
+                )}
+              >
+              <CornerDownLeft />
+              </button>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={pin.length === 0 || isPending}
+              variant={"login"}
+            >
+              {isPending ? "Logging in…" : "LOGIN"}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </form>
+        </Form>
+    </div>
+  );
+}
