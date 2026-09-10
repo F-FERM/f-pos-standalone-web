@@ -163,7 +163,7 @@ export default function LoginPage() {
               name="pin"
               type="password"
               value={pin}
-              readOnly
+              // readOnly
               placeholder="Enter PIN using keypad"
               className="mb-[10px]"
             />
