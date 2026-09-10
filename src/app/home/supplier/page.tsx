@@ -83,11 +83,10 @@ export default function SupplierPage() {
 
   const CARD_TOP = 0;
   const CARD_LEFT = 20;
-  const CARD_WIDTH = 984;
   const CARD_HEIGHT = 661;
 
   return (
-    <main className="flex h-full flex-col overflow-y-auto bg-black text-black">
+    <main className="flex h-full flex-col overflow-x-hidden overflow-y-auto bg-black text-black">
       <POSHeader />
 
       <div
@@ -99,7 +98,7 @@ export default function SupplierPage() {
           style={{
             top: CARD_TOP,
             left: CARD_LEFT,
-            width: CARD_WIDTH,
+            right: CARD_LEFT,
             height: CARD_HEIGHT,
             borderRadius: 15,
             background: "#D2D2D2",
@@ -108,7 +107,7 @@ export default function SupplierPage() {
 
         <div
           className="absolute flex items-center justify-between"
-          style={{ top: CARD_TOP + 20, left: 30, width: 964 }}
+          style={{ top: CARD_TOP + 20, left: 30, right: 30 }}
         >
           <span
             style={{
@@ -136,7 +135,7 @@ export default function SupplierPage() {
 
         <div
           className="absolute"
-          style={{ top: CARD_TOP + 88, left: 30, width: 964, display: "flex" }}
+          style={{ top: CARD_TOP + 88, left: 30, right: 30, display: "flex" }}
         >
           <SearchInput
             variant="panel"
@@ -151,7 +150,7 @@ export default function SupplierPage() {
           style={{
             top: CARD_TOP + 139,
             left: 30,
-            width: 964,
+            right: 30,
             height: 40,
             justifyContent: "space-between",
             borderRadius: 10,
@@ -179,11 +178,11 @@ export default function SupplierPage() {
         </div>
 
         <div
-          className="absolute flex flex-col overflow-y-auto"
+          className="absolute flex flex-col overflow-x-hidden overflow-y-auto"
           style={{
             top: CARD_TOP + 184,
             left: 30,
-            width: 964,
+            right: 30,
             height: 255,
             borderRadius: 10,
             background: "#B8B8B8",
@@ -231,7 +230,7 @@ export default function SupplierPage() {
 
         <div
           className="absolute"
-          style={{ top: CARD_TOP + 184 + 255 + 14, left: 30, width: 964 }}
+          style={{ top: CARD_TOP + 184 + 255 + 14, left: 30, right: 30 }}
         >
           <Pagination
             currentPage={currentPage}
@@ -243,7 +242,11 @@ export default function SupplierPage() {
 
         <div
           className="absolute flex items-center justify-center"
-          style={{ top: CARD_TOP + CARD_HEIGHT + 14, left: CARD_LEFT, width: CARD_WIDTH }}
+          style={{
+            top: CARD_TOP + CARD_HEIGHT + 14,
+            left: CARD_LEFT,
+            right: CARD_LEFT,
+          }}
         >
           <span
             style={{

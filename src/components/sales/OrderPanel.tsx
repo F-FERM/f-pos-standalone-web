@@ -1,13 +1,31 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Minus, Plus, X, UsersRound, Table2, ClipboardList } from "lucide-react";
-import { products } from "./Data";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Minus,
+  Plus,
+  X,
+  UsersRound,
+  Table2,
+  ClipboardList,
+} from "lucide-react";
+import {
+  listCustomerTypes,
+  type CustomerTypeValue,
+} from "@/src/api/customer-type";
+import { listFoods, type FoodRecord } from "@/src/api/food";
+import { createOrder, type OrderStatus } from "@/src/api/order";
 import { TableModal } from "./TableModal";
 import { OrderModal } from "./OrderModal";
 import { CustomerModal } from "./CustomerModal";
 
-const orderTypes = ["Dine", "Take Away", "Online", "Home delivery"];
+const CUSTOMER_TYPE_LABELS: Record<CustomerTypeValue, string> = {
+  DINE_IN: "Dine",
+  TAKE_AWAY: "Take Away",
+  ONLINE: "Online",
+  HOME_DELIVERY: "Home delivery",
+};
 const footerActions = [
   { icon: Table2, label: "Table" },
   { icon: ClipboardList, label: "Order" },
@@ -15,12 +33,58 @@ const footerActions = [
 ];
 
 export function OrderPanel() {
-  const [selectedType, setSelectedType] = useState("Online");
+  const [selectedType, setSelectedType] = useState<CustomerTypeValue>("ONLINE");
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const customerTypesQuery = useQuery({
+    queryKey: ["customer-types"],
+    queryFn: listCustomerTypes,
+  });
+  const foodsQuery = useQuery({
+    queryKey: ["foods"],
+    queryFn: listFoods,
+  });
 
-  const cartItems = Array(6).fill(products[0]); // placeholder — wire to real cart state
+  const customerTypes = customerTypesQuery.data?.data || [];
+  const foods = foodsQuery.data?.data || [];
+  const selectedCustomerType = customerTypes.find(
+    (customerType) => customerType.type === selectedType,
+  );
+  const cartItems = foods;
+  const subtotal = cartItems.reduce((sum, food) => sum + food.basePrice, 0);
+  const vat = 0;
+  const total = subtotal + vat;
+
+  const handleOrderAction = async (status: OrderStatus) => {
+    if (!selectedCustomerType || cartItems.length === 0) return;
+
+    try {
+      await createOrder({
+        customerTypeId: selectedCustomerType._id,
+        vat,
+        items: cartItems.map((food: FoodRecord) => ({
+          foodId: food._id,
+          portion: null,
+          price: food.basePrice,
+          originalPrice: food.basePrice,
+          qty: 1,
+          total: food.basePrice,
+          foodName: food.name,
+          priceDetails: {
+            customerTypeId: selectedCustomerType._id,
+            price: food.basePrice,
+          },
+        })),
+        subTotal: subtotal,
+        total,
+        discount: 0,
+        status,
+      });
+    } catch (error) {
+      console.error("Unable to create order", error);
+    }
+  };
 
   // --- cart scroll indicator (same pattern as CategorySidebar) ---
   const cartScrollRef = useRef<HTMLDivElement>(null);
@@ -67,15 +131,22 @@ export function OrderPanel() {
         {/* Order-type toggle bar — 341x20 */}
         <div
           className="flex items-center"
-          style={{ width: 341, height: 20, borderRadius: 10, background: "#D2D2D2", justifyContent: "space-between" }}
+          style={{
+            width: 341,
+            height: 20,
+            borderRadius: 10,
+            background: "#D2D2D2",
+            justifyContent: "space-between",
+          }}
         >
-          {orderTypes.map((type) => {
-            const active = type === selectedType;
+          {customerTypes.map((customerType) => {
+            const active = customerType.type === selectedType;
+            const label = CUSTOMER_TYPE_LABELS[customerType.type];
             return (
               <button
-                key={type}
+                key={customerType._id}
                 type="button"
-                onClick={() => setSelectedType(type)}
+                onClick={() => setSelectedType(customerType.type)}
                 className="flex items-center justify-center"
                 style={{
                   width: 77,
@@ -97,7 +168,7 @@ export function OrderPanel() {
                     color: active ? "#FFFFFF" : "#3B0038",
                   }}
                 >
-                  {type}
+                  {label}
                 </span>
               </button>
             );
@@ -131,13 +202,34 @@ export function OrderPanel() {
               borderTopRightRadius: 15,
             }}
           >
-            <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 10, color: "#3B0038" }}>
+            <span
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontWeight: 400,
+                fontSize: 10,
+                color: "#3B0038",
+              }}
+            >
               Item
             </span>
-            <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 10, color: "#3B0038" }}>
+            <span
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontWeight: 400,
+                fontSize: 10,
+                color: "#3B0038",
+              }}
+            >
               Quantity
             </span>
-            <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 10, color: "#3B0038" }}>
+            <span
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontWeight: 400,
+                fontSize: 10,
+                color: "#3B0038",
+              }}
+            >
               Amount
             </span>
           </div>
@@ -166,9 +258,9 @@ export function OrderPanel() {
               "
               style={{ padding: "10px 6px 6px 10px", gap: 8 }}
             >
-              {cartItems.map((product, i) => (
+              {cartItems.map((product) => (
                 <div
-                  key={i}
+                  key={product._id}
                   className="flex shrink-0 items-center"
                   style={{
                     width: 322,
@@ -182,16 +274,24 @@ export function OrderPanel() {
                   }}
                 >
                   <img
-                    src={product.image}
-                    alt=""
+                    src={product.foodImage || "/images/icons/butterscotch.jpg"}
+                    alt={product.name}
                     className="shrink-0 object-cover"
                     style={{ width: 97, height: 41, borderRadius: 5 }}
                   />
 
-                  <div className="flex min-w-0 flex-1 flex-col justify-center" style={{ marginLeft: 8, gap: 2 }}>
+                  <div
+                    className="flex min-w-0 flex-1 flex-col justify-center"
+                    style={{ marginLeft: 8, gap: 2 }}
+                  >
                     <p
                       className="truncate"
-                      style={{ fontFamily: "Poppins, sans-serif", fontWeight: 500, fontSize: 12, color: "#000000" }}
+                      style={{
+                        fontFamily: "Poppins, sans-serif",
+                        fontWeight: 500,
+                        fontSize: 12,
+                        color: "#000000",
+                      }}
                     >
                       {product.name}
                     </p>
@@ -200,11 +300,17 @@ export function OrderPanel() {
                       <button
                         type="button"
                         className="flex h-[15px] w-[15px] items-center justify-center rounded-full"
-                        style={{ background: "white", border: "1px solid #C4C4C4" }}
+                        style={{
+                          background: "white",
+                          border: "1px solid #C4C4C4",
+                        }}
                       >
                         <Minus size={9} className="text-black" />
                       </button>
-                      <span className="text-[13px] font-medium" style={{ color: "#000000" }}>
+                      <span
+                        className="text-[13px] font-medium"
+                        style={{ color: "#000000" }}
+                      >
                         1
                       </span>
                       <button
@@ -219,15 +325,26 @@ export function OrderPanel() {
 
                   <span
                     className="shrink-0 pl-2"
-                    style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: 16, color: "#000000" }}
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      fontWeight: 600,
+                      fontSize: 16,
+                      color: "#000000",
+                    }}
                   >
-                    ₹{product.price}
+                    ₹{product.basePrice}
                   </span>
 
                   <button
                     type="button"
                     className="ml-[10px] flex shrink-0 items-center justify-center"
-                    style={{ width: 16, height: 16, borderRadius: 10, padding: 2, background: "#FF0F0F" }}
+                    style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: 10,
+                      padding: 2,
+                      background: "#FF0F0F",
+                    }}
                   >
                     <X size={10} className="text-white" />
                   </button>
@@ -238,43 +355,105 @@ export function OrderPanel() {
 
           {/* small gap + hairline before totals */}
           <div style={{ height: 4 }} />
-          <div className=" shrink-0" style={{ width: 321, margin: "0 auto", borderColor: "#CECECE" }} />
+          <div
+            className=" shrink-0"
+            style={{ width: 321, margin: "0 auto", borderColor: "#CECECE" }}
+          />
           <div style={{ height: 6 }} />
 
           {/* Bottom stack: totals + action buttons + footer, 321 wide, gap 5 */}
-          <div className="flex shrink-0 flex-col" style={{ width: 321, margin: "0 auto", gap: 2, paddingBottom: 10 }}>
+          <div
+            className="flex shrink-0 flex-col"
+            style={{ width: 321, margin: "0 auto", gap: 2, paddingBottom: 10 }}
+          >
             <div
               className="flex justify-between"
-              style={{ fontFamily: "Poppins, sans-serif", fontWeight: 500, fontSize: 12, color: "#000000" }}
+              style={{
+                fontFamily: "Poppins, sans-serif",
+                fontWeight: 500,
+                fontSize: 12,
+                color: "#000000",
+              }}
             >
               <span>Items ({cartItems.length})</span>
-              <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 400, fontSize: 10 }}>200.00</span>
+              <span
+                style={{
+                  fontFamily: "Poppins, sans-serif",
+                  fontWeight: 400,
+                  fontSize: 10,
+                }}
+              >
+                {subtotal.toFixed(2)}
+              </span>
             </div>
 
             <div
               className="flex justify-between"
-              style={{ fontFamily: "Poppins, sans-serif", fontWeight: 500, fontSize: 12, color: "#000000" }}
+              style={{
+                fontFamily: "Poppins, sans-serif",
+                fontWeight: 500,
+                fontSize: 12,
+                color: "#000000",
+              }}
             >
               <span>Subtotal</span>
-              <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 400, fontSize: 10 }}>200.00</span>
+              <span
+                style={{
+                  fontFamily: "Poppins, sans-serif",
+                  fontWeight: 400,
+                  fontSize: 10,
+                }}
+              >
+                {subtotal.toFixed(2)}
+              </span>
             </div>
 
             <div
               className="flex justify-between"
-              style={{ fontFamily: "Poppins, sans-serif", fontWeight: 500, fontSize: 12, color: "#000000" }}
+              style={{
+                fontFamily: "Poppins, sans-serif",
+                fontWeight: 500,
+                fontSize: 12,
+                color: "#000000",
+              }}
             >
               <span>VAT(0%)</span>
-              <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 400, fontSize: 10 }}>0.00</span>
+              <span
+                style={{
+                  fontFamily: "Poppins, sans-serif",
+                  fontWeight: 400,
+                  fontSize: 10,
+                }}
+              >
+                {vat.toFixed(2)}
+              </span>
             </div>
 
-            <div className="border-t mt-1 mb-1" style={{ borderColor: "#878787" }} />
+            <div
+              className="border-t mt-1 mb-1"
+              style={{ borderColor: "#878787" }}
+            />
 
             <div className="flex justify-between items-center">
-              <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 16, color: "#000000" }}>
+              <span
+                style={{
+                  fontFamily: "Poppins, sans-serif",
+                  fontWeight: 700,
+                  fontSize: 16,
+                  color: "#000000",
+                }}
+              >
                 Total
               </span>
-              <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 16, color: "#000000" }}>
-                200.00
+              <span
+                style={{
+                  fontFamily: "Poppins, sans-serif",
+                  fontWeight: 700,
+                  fontSize: 16,
+                  color: "#000000",
+                }}
+              >
+                {total.toFixed(2)}
               </span>
             </div>
 
@@ -282,22 +461,48 @@ export function OrderPanel() {
               <button
                 type="button"
                 className="flex items-center justify-center text-white"
-                style={{ width: 105, height: 32, borderRadius: 10, background: "#3EA200", fontSize: 12, fontWeight: 600 }}
+                style={{
+                  width: 105,
+                  height: 32,
+                  borderRadius: 10,
+                  background: "#3EA200",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+                onClick={() => handleOrderAction("Placed")}
               >
                 Save
               </button>
               <button
                 type="button"
                 className="flex items-center justify-center text-white"
-                style={{ width: 105, height: 32, borderRadius: 10, background: "#3B0038", fontSize: 12, fontWeight: 600 }}
-                onClick={() => setIsOrderModalOpen(true)}
+                style={{
+                  width: 105,
+                  height: 32,
+                  borderRadius: 10,
+                  background: "#3B0038",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+                onClick={() => {
+                  void handleOrderAction("Printed");
+                  setIsOrderModalOpen(true);
+                }}
               >
                 Print
               </button>
               <button
                 type="button"
                 className="flex items-center justify-center text-white"
-                style={{ width: 105, height: 32, borderRadius: 10, background: "#FF0F0F", fontSize: 12, fontWeight: 600 }}
+                style={{
+                  width: 105,
+                  height: 32,
+                  borderRadius: 10,
+                  background: "#FF0F0F",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+                onClick={() => handleOrderAction("Cancelled")}
               >
                 Cancel
               </button>
@@ -340,7 +545,14 @@ export function OrderPanel() {
                   }}
                 >
                   <Icon size={18} style={{ color: "#3B0038" }} />
-                  <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 400, fontSize: 8, color: "#3B0038" }}>
+                  <span
+                    style={{
+                      fontFamily: "Poppins, sans-serif",
+                      fontWeight: 400,
+                      fontSize: 8,
+                      color: "#3B0038",
+                    }}
+                  >
                     {label}
                   </span>
                 </button>
@@ -350,9 +562,18 @@ export function OrderPanel() {
         </div>
       </div>
 
-      <TableModal open={isTableModalOpen} onClose={() => setIsTableModalOpen(false)} />
-      <OrderModal open={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} />
-      <CustomerModal open={isCustomerModalOpen} onClose={() => setIsCustomerModalOpen(false)} />
+      <TableModal
+        open={isTableModalOpen}
+        onClose={() => setIsTableModalOpen(false)}
+      />
+      <OrderModal
+        open={isOrderModalOpen}
+        onClose={() => setIsOrderModalOpen(false)}
+      />
+      <CustomerModal
+        open={isCustomerModalOpen}
+        onClose={() => setIsCustomerModalOpen(false)}
+      />
     </>
   );
 }

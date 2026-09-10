@@ -11,15 +11,13 @@ export function POSHeader() {
     <header
       className="flex items-center justify-between bg-[#EFEFEF]"
       style={{
-        width: 1024,
+        // width: 1024,
         height: 77,
         gap: 10,
         paddingTop: 22,
         paddingRight: 20,
         paddingBottom: 22,
         paddingLeft: 20,
-        
-
       }}
     >
       {/* Left: back button — 40x40, radius 5, padding 6, bg #B3B3B336 */}
@@ -68,7 +66,10 @@ export function POSHeader() {
       </div>
 
       {/* Right: admin profile — 150x40, gap 10 */}
-      <div className="flex shrink-0 items-center" style={{ width: 150, height: 40, gap: 10 }}>
+      <div
+        className="flex shrink-0 items-center"
+        style={{ width: 150, height: 40, gap: 10 }}
+      >
         <Avatar
           className="flex items-center justify-center bg-[#EFEFEF]"
           style={{

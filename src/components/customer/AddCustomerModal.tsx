@@ -5,6 +5,7 @@ import FormPhoneNumberInput from "@/src/components/form/FormPhoneNumberInput";
 import FormTextArea from "@/src/components/form/FormTextArea";
 import { X } from "lucide-react";
 import { FormProvider, useForm } from "react-hook-form";
+import { useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 
@@ -36,14 +37,35 @@ type AddCustomerModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (customer: NewCustomerInput) => void;
+  initialCustomer?: NewCustomerInput | null;
+  mode?: "add" | "edit";
 };
 
 export default function AddCustomerModal({
   isOpen,
   onClose,
   onAdd,
+  initialCustomer = null,
+  mode = "add",
 }: AddCustomerModalProps) {
   const methods = useForm<CustomerFormValues>({ defaultValues: emptyForm });
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (initialCustomer) {
+      methods.reset({
+        name: initialCustomer.name,
+        credit: String(initialCustomer.credit),
+        phone: initialCustomer.phone,
+        countryCode: initialCustomer.countryCode,
+        address: initialCustomer.address,
+      });
+      return;
+    }
+
+    methods.reset(emptyForm);
+  }, [initialCustomer, isOpen, methods]);
 
   const handleClose = () => {
     methods.reset(emptyForm);
@@ -95,7 +117,7 @@ export default function AddCustomerModal({
 
         <div>
           <DialogTitle className="text-[22px] font-semibold text-black">
-            Add Customer
+            {mode === "edit" ? "Edit Customer" : "Add Customer"}
           </DialogTitle>
         </div>
 
@@ -140,8 +162,13 @@ export default function AddCustomerModal({
           </div>
 
           <div className="mt-[22px] flex justify-end">
-            <Button type="button" variant="add" size="none" onClick={handleSubmit}>
-              ADD
+            <Button
+              type="button"
+              variant="add"
+              size="none"
+              onClick={handleSubmit}
+            >
+              {mode === "edit" ? "SAVE" : "ADD"}
             </Button>
           </div>
         </FormProvider>

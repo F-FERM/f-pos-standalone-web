@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { Check, Plus, X } from "lucide-react";
-import { Controller, FormProvider, useFieldArray, useForm } from "react-hook-form";
+import {
+  Controller,
+  FormProvider,
+  useFieldArray,
+  useForm,
+} from "react-hook-form";
 
 import FormInput from "@/src/components/form/FormInput";
 import FormMultiSelectInput, {
@@ -33,8 +38,8 @@ export type FoodFormValues = {
   onlinePrice: number;
   homeDeliveryPrice: number;
   hasOffer: boolean;
-  offerStartDate?: Date;
-  offerEndDate?: Date;
+  startDate?: string;
+  endDate?: string;
   discountPercent: number;
   choices: string[];
   preparationTime: number;
@@ -57,8 +62,8 @@ const emptyForm: FoodFormValues = {
   onlinePrice: 0,
   homeDeliveryPrice: 0,
   hasOffer: false,
-  offerStartDate: undefined,
-  offerEndDate: undefined,
+  startDate: "",
+  endDate: "",
   discountPercent: 0,
   choices: [],
   preparationTime: 0,
@@ -203,7 +208,10 @@ export default function AddFoodModal({
                       className="h-[18px] w-[18px] appearance-none rounded-full border-2 border-[#9C9C9C] checked:border-[4px] checked:border-[#450042]"
                     />
 
-                    <label htmlFor="food-type-nonveg" className="cursor-pointer">
+                    <label
+                      htmlFor="food-type-nonveg"
+                      className="cursor-pointer"
+                    >
                       Non-Veg
                     </label>
                     <input
@@ -289,25 +297,20 @@ export default function AddFoodModal({
                 Portions
               </label>
               <label className="flex items-center gap-2 text-base text-[#A1A1A1]">
-  <span
-    onClick={() => handlePortionsToggle(!hasPortions)}
-    className={`flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm border border-black ${
-      hasPortions
-        ? "border-[#450042] bg-[#450042]"
-        : "border-black bg-[#E9E9E9]"
-    }`}
-  >
-    {hasPortions && (
-      <Check
-        size={12}
-        strokeWidth={3}
-        className="text-white"
-      />
-    )}
-  </span>
-
-  Portions
-</label>
+                <span
+                  onClick={() => handlePortionsToggle(!hasPortions)}
+                  className={`flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm border border-black ${
+                    hasPortions
+                      ? "border-[#450042] bg-[#450042]"
+                      : "border-black bg-[#E9E9E9]"
+                  }`}
+                >
+                  {hasPortions && (
+                    <Check size={12} strokeWidth={3} className="text-white" />
+                  )}
+                </span>
+                Portions
+              </label>
 
               {hasPortions && (
                 <div className="mt-3">
@@ -323,7 +326,9 @@ export default function AddFoodModal({
                         </label>
                         <div className="relative">
                           <input
-                            {...methods.register(`portions.${index}.name` as const)}
+                            {...methods.register(
+                              `portions.${index}.name` as const,
+                            )}
                             placeholder="Enter position name"
                             className="w-full rounded-[8px] border border-[#E9E9E9] bg-[#D2D2D2] px-3 py-2 text-sm text-black placeholder:text-[#8A8A8A] outline-none"
                           />
@@ -342,7 +347,9 @@ export default function AddFoodModal({
                           </label>
                           <input
                             type="number"
-                            {...methods.register(`portions.${index}.price` as const)}
+                            {...methods.register(
+                              `portions.${index}.price` as const,
+                            )}
                             className="w-full rounded-[8px] border border-[#E9E9E9] bg-[#D2D2D2] px-3 py-2 text-sm text-black outline-none"
                           />
                         </div>
@@ -350,7 +357,9 @@ export default function AddFoodModal({
                         {index === portionFields.length - 1 ? (
                           <button
                             type="button"
-                            onClick={() => appendPortion({ name: "", price: 0 })}
+                            onClick={() =>
+                              appendPortion({ name: "", price: 0 })
+                            }
                             className="flex h-[38px] w-[38px] items-center justify-center rounded-[8px] bg-[#D2D2D2] text-black"
                             aria-label="Add potion"
                           >
@@ -391,7 +400,12 @@ export default function AddFoodModal({
                   <p className="mb-3 text-base font-medium text-black">
                     Dine-In
                   </p>
-                  <FormInput name="dineInPrice" label="Price" type="number" labelClassName="mb-0 text-gray-500 text-sm font-medium " />
+                  <FormInput
+                    name="dineInPrice"
+                    label="Price"
+                    type="number"
+                    labelClassName="mb-0 text-gray-500 text-sm font-medium "
+                  />
                 </div>
                 <div className="rounded-lg border border-gray-400 p-4">
                   <p className="mb-3 text-base font-medium text-black">
@@ -401,7 +415,8 @@ export default function AddFoodModal({
                     name="takeAwayPrice"
                     label="Price"
                     type="number"
-labelClassName="mb-0 text-gray-500 text-sm font-medium "                  />
+                    labelClassName="mb-0 text-gray-500 text-sm font-medium "
+                  />
                 </div>
                 <div className="rounded-lg border border-gray-400 p-4">
                   <p className="mb-3 text-base font-medium text-black">
@@ -411,7 +426,8 @@ labelClassName="mb-0 text-gray-500 text-sm font-medium "                  />
                     name="onlinePrice"
                     label="Swiggy Price"
                     type="number"
-labelClassName="mb-0 text-gray-500 text-sm font-medium "                  />
+                    labelClassName="mb-0 text-gray-500 text-sm font-medium "
+                  />
                 </div>
                 <div className="rounded-lg border border-gray-400 p-4">
                   <p className="mb-3 text-base font-medium text-black">
@@ -421,57 +437,43 @@ labelClassName="mb-0 text-gray-500 text-sm font-medium "                  />
                     name="homeDeliveryPrice"
                     label="Price"
                     type="number"
-labelClassName="mb-0 text-gray-500 text-sm font-medium "                  />
+                    labelClassName="mb-0 text-gray-500 text-sm font-medium "
+                  />
                 </div>
               </div>
             </div>
 
-         
-
-   
-              <label className="flex items-center gap-2 text-base text-[#A1A1A1]">
-  <span
- onClick={() =>
-      methods.setValue(
-        "hasOffer",
-        !methods.getValues("hasOffer")
-      )
-    }    className={`flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm border border-black ${
-      hasOffer
-        ? "border-[#450042] bg-[#450042]"
-        : "border-black bg-[#E9E9E9]"
-    }`}
-  >
-   {methods.watch("hasOffer") && (
-      <Check
-        size={12}
-        strokeWidth={3}
-        className="text-white"
-      />
-    )}
-  </span>
-
-  Offer
-</label>
+            <label className="flex items-center gap-2 text-base text-[#A1A1A1]">
+              <span
+                onClick={() =>
+                  methods.setValue("hasOffer", !methods.getValues("hasOffer"))
+                }
+                className={`flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm border border-black ${
+                  hasOffer
+                    ? "border-[#450042] bg-[#450042]"
+                    : "border-black bg-[#E9E9E9]"
+                }`}
+              >
+                {methods.watch("hasOffer") && (
+                  <Check size={12} strokeWidth={3} className="text-white" />
+                )}
+              </span>
+              Offer
+            </label>
 
             {hasOffer && (
               <>
                 <div className="grid grid-cols-1 gap-4">
                   <div>
-                     <FormInput
-                  name="startDate"
-                  label="Start Date"
-                  type="date"
-                />
+                    <FormInput
+                      name="startDate"
+                      label="Start Date"
+                      type="date"
+                    />
                   </div>
-  <div>
-                     <FormInput
-                  name="endDate"
-                  label="End Date"
-                  type="date"
-                />
+                  <div>
+                    <FormInput name="endDate" label="End Date" type="date" />
                   </div>
-                
                 </div>
 
                 <FormInput
@@ -496,7 +498,6 @@ labelClassName="mb-0 text-gray-500 text-sm font-medium "                  />
                   name="choices"
                   label="Choices"
                   placeholder="Enter Choices..."
-                 
                 />
 
                 <FormInput

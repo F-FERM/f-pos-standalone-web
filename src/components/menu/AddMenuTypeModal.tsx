@@ -4,6 +4,7 @@ import FormMultiSelectInput, {
   selectType,
 } from "@/src/components/form/FormMultiSelectInput";
 import { X } from "lucide-react";
+import { useEffect } from "react";
 import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
@@ -24,6 +25,8 @@ type AddMenuTypeModalProps = {
   onClose: () => void;
   onAdd: (menuType: NewMenuTypeInput) => void;
   existingOptions?: selectType[];
+  initialMenuType?: string | null;
+  mode?: "add" | "edit";
 };
 
 export default function AddMenuTypeModal({
@@ -31,9 +34,16 @@ export default function AddMenuTypeModal({
   onClose,
   onAdd,
   existingOptions = [],
+  initialMenuType = null,
+  mode = "add",
 }: AddMenuTypeModalProps) {
   const methods = useForm<MenuTypeFormValues>({ defaultValues: emptyForm });
   const [createdOptions, setCreatedOptions] = useState<selectType[]>([]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    methods.reset({ menuTypes: initialMenuType ? [initialMenuType] : [] });
+  }, [initialMenuType, isOpen, methods]);
 
   const handleClose = () => {
     methods.reset(emptyForm);
@@ -82,11 +92,11 @@ export default function AddMenuTypeModal({
 
         <div>
           <DialogTitle className="text-[22px] font-semibold text-black">
-            Add Menu Type
+            {mode === "edit" ? "Edit Menu Type" : "Add Menu Type"}
           </DialogTitle>
           <p className="text-[14px] text-[#A4A4A4] font-medium mb-2">
-            Define food categories to streamline menu management (e.g.
-            Desserts, Beverages).
+            Define food categories to streamline menu management (e.g. Desserts,
+            Beverages).
           </p>
         </div>
 
@@ -117,7 +127,7 @@ export default function AddMenuTypeModal({
               size="none"
               onClick={handleSubmit}
             >
-              ADD
+              {mode === "edit" ? "SAVE" : "ADD"}
             </Button>
           </div>
         </FormProvider>

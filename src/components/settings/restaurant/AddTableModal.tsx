@@ -4,6 +4,7 @@ import FormCombobox, { selectType } from "@/src/components/form/FormCombobox";
 import FormInput from "@/src/components/form/FormInput";
 import { X } from "lucide-react";
 import { FormProvider, useForm } from "react-hook-form";
+import { useEffect } from "react";
 import { Button } from "../../ui/button";
 
 export type TableFormValues = {
@@ -25,6 +26,8 @@ type AddTableModalProps = {
   onClose: () => void;
   onAdd: (table: NewTableInput) => void;
   floorOptions?: selectType[];
+  initialTable?: NewTableInput | null;
+  mode?: "add" | "edit";
 };
 
 export default function AddTableModal({
@@ -32,8 +35,23 @@ export default function AddTableModal({
   onClose,
   onAdd,
   floorOptions = [],
+  initialTable = null,
+  mode = "add",
 }: AddTableModalProps) {
   const methods = useForm<TableFormValues>({ defaultValues: emptyForm });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    methods.reset(
+      initialTable
+        ? {
+            floor: initialTable.floor,
+            tableName: initialTable.tableName,
+            capacity: String(initialTable.capacity),
+          }
+        : emptyForm,
+    );
+  }, [initialTable, isOpen, methods]);
 
   if (!isOpen) return null;
 
@@ -70,7 +88,7 @@ export default function AddTableModal({
 
           <div className="flex min-h-[420px] w-full flex-col gap-[16px] rounded-[20px] border border-[#A6A6A6] bg-[#E9E9E9] px-4 py-6 shadow-[0_0_30px_rgba(0,0,0,0.35)] sm:px-[34px]">
             <h3 className="font-poppins text-[22px] font-semibold leading-none text-black">
-              Add Table
+              {mode === "edit" ? "Edit Table" : "Add Table"}
             </h3>
 
             <div className="flex w-full flex-col gap-[10px] rounded-[10px] border border-[#B5B5B5] bg-[#E9E9E9] p-2.5 sm:max-w-[742px]">
@@ -84,7 +102,11 @@ export default function AddTableModal({
               </label>
 
               <label className="block">
-                <FormInput name="tableName" placeholder="Enter Table" label="Table" />
+                <FormInput
+                  name="tableName"
+                  placeholder="Enter Table"
+                  label="Table"
+                />
               </label>
 
               <label className="block">
@@ -98,8 +120,13 @@ export default function AddTableModal({
             </div>
 
             <div className="mt-auto flex justify-end">
-              <Button type="button" variant="add" size="none" onClick={handleSubmit}>
-                ADD
+              <Button
+                type="button"
+                variant="add"
+                size="none"
+                onClick={handleSubmit}
+              >
+                {mode === "edit" ? "SAVE" : "ADD"}
               </Button>
             </div>
           </div>

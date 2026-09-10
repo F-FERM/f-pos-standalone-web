@@ -6,8 +6,12 @@ import userPlus from "../../../../public/images/icons/usergroup.png";
 import { Pagination } from "@/src/components/common/Pagination";
 import { SearchInput } from "@/src/components/common/SearchInput";
 import { POSHeader } from "@/src/components/sales/PosHeader";
-import AddPurchaseModal, { NewPurchaseInput } from "@/src/components/purchase/AddPurchaseModal";
-import AddItemModal, { NewItemInput } from "@/src/components/purchase/AddItemModal";
+import AddPurchaseModal, {
+  NewPurchaseInput,
+} from "@/src/components/purchase/AddPurchaseModal";
+import AddItemModal, {
+  NewItemInput,
+} from "@/src/components/purchase/AddItemModal";
 import { Button } from "@/src/components/ui/button";
 
 type Purchase = {
@@ -96,7 +100,10 @@ export default function PurchasePage() {
     const query = search.trim().toLowerCase();
     if (!query) return items;
     return items.filter((item) =>
-      [item.ingredientName, item.purchaseUnit].join(" ").toLowerCase().includes(query),
+      [item.ingredientName, item.purchaseUnit]
+        .join(" ")
+        .toLowerCase()
+        .includes(query),
     );
   }, [items, search]);
 
@@ -123,7 +130,10 @@ export default function PurchasePage() {
   };
 
   const handleAddPurchase = (data: NewPurchaseInput) => {
-    const subTotal = data.lineItems.reduce((sum, line) => sum + line.qty * line.price, 0);
+    const subTotal = data.lineItems.reduce(
+      (sum, line) => sum + line.qty * line.price,
+      0,
+    );
     const vat =
       data.vatMode === "VAT Inclusive"
         ? subTotal - subTotal / (1 + VAT_RATE)
@@ -167,11 +177,10 @@ export default function PurchasePage() {
 
   const CARD_TOP = 0;
   const CARD_LEFT = 20;
-  const CARD_WIDTH = 984;
   const CARD_HEIGHT = 661;
 
   return (
-    <main className="flex h-full flex-col overflow-y-auto bg-black text-black">
+    <main className="flex h-full flex-col overflow-x-hidden overflow-y-auto bg-black text-black">
       <POSHeader />
 
       <div
@@ -183,7 +192,7 @@ export default function PurchasePage() {
           style={{
             top: CARD_TOP,
             left: CARD_LEFT,
-            width: CARD_WIDTH,
+            right: CARD_LEFT,
             height: CARD_HEIGHT,
             borderRadius: 15,
             background: "#D2D2D2",
@@ -192,7 +201,7 @@ export default function PurchasePage() {
 
         <div
           className="absolute flex items-center justify-between"
-          style={{ top: CARD_TOP + 20, left: 30, width: 964 }}
+          style={{ top: CARD_TOP + 20, left: 30, right: 30 }}
         >
           <span
             style={{
@@ -219,7 +228,7 @@ export default function PurchasePage() {
 
         <div
           className="absolute flex flex-wrap items-center gap-[12px]"
-          style={{ top: CARD_TOP + 88, left: 30, width: 964 }}
+          style={{ top: CARD_TOP + 88, left: 30, right: 30 }}
         >
           {TABS.map((tab) => {
             const selected = activeTab === tab;
@@ -236,7 +245,9 @@ export default function PurchasePage() {
                   width: 166,
                   height: 50,
                   borderRadius: 12,
-                  border: selected ? "1px solid transparent" : "1px solid #9C9C9C",
+                  border: selected
+                    ? "1px solid transparent"
+                    : "1px solid #9C9C9C",
                   background: selected ? "#450042" : "#D2D2D2",
                   fontFamily: "Poppins, sans-serif",
                   fontWeight: 600,
@@ -263,7 +274,7 @@ export default function PurchasePage() {
           style={{
             top: CARD_TOP + 152,
             left: 30,
-            width: 964,
+            right: 30,
             height: 40,
             justifyContent: "space-between",
             borderRadius: 10,
@@ -290,11 +301,11 @@ export default function PurchasePage() {
         </div>
 
         <div
-          className="absolute flex flex-col overflow-y-auto"
+          className="absolute flex flex-col overflow-x-hidden overflow-y-auto"
           style={{
             top: CARD_TOP + 197,
             left: 30,
-            width: 964,
+            right: 30,
             height: 242,
             borderRadius: 10,
             background: "#B8B8B8",
@@ -349,7 +360,7 @@ export default function PurchasePage() {
 
           {isPurchase && (
             <div
-  className="
+              className="
     sticky bottom-0 ml-auto mr-3 mt-auto
     flex h-[76px] w-[208px]
     flex-col gap-[10px]
@@ -363,16 +374,16 @@ export default function PurchasePage() {
     font-medium
     text-white
   "
->
-  <p>Total VAT: AED {totals.vat.toFixed(2)}</p>
-  <p>Grand Total: AED {totals.total.toFixed(2)}</p>
-</div>
+            >
+              <p>Total VAT: AED {totals.vat.toFixed(2)}</p>
+              <p>Grand Total: AED {totals.total.toFixed(2)}</p>
+            </div>
           )}
         </div>
 
         <div
           className="absolute"
-          style={{ top: CARD_TOP + 197 + 242 + 14, left: 30, width: 964 }}
+          style={{ top: CARD_TOP + 197 + 242 + 14, left: 30, right: 30 }}
         >
           <Pagination
             currentPage={currentPage}
@@ -384,7 +395,11 @@ export default function PurchasePage() {
 
         <div
           className="absolute flex items-center justify-center"
-          style={{ top: CARD_TOP + CARD_HEIGHT + 14, left: CARD_LEFT, width: CARD_WIDTH }}
+          style={{
+            top: CARD_TOP + CARD_HEIGHT + 14,
+            left: CARD_LEFT,
+            right: CARD_LEFT,
+          }}
         >
           <span
             style={{

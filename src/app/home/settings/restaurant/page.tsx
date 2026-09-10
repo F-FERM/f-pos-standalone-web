@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Building2,
   Clock,
@@ -12,6 +12,8 @@ import {
   Smartphone,
   Calendar,
   RefreshCw,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import userPlus from "../../../../../public/images/icons/usergroup.png";
 
@@ -19,17 +21,50 @@ import { Pagination } from "@/src/components/common/Pagination";
 import { SearchInput } from "@/src/components/common/SearchInput";
 import { POSHeader } from "@/src/components/sales/PosHeader";
 import { Button } from "@/src/components/ui/button";
-import AddCustomerTypeModal, { NewCustomerTypeInput } from "@/src/components/settings/restaurant/AddCustomerTypeModal";
-import AddFloorModal, { NewFloorInput } from "@/src/components/settings/restaurant/AddFloorModal";
-import AddTableModal, { NewTableInput } from "@/src/components/settings/restaurant/AddTableModal";
+import AddCustomerTypeModal, {
+  NewCustomerTypeInput,
+} from "@/src/components/settings/restaurant/AddCustomerTypeModal";
+import AddFloorModal, {
+  NewFloorInput,
+} from "@/src/components/settings/restaurant/AddFloorModal";
+import AddTableModal, {
+  NewTableInput,
+} from "@/src/components/settings/restaurant/AddTableModal";
+import { listRestaurants, type RestaurantRecord } from "@/src/api/restaurant";
+import {
+  CUSTOMER_TYPE_OPTIONS,
+  createCustomerType,
+  deleteCustomerType,
+  listCustomerTypes,
+  updateCustomerType,
+  type CustomerTypeRecord,
+  type CustomerTypeValue,
+} from "@/src/api/customer-type";
+import { toast } from "sonner";
+import {
+  createFloor,
+  deleteFloor,
+  listFloors,
+  updateFloor,
+  type FloorRecord,
+} from "@/src/api/floor";
+import {
+  createTable,
+  deleteTable,
+  listTables,
+  updateTable,
+  type TableRecord,
+} from "@/src/api/table";
 
 type CustomerType = {
-  id: number;
-  type: string;
+  id: string;
+  type: CustomerTypeValue;
+  createdDate: string;
+  updatedDate: string;
 };
 
 type Floor = {
-  id: number;
+  id: string;
   floorName: string;
   numberOfTables: number;
   createdBy: string;
@@ -38,7 +73,8 @@ type Floor = {
 };
 
 type TableRow = {
-  id: number;
+  id: string;
+  floorId: string;
   floorName: string;
   tableName: string;
   seats: number;
@@ -47,6 +83,7 @@ type TableRow = {
 };
 
 type RestaurantProfile = {
+  name: string;
   image?: string;
   address: string;
   phone: string;
@@ -90,14 +127,8 @@ const TABLE_COLUMNS = [
 ] as const;
 const TABLE_GRID = "grid-cols-[48px_1.2fr_1.2fr_0.8fr_1fr_1fr_80px]";
 
-function formatDate(date: Date) {
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
-}
-
 const defaultProfile: RestaurantProfile = {
+  name: "Restaurant",
   address: "123 Main Street",
   phone: "+1234567890",
   email: "",
@@ -112,6 +143,71 @@ const defaultProfile: RestaurantProfile = {
   updatedDate: "31 Jul 2026, 3:34 PM",
 };
 
+function formatProfileDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "-"
+    : date.toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+}
+
+function mapRestaurantProfile(restaurant: RestaurantRecord): RestaurantProfile {
+  return {
+    name: restaurant.name,
+    image: restaurant.logo || undefined,
+    address: restaurant.address || "-",
+    phone: restaurant.phone || "-",
+    email: restaurant.email || "",
+    country: restaurant.country || "-",
+    state: restaurant.state || "-",
+    city: restaurant.city || "-",
+    openingTime: restaurant.openingTime || "-",
+    closingTime: restaurant.closingTime || "-",
+    primaryPhone: restaurant.phone || "-",
+    secondaryPhone: restaurant.phone2 || "-",
+    createdDate: formatProfileDate(restaurant.createdAt),
+    updatedDate: formatProfileDate(restaurant.updatedAt),
+  };
+}
+
+function mapCustomerType(customerType: CustomerTypeRecord): CustomerType {
+  return {
+    id: customerType._id,
+    type: customerType.type,
+    createdDate: formatProfileDate(customerType.createdAt),
+    updatedDate: formatProfileDate(customerType.updatedAt),
+  };
+}
+
+function mapFloor(floor: FloorRecord): Floor {
+  return {
+    id: floor._id,
+    floorName: floor.name,
+    numberOfTables: 0,
+    createdBy: floor.createdBy || "Admin",
+    createdDate: formatProfileDate(floor.createdAt),
+    updatedDate: formatProfileDate(floor.updatedAt),
+  };
+}
+
+function mapTable(table: TableRecord): TableRow {
+  return {
+    id: table._id,
+    floorId: table.floorId._id,
+    floorName: table.floorId.name,
+    tableName: table.name,
+    seats: table.capacity,
+    createdDate: formatProfileDate(table.createdAt),
+    updatedDate: formatProfileDate(table.updatedAt),
+  };
+}
+
 export default function RestaurantSettingsPage() {
   const [activeTab, setActiveTab] = useState<RestaurantTab>("My Restaurant");
   const [search, setSearch] = useState("");
@@ -121,13 +217,72 @@ export default function RestaurantSettingsPage() {
   const [profile, setProfile] = useState<RestaurantProfile>(defaultProfile);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    listRestaurants()
+      .then((response) => {
+        const restaurant =
+          response.data.find((item) => item.isActive) || response.data[0];
+
+        if (!cancelled && restaurant) {
+          setProfile(mapRestaurantProfile(restaurant));
+        }
+      })
+      .catch(() => {
+        // Keep the local fallback profile visible if the restaurant request fails.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [customerTypes, setCustomerTypes] = useState<CustomerType[]>([]);
+  const [editingCustomerType, setEditingCustomerType] =
+    useState<CustomerType | null>(null);
   const [floors, setFloors] = useState<Floor[]>([]);
+  const [editingFloor, setEditingFloor] = useState<Floor | null>(null);
   const [tables, setTables] = useState<TableRow[]>([]);
+  const [editingTable, setEditingTable] = useState<TableRow | null>(null);
 
   const [isCustomerTypeModalOpen, setIsCustomerTypeModalOpen] = useState(false);
   const [isFloorModalOpen, setIsFloorModalOpen] = useState(false);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+
+  useEffect(() => {
+    listCustomerTypes()
+      .then((response) =>
+        setCustomerTypes((response.data || []).map(mapCustomerType)),
+      )
+      .catch((error: unknown) => {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Unable to load customer types",
+        );
+      });
+  }, []);
+
+  useEffect(() => {
+    listFloors()
+      .then((response) => setFloors((response.data || []).map(mapFloor)))
+      .catch((error: unknown) => {
+        toast.error(
+          error instanceof Error ? error.message : "Unable to load floors",
+        );
+      });
+  }, []);
+
+  useEffect(() => {
+    listTables()
+      .then((response) => setTables((response.data || []).map(mapTable)))
+      .catch((error: unknown) => {
+        toast.error(
+          error instanceof Error ? error.message : "Unable to load tables",
+        );
+      });
+  }, []);
 
   const filteredCustomerTypes = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -157,51 +312,145 @@ export default function RestaurantSettingsPage() {
     reader.readAsDataURL(file);
   };
 
-  const handleAddCustomerType = (data: NewCustomerTypeInput) => {
-    setCustomerTypes((current) => [
-      ...current,
-      ...data.types.map((type, index) => ({ id: current.length + index + 1, type })),
-    ]);
-    setIsCustomerTypeModalOpen(false);
+  const handleSaveCustomerType = async (data: NewCustomerTypeInput) => {
+    const selectedType = data.types[0] as CustomerTypeValue | undefined;
+    if (!selectedType) return;
+
+    try {
+      if (editingCustomerType) {
+        const response = await updateCustomerType(
+          editingCustomerType.id,
+          selectedType,
+        );
+        setCustomerTypes((current) =>
+          current.map((customerType) =>
+            customerType.id === editingCustomerType.id
+              ? mapCustomerType(response.data)
+              : customerType,
+          ),
+        );
+        toast.success("Customer type updated successfully");
+      } else {
+        const response = await createCustomerType(selectedType);
+        setCustomerTypes((current) => [
+          mapCustomerType(response.data),
+          ...current,
+        ]);
+        toast.success("Customer type created successfully");
+      }
+
+      setEditingCustomerType(null);
+      setIsCustomerTypeModalOpen(false);
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save customer type",
+      );
+    }
   };
 
-  const handleAddFloor = (data: NewFloorInput) => {
-    const today = formatDate(new Date());
-    setFloors((current) => [
-      ...current,
-      ...data.floorNames.map((floorName, index) => ({
-        id: current.length + index + 1,
-        floorName,
-        numberOfTables: 0,
-        createdBy: "Admin",
-        createdDate: today,
-        updatedDate: today,
-      })),
-    ]);
-    setIsFloorModalOpen(false);
+  const handleDeleteCustomerType = async (customerType: CustomerType) => {
+    if (!window.confirm(`Delete ${customerType.type}?`)) return;
+
+    try {
+      await deleteCustomerType(customerType.id);
+      setCustomerTypes((current) =>
+        current.filter((item) => item.id !== customerType.id),
+      );
+      toast.success(`${customerType.type} deleted successfully`);
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to delete customer type",
+      );
+    }
   };
 
-  const handleAddTable = (data: NewTableInput) => {
-    const today = formatDate(new Date());
-    setTables((current) => [
-      ...current,
-      {
-        id: current.length + 1,
-        floorName: data.floor,
-        tableName: data.tableName,
-        seats: data.capacity,
-        createdDate: today,
-        updatedDate: today,
-      },
-    ]);
-    setFloors((current) =>
-      current.map((f) =>
-        f.floorName === data.floor
-          ? { ...f, numberOfTables: f.numberOfTables + 1 }
-          : f,
-      ),
-    );
-    setIsTableModalOpen(false);
+  const handleSaveFloor = async (data: NewFloorInput) => {
+    const floorName = data.floorNames[0]?.trim();
+    if (!floorName) return;
+
+    try {
+      if (editingFloor) {
+        const response = await updateFloor(editingFloor.id, floorName);
+        setFloors((current) =>
+          current.map((floor) =>
+            floor.id === editingFloor.id ? mapFloor(response.data) : floor,
+          ),
+        );
+        toast.success("Floor updated successfully");
+      } else {
+        const response = await createFloor(floorName);
+        setFloors((current) => [mapFloor(response.data), ...current]);
+        toast.success("Floor created successfully");
+      }
+
+      setEditingFloor(null);
+      setIsFloorModalOpen(false);
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save floor",
+      );
+    }
+  };
+
+  const handleDeleteFloor = async (floor: Floor) => {
+    if (!window.confirm(`Delete ${floor.floorName}?`)) return;
+
+    try {
+      await deleteFloor(floor.id);
+      setFloors((current) => current.filter((item) => item.id !== floor.id));
+      toast.success(`${floor.floorName} deleted successfully`);
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to delete floor",
+      );
+    }
+  };
+
+  const handleSaveTable = async (data: NewTableInput) => {
+    const payload = {
+      floorId: data.floor,
+      name: data.tableName,
+      capacity: data.capacity,
+    };
+
+    try {
+      if (editingTable) {
+        const response = await updateTable(editingTable.id, payload);
+        setTables((current) =>
+          current.map((table) =>
+            table.id === editingTable.id ? mapTable(response.data) : table,
+          ),
+        );
+        toast.success("Table updated successfully");
+      } else {
+        const response = await createTable(payload);
+        setTables((current) => [mapTable(response.data), ...current]);
+        toast.success("Table created successfully");
+      }
+
+      setEditingTable(null);
+      setIsTableModalOpen(false);
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save table",
+      );
+    }
+  };
+
+  const handleDeleteTable = async (table: TableRow) => {
+    if (!window.confirm(`Delete ${table.tableName}?`)) return;
+
+    try {
+      await deleteTable(table.id);
+      setTables((current) => current.filter((item) => item.id !== table.id));
+      toast.success(`${table.tableName} deleted successfully`);
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to delete table",
+      );
+    }
   };
 
   const handlePageChange = (page: number) => {
@@ -209,17 +458,24 @@ export default function RestaurantSettingsPage() {
   };
 
   const openAddModal = () => {
-    if (activeTab === "Customer Types") setIsCustomerTypeModalOpen(true);
-    if (activeTab === "Floor") setIsFloorModalOpen(true);
-    if (activeTab === "Table") setIsTableModalOpen(true);
+    if (activeTab === "Customer Types") {
+      setEditingCustomerType(null);
+      setIsCustomerTypeModalOpen(true);
+    } else if (activeTab === "Floor") {
+      setEditingFloor(null);
+      setIsFloorModalOpen(true);
+    } else if (activeTab === "Table") {
+      setEditingTable(null);
+      setIsTableModalOpen(true);
+    }
   };
 
   const addLabel =
     activeTab === "Customer Types"
       ? "Add Customer"
       : activeTab === "Floor"
-      ? "Add Floor"
-      : "Add Table";
+        ? "Add Floor"
+        : "Add Table";
 
   const infoCards = [
     { icon: MapPin, label: "Address", value: profile.address },
@@ -231,15 +487,19 @@ export default function RestaurantSettingsPage() {
     { icon: Clock, label: "Opening Time", value: profile.openingTime },
     { icon: Clock, label: "Closing Time", value: profile.closingTime },
     { icon: Phone, label: "Primary Phone", value: profile.primaryPhone },
-    { icon: Smartphone, label: "Secondary Phone", value: profile.secondaryPhone },
+    {
+      icon: Smartphone,
+      label: "Secondary Phone",
+      value: profile.secondaryPhone,
+    },
   ];
 
   return (
-    <main className="flex h-full flex-col  bg-black text-black">
+    <main className="flex h-full flex-col overflow-x-hidden bg-black text-black">
       <POSHeader />
 
       <div className="flex flex-1 flex-col items-center gap-4 bg-[#EFEFEF] px-3  ">
-        <div className="flex w-full max-w-[984px] flex-col gap-3 rounded-[15px] bg-[#D2D2D2] p-4  lg:min-h-[661px]">
+        <div className="flex w-full flex-col gap-3 rounded-[15px] bg-[#D2D2D2] p-4 lg:min-h-[661px]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-3">
               {TABS.map((tab) => {
@@ -307,7 +567,7 @@ export default function RestaurantSettingsPage() {
 
                 <div className="mb-2 flex items-center gap-2 font-poppins text-[18px] font-semibold leading-none text-black">
                   <Building2 size={18} />
-                  Customer Types
+                  {profile.name}
                 </div>
 
                 <div className="flex flex-col">
@@ -347,7 +607,11 @@ export default function RestaurantSettingsPage() {
           ) : (
             <div className="flex flex-1 flex-col gap-4 lg:min-h-0">
               <div className="flex justify-end">
-                <SearchInput variant="panel" value={search} onChange={(value) => setSearch(value)} />
+                <SearchInput
+                  variant="panel"
+                  value={search}
+                  onChange={(value) => setSearch(value)}
+                />
               </div>
 
               {activeTab === "Customer Types" && (
@@ -374,7 +638,29 @@ export default function RestaurantSettingsPage() {
                           className={`grid gap-2 border-b border-black/5 px-4 py-2.5 font-poppins text-[12px] text-black ${CUSTOMER_TYPE_GRID}`}
                         >
                           <span className="truncate">{item.type}</span>
-                          <span />
+                          <span className="flex items-center justify-center gap-2">
+                            <Button
+                              type="button"
+                              variant="editicon"
+                              size="icon"
+                              aria-label={`Edit ${item.type}`}
+                              onClick={() => {
+                                setEditingCustomerType(item);
+                                setIsCustomerTypeModalOpen(true);
+                              }}
+                            >
+                              <Pencil size={15} />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="deleteicon"
+                              size="icon"
+                              aria-label={`Delete ${item.type}`}
+                              onClick={() => handleDeleteCustomerType(item)}
+                            >
+                              <Trash2 size={15} />
+                            </Button>
+                          </span>
                         </div>
                       ))
                     )}
@@ -418,7 +704,29 @@ export default function RestaurantSettingsPage() {
                           <span className="truncate">{floor.createdBy}</span>
                           <span>{floor.createdDate}</span>
                           <span>{floor.updatedDate}</span>
-                          <span />
+                          <span className="flex items-center justify-center gap-2">
+                            <Button
+                              type="button"
+                              variant="editicon"
+                              size="icon"
+                              aria-label={`Edit ${floor.floorName}`}
+                              onClick={() => {
+                                setEditingFloor(floor);
+                                setIsFloorModalOpen(true);
+                              }}
+                            >
+                              <Pencil size={15} />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="deleteicon"
+                              size="icon"
+                              aria-label={`Delete ${floor.floorName}`}
+                              onClick={() => handleDeleteFloor(floor)}
+                            >
+                              <Trash2 size={15} />
+                            </Button>
+                          </span>
                         </div>
                       ))
                     )}
@@ -462,7 +770,29 @@ export default function RestaurantSettingsPage() {
                           <span>{table.seats}</span>
                           <span>{table.createdDate}</span>
                           <span>{table.updatedDate}</span>
-                          <span />
+                          <span className="flex items-center justify-center gap-2">
+                            <Button
+                              type="button"
+                              variant="editicon"
+                              size="icon"
+                              aria-label={`Edit ${table.tableName}`}
+                              onClick={() => {
+                                setEditingTable(table);
+                                setIsTableModalOpen(true);
+                              }}
+                            >
+                              <Pencil size={15} />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="deleteicon"
+                              size="icon"
+                              aria-label={`Delete ${table.tableName}`}
+                              onClick={() => handleDeleteTable(table)}
+                            >
+                              <Trash2 size={15} />
+                            </Button>
+                          </span>
                         </div>
                       ))
                     )}
@@ -487,22 +817,55 @@ export default function RestaurantSettingsPage() {
 
       <AddCustomerTypeModal
         isOpen={isCustomerTypeModalOpen}
-        onClose={() => setIsCustomerTypeModalOpen(false)}
-        onAdd={handleAddCustomerType}
-        existingTypeOptions={customerTypes.map((c) => ({ label: c.type, value: c.type }))}
+        onClose={() => {
+          setIsCustomerTypeModalOpen(false);
+          setEditingCustomerType(null);
+        }}
+        onAdd={handleSaveCustomerType}
+        mode={editingCustomerType ? "edit" : "add"}
+        initialType={editingCustomerType?.type ?? null}
+        existingTypeOptions={CUSTOMER_TYPE_OPTIONS.map((option) => ({
+          label: option.label,
+          value: option.value,
+        }))}
       />
 
       <AddFloorModal
         isOpen={isFloorModalOpen}
-        onClose={() => setIsFloorModalOpen(false)}
-        onAdd={handleAddFloor}
+        onClose={() => {
+          setIsFloorModalOpen(false);
+          setEditingFloor(null);
+        }}
+        onAdd={handleSaveFloor}
+        mode={editingFloor ? "edit" : "add"}
+        initialFloor={editingFloor?.floorName ?? null}
+        existingFloorOptions={floors.map((floor) => ({
+          label: floor.floorName,
+          value: floor.floorName,
+        }))}
       />
 
       <AddTableModal
         isOpen={isTableModalOpen}
-        onClose={() => setIsTableModalOpen(false)}
-        onAdd={handleAddTable}
-        floorOptions={floors.map((f) => ({ label: f.floorName, value: f.floorName }))}
+        onClose={() => {
+          setIsTableModalOpen(false);
+          setEditingTable(null);
+        }}
+        onAdd={handleSaveTable}
+        mode={editingTable ? "edit" : "add"}
+        initialTable={
+          editingTable
+            ? {
+                floor: editingTable.floorId,
+                tableName: editingTable.tableName,
+                capacity: editingTable.seats,
+              }
+            : null
+        }
+        floorOptions={floors.map((floor) => ({
+          label: floor.floorName,
+          value: floor.id,
+        }))}
       />
     </main>
   );
