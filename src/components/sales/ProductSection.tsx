@@ -6,6 +6,7 @@ import { CategorySidebar } from "./CategorySidebar";
 import { Product } from "./Types";
 import { products } from "./Data";
 import { PanelBackground, PanelBackgroundHandle } from "./PanelGround";
+import Image from "next/image";
 
 type ProductGridProps = {
   selectedProduct: Product;
@@ -14,8 +15,8 @@ type ProductGridProps = {
 
 function ProductGrid({ selectedProduct, onSelect }: ProductGridProps) {
   return (
-    <div className="min-w-0 flex-1 overflow-y-auto py-3 pr-2 pl-1 xs:py-4 xs:pr-3 sm:py-[29px] ">
-      <div className="mx-auto flex flex-wrap content-start justify-between" style={{ width: 476, rowGap: 10 }}>
+    <div className="min-w-0 flex-1 overflow-y-auto py-3 pr-0 xs:py-4 sm:py-[29px] ">
+      <div className="mx-auto flex flex-wrap content-start justify-between " style={{ width: 476, rowGap: 10,height:104 }}>
         {products.map((product) => {
           const selected = selectedProduct.id === product.id;
 
@@ -32,7 +33,9 @@ function ProductGrid({ selectedProduct, onSelect }: ProductGridProps) {
               }}
               className="group relative shrink-0 overflow-hidden text-left"
             >
-              <img
+              <Image
+                width={150}
+                height={104}
                 src={product.image}
                 alt={product.name}
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -59,8 +62,8 @@ function ProductGrid({ selectedProduct, onSelect }: ProductGridProps) {
                       fontFamily: "Poppins",
                       fontWeight: 500,
                       fontSize: 12,
-                      lineHeight: "100%",
-                      letterSpacing: "0%",
+                      lineHeight: "150%",
+                      letterSpacing: "5%",
                       whiteSpace: "normal",
                       wordBreak: "break-word",
                       overflow: "visible",
@@ -72,7 +75,7 @@ function ProductGrid({ selectedProduct, onSelect }: ProductGridProps) {
                   <span
                     className="shrink-0 text-white"
                     style={{
-                      fontFamily: "Inter",
+                 
                       fontWeight: 600,
                       fontSize: 14,
                       lineHeight: "100%",

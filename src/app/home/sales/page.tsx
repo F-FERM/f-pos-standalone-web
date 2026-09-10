@@ -77,7 +77,7 @@ export default function POSScreen() {
 
       {/* Section 3 — Category + product panel — 613x564 */}
       <div
-        className="absolute bg-white rounded-xl"
+        className="absolute bg-[#EFEFEF] rounded-xl"
         style={{
           top: 159,
           left: 30,

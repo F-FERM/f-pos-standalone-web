@@ -28,7 +28,7 @@ const axiosInstance = axios.create({
 // Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
-    const accessToken = LocalStorage.getItem("accessToken");
+    const accessToken = LocalStorage.getItem("access_token");
     if (accessToken && config.headers) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
@@ -80,7 +80,7 @@ axiosInstance.interceptors.response.use(
         const { accessToken, refreshToken: newRefreshToken } =
           response.data.tokens;
 
-        LocalStorage.setItem("accessToken", accessToken);
+        LocalStorage.setItem("access_token", accessToken);
         LocalStorage.setItem("refreshToken", newRefreshToken);
 
         axiosInstance.defaults.headers.common.Authorization = `Bearer ${accessToken}`;

@@ -171,7 +171,7 @@ export function OrderPanel() {
                   key={i}
                   className="flex shrink-0 items-center"
                   style={{
-                    width: 310,
+                    width: 322,
                     height: 46,
                     borderRadius: 6,
                     border: "1px solid #CECECE",
