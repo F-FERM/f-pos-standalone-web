@@ -1,3 +1,4 @@
+import { StaticImageData } from "next/image";
 import type { ElementType } from "react";
 
 export type Category = {
@@ -10,7 +11,7 @@ export type Product = {
   id: number;
   name: string;
   price: number;
-  image: string;
+  image: string | StaticImageData;
 };
 
 export type TableStatus = "available" | "running" | "vacating";

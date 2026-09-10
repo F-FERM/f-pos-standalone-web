@@ -96,7 +96,7 @@ export function CategorySidebar({
           width: 3,
           height: THUMB_HEIGHT,
           borderRadius: 5,
-          backgroundColor: "#3B0038",
+          backgroundColor: "#3B0038", 
           opacity: 0,
         }}
       />
@@ -141,7 +141,7 @@ export function CategorySidebar({
                     className="h-[22px] w-[22px] shrink-0 text-secondary xs:h-[26px] xs:w-[26px]"
                     strokeWidth={1.7}
                   />
-                  <span className="mt-0.5 w-full text-center text-[10px] font-medium leading-tight text-secondary xs:text-[12px] md:text-[12px] md:leading-[20px]">
+                  <span className="mt-0.5 w-full text-center text-[10px] font-medium leading-tight text-[#3B0038] xs:text-[12px] md:text-[12px] md:leading-[20px]">
                     {category.name}
                   </span>
                 </button>
