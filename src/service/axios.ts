@@ -17,7 +17,7 @@ const processQueue = (error: any, token: string | null = null) => {
 };
 
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001/api/",
+  baseURL:"http://127.0.0.1:3010/api/",
   headers: {
     "Content-Type": "application/json",
   },
