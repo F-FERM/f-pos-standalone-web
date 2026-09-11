@@ -54,9 +54,8 @@ import {
 // runs on a different origin/port than the API.
 // Prefer an env var so this isn't hardcoded per-environment; falls back to
 // localhost:3005 for local dev.
-const API_MEDIA_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
-  "http://localhost:3005";
+const API_MEDIA_BASE_URL ="http://127.0.0.1:3010";
+  // process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
 
 function getMediaUrl(path?: string | null): string | undefined {
   if (!path) return undefined;
