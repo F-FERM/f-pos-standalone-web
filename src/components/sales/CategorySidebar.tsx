@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { categories } from "./Data";
+import { useQuery } from "@tanstack/react-query";
+import { Cake, IceCreamBowl, Pizza, ShoppingBasket } from "lucide-react";
+import { listCategories } from "@/src/api/category";
 
 type CategorySidebarProps = {
-  selectedId: number;
-  onSelect: (id: number) => void;
+  selectedId: string;
+  onSelect: (id: string) => void;
   /**
    * reports the vertical center (px, relative to the sidebar container) of the
    * selected item. Called synchronously on every scroll event, so the handler
@@ -25,7 +27,23 @@ export function CategorySidebar({
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLSpanElement>(null);
-  const itemRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const categoriesQuery = useQuery({
+    queryKey: ["categories"],
+    queryFn: listCategories,
+  });
+  const categories = categoriesQuery.data?.data || [];
+  const selectedCategoryId = selectedId || categories[0]?._id || "";
+
+  const getCategoryIcon = (name: string) => {
+    const normalizedName = name.toLowerCase();
+    if (normalizedName.includes("combo")) return ShoppingBasket;
+    if (normalizedName.includes("ice")) return IceCreamBowl;
+    if (normalizedName.includes("pizza") || normalizedName.includes("burger")) {
+      return Pizza;
+    }
+    return Cake;
+  };
 
   // Keeps the notch locked onto the selected item wherever it currently sits,
   // and drives the purple scroll indicator. The list is never auto-scrolled to
@@ -43,10 +61,12 @@ export function CategorySidebar({
     const update = () => {
       const containerRect = container.getBoundingClientRect();
 
-      const item = itemRefs.current[selectedId];
+      const item = itemRefs.current[selectedCategoryId];
       if (item) {
         const itemRect = item.getBoundingClientRect();
-        onSelectedCenterChange?.(itemRect.top - containerRect.top + itemRect.height / 2);
+        onSelectedCenterChange?.(
+          itemRect.top - containerRect.top + itemRect.height / 2,
+        );
       }
 
       const thumb = thumbRef.current;
@@ -80,7 +100,7 @@ export function CategorySidebar({
       scrollEl.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-  }, [selectedId, onSelectedCenterChange]);
+  }, [selectedCategoryId, onSelectedCenterChange, categoriesQuery.data]);
 
   return (
     <nav
@@ -96,7 +116,7 @@ export function CategorySidebar({
           width: 3,
           height: THUMB_HEIGHT,
           borderRadius: 5,
-          backgroundColor: "#3B0038", 
+          backgroundColor: "#3B0038",
           opacity: 0,
         }}
       />
@@ -108,40 +128,44 @@ export function CategorySidebar({
         "
       >
         {categories.map((category) => {
-          const Icon = category.icon;
-          const selected = selectedId === category.id;
+          const Icon = getCategoryIcon(category.name);
+          const selected = selectedCategoryId === category._id;
 
           return (
             <div
-              key={category.id}
+              key={category._id}
               ref={(el) => {
-                itemRefs.current[category.id] = el;
+                itemRefs.current[category._id] = el;
               }}
               className="relative flex w-full shrink-0 items-center justify-center"
             >
               {selected ? (
                 <button
                   type="button"
-                  onClick={() => onSelect(category.id)}
+                  onClick={() => onSelect(category._id)}
                   className="
                     relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full
                     border-0 bg-[#670063] shadow-[0_4px_16px_rgba(0,0,0,0.45)]
                     xs:h-12 xs:w-12 sm:h-[52px] sm:w-[52px]
                   "
                 >
-                  <Icon className="h-5 w-5 text-white xs:h-6 xs:w-6 sm:h-6 sm:w-6" strokeWidth={1.8} />
+                  <Icon
+                    className="h-5 w-5 text-white xs:h-6 xs:w-6 sm:h-6 sm:w-6"
+                    strokeWidth={1.8}
+                  />
                 </button>
               ) : (
                 <button
                   type="button"
-                  onClick={() => onSelect(category.id)}
-                  className="relative z-10 flex w-full flex-col items-center justify-center px-4 py-3"
+                  onClick={() => onSelect(category._id)}
+                  title={category.name}
+                  className="relative z-10 flex w-full flex-col items-center justify-center px-1 py-3"
                 >
                   <Icon
                     className="h-[22px] w-[22px] shrink-0 text-secondary xs:h-[26px] xs:w-[26px]"
                     strokeWidth={1.7}
                   />
-                  <span className="mt-0.5 w-full text-center text-[10px] font-medium leading-tight text-[#3B0038] xs:text-[12px] md:text-[12px] md:leading-[20px]">
+                  <span className="mt-0.5 block w-full truncate text-center text-[10px] font-medium leading-tight text-[#3B0038] xs:text-[12px] md:text-[12px] md:leading-[20px]">
                     {category.name}
                   </span>
                 </button>

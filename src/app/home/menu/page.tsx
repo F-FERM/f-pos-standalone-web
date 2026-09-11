@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import userPlus from "../../../../public/images/icons/usergroup.png";
 
 import { Pagination } from "@/src/components/common/Pagination";
@@ -8,14 +11,44 @@ import { SearchInput } from "@/src/components/common/SearchInput";
 import { POSHeader } from "@/src/components/sales/PosHeader";
 
 import AddFoodModal, { NewFoodInput } from "@/src/components/menu/AddFoodModal";
-import AddCategoryModal, { NewCategoryInput } from "@/src/components/menu/AddCategoryModal";
-import AddMenuTypeModal, { NewMenuTypeInput } from "@/src/components/menu/AddMenuTypeModal";
-import AddComboModal, { NewComboInput } from "@/src/components/menu/AddComboModal";
+import AddCategoryModal, {
+  NewCategoryInput,
+} from "@/src/components/menu/AddCategoryModal";
+import AddMenuTypeModal, {
+  NewMenuTypeInput,
+} from "@/src/components/menu/AddMenuTypeModal";
+import AddComboModal, {
+  NewComboInput,
+} from "@/src/components/menu/AddComboModal";
 import { Button } from "@/src/components/ui/button";
 import MenuItemCard from "@/src/components/menu/item";
+import {
+  CategoryRecord,
+  createCategory,
+  deleteCategory,
+  listCategories,
+  updateCategory,
+} from "@/src/api/category";
+import {
+  MenuTypeRecord,
+  createMenuType,
+  deleteMenuType,
+  listMenuTypes,
+  updateMenuType,
+} from "@/src/api/menu-type";
+import { listKitchens } from "@/src/api/kitchen";
+import { listCustomerTypes } from "@/src/api/customer-type";
+import {
+  createFood,
+  deleteFood,
+  updateFood,
+  listFoods,
+  type FoodPayload,
+  type FoodRecord,
+} from "@/src/api/food";
 
 type Category = {
-  id: number;
+  id: string;
   name: string;
   createdBy: string;
   createdDate: string;
@@ -23,7 +56,7 @@ type Category = {
 };
 
 type MenuType = {
-  id: number;
+  id: string;
   name: string;
   createdBy: string;
   createdDate: string;
@@ -31,12 +64,12 @@ type MenuType = {
 };
 
 type Food = {
-  id: number;
+  id: string;
   image?: string;
   name: string;
   category: string;
   kitchen: string;
-  foodType: "Veg" | "Non-Veg";
+  foodType: "VEG" | "NON_VEG";
   createdBy: string;
   createdAt: string;
 };
@@ -109,12 +142,119 @@ function formatDate(date: Date) {
   return `${day}/${month}/${year}`;
 }
 
+// "HOME_DELIVERY" -> "Home Delivery" — used as the card label in the
+// dynamic Pricing section of AddFoodModal.
+function formatCustomerTypeLabel(type: string) {
+  return type
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function formatApiDate(date: string) {
+  const parsedDate = new Date(date);
+  return Number.isNaN(parsedDate.getTime())
+    ? date
+    : parsedDate.toLocaleDateString("en-GB");
+}
+
+function mapCategory(category: CategoryRecord): Category {
+  return {
+    id: category._id,
+    name: category.name,
+    createdBy: category?.createdBy?.username || "Admin",
+    createdDate: formatApiDate(category.createdAt),
+    updatedDate: formatApiDate(category.updatedAt),
+  };
+}
+
+function mapMenuType(menuType: MenuTypeRecord): MenuType {
+  return {
+    id: menuType._id,
+    name: menuType.name,
+    createdBy: menuType.createdBy?.username || "Admin",
+    createdDate: formatApiDate(menuType.createdAt),
+    updatedDate: formatApiDate(menuType.updatedAt),
+  };
+}
+
+function mapFood(food: FoodRecord): Food {
+  return {
+    id: food._id,
+    image: food.foodImage,
+    name: food.name,
+    category: food.categoryId.name || "-",
+    kitchen: food.kitchenId.name || "-",
+    foodType: food.foodType,
+    createdBy: food.createdBy?.username || "Admin",
+    createdAt: formatApiDate(food.createdAt),
+  };
+}
+
+// Converts a raw FoodRecord (from GET /foods/:id) back into the shape
+// AddFoodModal's form expects, so the modal can be pre-filled when editing.
+// Matches the actual getById response shape: menuTypeId/categoryId/kitchenId
+// are populated objects, and customerTypes[].customerTypeId is itself a
+// populated object carrying `type` (DINE_IN / TAKE_AWAY / ONLINE / HOME_DELIVERY).
+function mapFoodToFormValues(food: FoodRecord): NewFoodInput {
+  const record = food as any;
+
+  const menuTypeId = record.menuTypeId?._id || "";
+
+  // Keyed by the master customer-type id (customerTypeId._id), matching
+  // the keys AddFoodModal's dynamic Pricing cards use.
+  const customerPrices: Record<string, number> = {};
+  (record.customerTypes || []).forEach((c: any) => {
+    const id = c.customerTypeId?._id;
+    if (id) customerPrices[id] = c.price ?? 0;
+  });
+
+  // API returns ISO datetimes ("2026-09-11T00:00:00.000Z") but the form's
+  // <input type="date"> only accepts "YYYY-MM-DD" — without this it silently
+  // fails to populate.
+  const toDateInputValue = (value?: string) => {
+    if (!value) return "";
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString().slice(0, 10);
+  };
+
+  return {
+    foodName: record.name,
+    foodImage: record.foodImage,
+    foodType: record.foodType === "VEG" ? "Veg" : "Non-Veg",
+    menuTypes: menuTypeId ? [menuTypeId] : [],
+    category: record.categoryId?._id || "",
+    kitchen: record.kitchenId?._id || "",
+    hasPortions: Boolean(record.isPortionEnabled),
+    portions:
+      record.portions?.map((p: any) => ({ name: p.name, price: p.basePrice })) ||
+      [],
+    basePrice: record.basePrice || 0,
+    customerPrices,
+    hasOffer: Boolean(record.isOfferEnabled),
+    startDate: toDateInputValue(record.offer?.startDate),
+    endDate: toDateInputValue(record.offer?.endDate),
+    discountPercent: record.offer?.discount || 0,
+    choices: record.choices || [],
+    preparationTime: record.preparationTime || 0,
+  };
+}
+
 const TAB_META: Record<
   MenuTab,
   { columns: readonly string[]; grid: string; addLabel: string }
 > = {
-  Category: { columns: CATEGORY_COLUMNS, grid: CATEGORY_GRID, addLabel: "Add Category" },
-  "Menu Type": { columns: MENU_TYPE_COLUMNS, grid: MENU_TYPE_GRID, addLabel: "Add Menu Type" },
+  Category: {
+    columns: CATEGORY_COLUMNS,
+    grid: CATEGORY_GRID,
+    addLabel: "Add Category",
+  },
+  "Menu Type": {
+    columns: MENU_TYPE_COLUMNS,
+    grid: MENU_TYPE_GRID,
+    addLabel: "Add Menu Type",
+  },
   Food: { columns: FOOD_COLUMNS, grid: FOOD_GRID, addLabel: "Add Food" },
   Combo: { columns: COMBO_COLUMNS, grid: COMBO_GRID, addLabel: "Add Combo" },
 };
@@ -122,7 +262,8 @@ const TAB_META: Record<
 export default function MenuPage() {
   const [activeTab, setActiveTab] = useState<MenuTab>("Category");
   const [search, setSearch] = useState("");
-  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(10);
+  const [pageSize, setPageSize] =
+    useState<(typeof PAGE_SIZE_OPTIONS)[number]>(10);
 
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isMenuTypeModalOpen, setIsMenuTypeModalOpen] = useState(false);
@@ -133,28 +274,58 @@ export default function MenuPage() {
   const [menuTypes, setMenuTypes] = useState<MenuType[]>([]);
   const [foods, setFoods] = useState<Food[]>([]);
   const [combos, setCombos] = useState<Combo[]>([]);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingMenuType, setEditingMenuType] = useState<MenuType | null>(null);
+  const [editingFood, setEditingFood] = useState<FoodRecord | null>(null);
+  const queryClient = useQueryClient();
+
+  const categoriesQuery = useQuery({
+    queryKey: ["categories"],
+    queryFn: listCategories,
+  });
+  const menuTypesQuery = useQuery({
+    queryKey: ["menu-types"],
+    queryFn: listMenuTypes,
+  });
+  const kitchensQuery = useQuery({
+    queryKey: ["kitchens"],
+    queryFn: listKitchens,
+  });
+  const customerTypesQuery = useQuery({
+    queryKey: ["customer-types"],
+    queryFn: listCustomerTypes,
+  });
+  const foodsQuery = useQuery({
+    queryKey: ["foods"],
+    queryFn: listFoods,
+  });
+
+  const categoryRows =
+    categoriesQuery.data?.data.map(mapCategory) || categories;
+  const menuTypeRows = menuTypesQuery.data?.data.map(mapMenuType) || menuTypes;
+  const foodRows = foodsQuery.data?.data.map(mapFood) || foods;
 
   const meta = TAB_META[activeTab];
 
   const filteredCategories = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return categories;
-    return categories.filter((c) => c.name.toLowerCase().includes(query));
-  }, [categories, search]);
+    if (!query) return categoryRows;
+    return categoryRows.filter((c) => c.name.toLowerCase().includes(query));
+  }, [categoryRows, search]);
 
   const filteredMenuTypes = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return menuTypes;
-    return menuTypes.filter((m) => m.name.toLowerCase().includes(query));
-  }, [menuTypes, search]);
+    if (!query) return menuTypeRows;
+    return menuTypeRows.filter((m) => m.name.toLowerCase().includes(query));
+  }, [menuTypeRows, search]);
 
   const filteredFoods = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return foods;
-    return foods.filter((f) =>
+    if (!query) return foodRows;
+    return foodRows.filter((f) =>
       [f.name, f.category, f.kitchen].join(" ").toLowerCase().includes(query),
     );
-  }, [foods, search]);
+  }, [foodRows, search]);
 
   const filteredCombos = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -187,52 +358,181 @@ export default function MenuPage() {
     }
   };
 
-  const handleAddCategory = (data: NewCategoryInput) => {
-    const today = formatDate(new Date());
-    setCategories((current) => [
-      ...current,
-      {
-        id: current.length + 1,
-        name: data.categoryName,
-        createdBy: "Admin",
-        createdDate: today,
-        updatedDate: today,
-      },
-    ]);
-    setIsCategoryModalOpen(false);
+  const handleSaveCategory = async (data: NewCategoryInput) => {
+    try {
+      if (editingCategory) {
+        const response = await updateCategory(
+          editingCategory.id,
+          data.categoryName,
+        );
+        setCategories((current) =>
+          current.map((category) =>
+            category.id === editingCategory.id
+              ? mapCategory(response.data)
+              : category,
+          ),
+        );
+        queryClient.invalidateQueries({ queryKey: ["categories"] });
+        toast.success("Category updated successfully");
+      } else {
+        const response = await createCategory(data.categoryName);
+        setCategories((current) => [mapCategory(response.data), ...current]);
+        queryClient.invalidateQueries({ queryKey: ["categories"] });
+        toast.success("Category created successfully");
+      }
+
+      setEditingCategory(null);
+      setIsCategoryModalOpen(false);
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save category",
+      );
+    }
   };
 
-  const handleAddMenuType = (data: NewMenuTypeInput) => {
-    const today = formatDate(new Date());
-    setMenuTypes((current) => [
-      ...current,
-      {
-        id: current.length + 1,
-        name: data.menuType,
-        createdBy: "Admin",
-        createdDate: today,
-        updatedDate: today,
-      },
-    ]);
-    setIsMenuTypeModalOpen(false);
+  const handleDeleteCategory = async (category: Category) => {
+    if (!window.confirm(`Delete ${category.name}?`)) return;
+
+    try {
+      await deleteCategory(category.id);
+      setCategories((current) =>
+        current.filter((item) => item.id !== category.id),
+      );
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      toast.success(`${category.name} deleted successfully`);
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to delete category",
+      );
+    }
   };
 
-  const handleAddFood = (data: NewFoodInput) => {
-    const today = formatDate(new Date());
-    setFoods((current) => [
-      ...current,
-      {
-        id: current.length + 1,
-        image: data.foodImage,
-        name: data.foodName,
-        category: data.category,
-        kitchen: data.kitchen,
-        foodType: data.foodType,
-        createdBy: "Admin",
-        createdAt: today,
-      },
-    ]);
+  const handleSaveMenuType = async (data: NewMenuTypeInput) => {
+    try {
+      if (editingMenuType) {
+        const response = await updateMenuType(
+          editingMenuType.id,
+          data.name,
+        );
+        setMenuTypes((current) =>
+          current.map((menuType) =>
+            menuType.id === editingMenuType.id
+              ? mapMenuType(response.data)
+              : menuType,
+          ),
+        );
+        queryClient.invalidateQueries({ queryKey: ["menu-types"] });
+        toast.success("Menu type updated successfully");
+      } else {
+        const response = await createMenuType(data.name);
+        setMenuTypes((current) => [mapMenuType(response.data), ...current]);
+        queryClient.invalidateQueries({ queryKey: ["menu-types"] });
+        toast.success("Menu type created successfully");
+      }
+
+      setEditingMenuType(null);
+      setIsMenuTypeModalOpen(false);
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save menu type",
+      );
+    }
+  };
+
+  const handleDeleteMenuType = async (menuType: MenuType) => {
+    if (!window.confirm(`Delete ${menuType.name}?`)) return;
+
+    try {
+      await deleteMenuType(menuType.id);
+      setMenuTypes((current) =>
+        current.filter((item) => item.id !== menuType.id),
+      );
+      queryClient.invalidateQueries({ queryKey: ["menu-types"] });
+      toast.success(`${menuType.name} deleted successfully`);
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to delete menu type",
+      );
+    }
+  };
+
+  const handleSaveFood = async (data: NewFoodInput, imageFile?: File) => {
+  const payload: FoodPayload = {
+    name: data.foodName.trim(),
+    foodType: data.foodType === "Veg" ? "VEG" : "NON_VEG",
+    menuTypeId: data.menuTypes[0] || "",
+    categoryId: data.category,
+    kitchenId: data.kitchen,
+    isPortionEnabled: data.hasPortions,
+    portions: data.hasPortions
+      ? data.portions.map((portion) => ({
+          name: portion.name.trim(),
+          basePrice: Number(portion.price) || 0,
+        }))
+      : [],
+    basePrice: Number(data.basePrice) || 0,
+    customerTypes: (customerTypesQuery.data?.data || [])
+      .map((customerType) => ({
+        customerTypeId: customerType._id,
+        price: Number(data.customerPrices?.[customerType._id]) || 0,
+      }))
+      .filter((customerType) => customerType.price > 0),
+    isOfferEnabled: data.hasOffer,
+    offer: data.hasOffer
+      ? {
+          startDate: data.startDate || "",
+          endDate: data.endDate || "",
+          discount: Number(data.discountPercent) || 0,
+        }
+      : undefined,
+    choices: Array.isArray(data.choices)
+      ? data.choices.filter(Boolean)
+      : String(data.choices || "")
+          .split(",")
+          .map((choice) => choice.trim())
+          .filter(Boolean),
+    preparationTime: Number(data.preparationTime) || 0,
+  };
+
+  try {
+    if (editingFood) {
+      const response = await updateFood(editingFood._id, payload, imageFile);
+      setFoods((current) =>
+        current.map((food) =>
+          food.id === editingFood._id ? mapFood(response.data) : food,
+        ),
+      );
+      queryClient.invalidateQueries({ queryKey: ["foods"] });
+      toast.success("Food updated successfully");
+    } else {
+      const response = await createFood(payload, imageFile);
+      setFoods((current) => [mapFood(response.data), ...current]);
+      queryClient.invalidateQueries({ queryKey: ["foods"] });
+      toast.success("Food created successfully");
+    }
+
+    setEditingFood(null);
     setIsFoodModalOpen(false);
+  } catch (error: unknown) {
+    toast.error(
+      error instanceof Error ? error.message : "Unable to save food",
+    );
+  }
+};
+
+  const handleDeleteFood = async (food: Food) => {
+    if (!window.confirm(`Delete ${food.name}?`)) return;
+
+    try {
+      await deleteFood(food.id);
+      setFoods((current) => current.filter((item) => item.id !== food.id));
+      queryClient.invalidateQueries({ queryKey: ["foods"] });
+      toast.success(`${food.name} deleted successfully`);
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to delete food",
+      );
+    }
   };
 
   const handleAddCombo = (data: NewComboInput) => {
@@ -258,11 +558,10 @@ export default function MenuPage() {
 
   const CARD_TOP = 0;
   const CARD_LEFT = 20;
-  const CARD_WIDTH = 984;
   const CARD_HEIGHT = 661;
 
   return (
-    <main className="flex h-full flex-col overflow-y-auto bg-black text-black">
+    <main className="flex h-full flex-col overflow-x-hidden overflow-y-auto bg-black text-black">
       <POSHeader />
 
       {/* relative canvas — explicit min-height guarantees the card + footer always fit and render */}
@@ -276,7 +575,7 @@ export default function MenuPage() {
           style={{
             top: CARD_TOP,
             left: CARD_LEFT,
-            width: CARD_WIDTH,
+            right: CARD_LEFT,
             height: CARD_HEIGHT,
             borderRadius: 15,
             background: "#D2D2D2",
@@ -285,7 +584,7 @@ export default function MenuPage() {
 
         <div
           className="absolute flex items-center justify-between"
-          style={{ top: CARD_TOP + 20, left: 30, width: 964 }}
+          style={{ top: CARD_TOP + 20, left: 30, right: 30 }}
         >
           <div className="flex flex-wrap items-center gap-[12px]">
             {TABS.map((tab) => {
@@ -303,7 +602,9 @@ export default function MenuPage() {
                     width: 120,
                     height: 50,
                     borderRadius: 12,
-                    border: selected ? "1px solid transparent" : "1px solid #9C9C9C",
+                    border: selected
+                      ? "1px solid transparent"
+                      : "1px solid #9C9C9C",
                     background: selected ? "#450042" : "#D2D2D2",
                     paddingTop: 15,
                     paddingRight: 17,
@@ -337,7 +638,7 @@ export default function MenuPage() {
 
         <div
           className="absolute"
-          style={{ top: CARD_TOP + 88, left: 30, width: 964, display: "flex" }}
+          style={{ top: CARD_TOP + 88, left: 30, right: 30, display: "flex" }}
         >
           <SearchInput
             variant="panel"
@@ -348,47 +649,45 @@ export default function MenuPage() {
         </div>
 
         {/* header row — exact spec: 964x40, radius10, bg #EFEFEF */}
-       {/* header row — exact spec: 964x40, radius10, bg #EFEFEF */}
-{/* header row — exact spec: 964x40, radius10, bg #EFEFEF */}
-<div
-  className="absolute hidden items-center sm:flex"
-  style={{
-    top: CARD_TOP + 139,
-    left: 30,
-    width: 964,
-    height: 40,
-    justifyContent: "space-between",
-    borderRadius: 10,
-    background: "#EFEFEF",
-    paddingRight: 11,
-    paddingLeft: 11,
-  }}
->
-  {meta.columns.map((column) => (
-    <span
-      key={column}
-      className="truncate text-center"
-      style={{
-        fontFamily: "Poppins, sans-serif",
-        fontWeight: 400,
-        fontSize: 12,
-        lineHeight: "normal",
-        letterSpacing: 0,
-        color: "#000000",
-      }}
-    >
-      {column}
-    </span>
-  ))}
-</div>
+        <div
+          className="absolute hidden items-center sm:flex"
+          style={{
+            top: CARD_TOP + 139,
+            left: 30,
+            right: 30,
+            height: 40,
+            justifyContent: "space-between",
+            borderRadius: 10,
+            background: "#EFEFEF",
+            paddingRight: 11,
+            paddingLeft: 11,
+          }}
+        >
+          {meta.columns.map((column) => (
+            <span
+              key={column}
+              className="truncate text-center"
+              style={{
+                fontFamily: "Poppins, sans-serif",
+                fontWeight: 400,
+                fontSize: 12,
+                lineHeight: "normal",
+                letterSpacing: 0,
+                color: "#000000",
+              }}
+            >
+              {column}
+            </span>
+          ))}
+        </div>
 
         {/* list — exact spec: 964x255, radius10, bg #B8B8B8, padding 20/0 */}
         <div
-          className="absolute flex flex-col overflow-y-auto"
+          className="absolute flex flex-col overflow-x-hidden overflow-y-auto"
           style={{
             top: CARD_TOP + 184,
             left: 30,
-            width: 964,
+            right: 30,
             height: 255,
             justifyContent: "space-between",
             borderRadius: 10,
@@ -424,7 +723,29 @@ export default function MenuPage() {
                 <span className="truncate">{category.createdBy}</span>
                 <span>{category.createdDate}</span>
                 <span>{category.updatedDate}</span>
-                <span />
+                <span className="flex items-center justify-center gap-2">
+                  <Button
+                    type="button"
+                    variant="editicon"
+                    size="icon"
+                    aria-label={`Edit ${category.name}`}
+                    onClick={() => {
+                      setEditingCategory(category);
+                      setIsCategoryModalOpen(true);
+                    }}
+                  >
+                    <Pencil size={15} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="deleteicon"
+                    size="icon"
+                    aria-label={`Delete ${category.name}`}
+                    onClick={() => handleDeleteCategory(category)}
+                  >
+                    <Trash2 size={15} />
+                  </Button>
+                </span>
               </div>
             ))}
 
@@ -439,7 +760,29 @@ export default function MenuPage() {
                 <span className="truncate">{menuType.createdBy}</span>
                 <span>{menuType.createdDate}</span>
                 <span>{menuType.updatedDate}</span>
-                <span />
+                <span className="flex items-center justify-center gap-2">
+                  <Button
+                    type="button"
+                    variant="editicon"
+                    size="icon"
+                    aria-label={`Edit ${menuType.name}`}
+                    onClick={() => {
+                      setEditingMenuType(menuType);
+                      setIsMenuTypeModalOpen(true);
+                    }}
+                  >
+                    <Pencil size={15} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="deleteicon"
+                    size="icon"
+                    aria-label={`Delete ${menuType.name}`}
+                    onClick={() => handleDeleteMenuType(menuType)}
+                  >
+                    <Trash2 size={15} />
+                  </Button>
+                </span>
               </div>
             ))}
 
@@ -468,7 +811,34 @@ export default function MenuPage() {
                 <span className="truncate">{food.foodType}</span>
                 <span className="truncate">{food.createdBy}</span>
                 <span>{food.createdAt}</span>
-                <span />
+                <span className="flex items-center justify-center gap-2">
+                  <Button
+                    type="button"
+                    variant="editicon"
+                    size="icon"
+                    aria-label={`Edit ${food.name}`}
+                    onClick={() => {
+                      const record = foodsQuery.data?.data.find(
+                        (f) => f._id === food.id,
+                      );
+                      if (record) {
+                        setEditingFood(record);
+                        setIsFoodModalOpen(true);
+                      }
+                    }}
+                  >
+                    <Pencil size={15} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="deleteicon"
+                    size="icon"
+                    aria-label={`Delete ${food.name}`}
+                    onClick={() => handleDeleteFood(food)}
+                  >
+                    <Trash2 size={15} />
+                  </Button>
+                </span>
               </div>
             ))}
 
@@ -503,7 +873,7 @@ export default function MenuPage() {
 
         <div
           className="absolute"
-          style={{ top: CARD_TOP + 184 + 255 + 14, left: 30, width: 964 }}
+          style={{ top: CARD_TOP + 184 + 255 + 14, left: 30, right: 30 }}
         >
           <Pagination
             currentPage={currentPage}
@@ -516,7 +886,11 @@ export default function MenuPage() {
         {/* footer copyright — sits BELOW the card, outside its background, not overlapping it */}
         <div
           className="absolute flex items-center justify-center"
-          style={{ top: CARD_TOP + CARD_HEIGHT + 14, left: CARD_LEFT, width: CARD_WIDTH }}
+          style={{
+            top: CARD_TOP + CARD_HEIGHT + 14,
+            left: CARD_LEFT,
+            right: CARD_LEFT,
+          }}
         >
           <span
             style={{
@@ -528,31 +902,63 @@ export default function MenuPage() {
               color: "#939393",
             }}
           >
-            © 2026 Techon Innovations. All rights reserved.
+            © 2026 FFERM Digital Labs. All rights reserved.
           </span>
         </div>
       </div>
 
       <AddCategoryModal
         isOpen={isCategoryModalOpen}
-        onClose={() => setIsCategoryModalOpen(false)}
-        onAdd={handleAddCategory}
+        onClose={() => {
+          setIsCategoryModalOpen(false);
+          setEditingCategory(null);
+        }}
+        onAdd={handleSaveCategory}
+        mode={editingCategory ? "edit" : "add"}
+        initialCategory={
+          editingCategory ? { categoryName: editingCategory.name } : null
+        }
       />
 
       <AddMenuTypeModal
         isOpen={isMenuTypeModalOpen}
-        onClose={() => setIsMenuTypeModalOpen(false)}
-        onAdd={handleAddMenuType}
+        onClose={() => {
+          setIsMenuTypeModalOpen(false);
+          setEditingMenuType(null);
+        }}
+        onAdd={handleSaveMenuType}
+        mode={editingMenuType ? "edit" : "add"}
+        initialMenuType={editingMenuType?.name ?? null}
       />
 
       <AddFoodModal
         isOpen={isFoodModalOpen}
-        onClose={() => setIsFoodModalOpen(false)}
-        onAdd={handleAddFood}
-        categoryOptions={categories.map((c) => ({ label: c.name, value: c.name }))}
-        menuTypeOptions={menuTypes.map((m) => ({ label: m.name, value: m.name }))}
+        onClose={() => {
+          setIsFoodModalOpen(false);
+          setEditingFood(null);
+        }}
+        onAdd={handleSaveFood}
+        mode={editingFood ? "edit" : "add"}
+        initialFood={editingFood ? mapFoodToFormValues(editingFood) : null}
+        categoryOptions={(categoriesQuery.data?.data || []).map((category) => ({
+          label: category.name,
+          value: category._id,
+        }))}
+        menuTypeOptions={(menuTypesQuery.data?.data || []).map((menuType) => ({
+          label: menuType.name,
+          value: menuType._id,
+        }))}
+        kitchenOptions={(kitchensQuery.data?.data || []).map((kitchen) => ({
+          label: kitchen.name,
+          value: kitchen._id,
+        }))}
+        customerTypeOptions={(customerTypesQuery.data?.data || []).map(
+          (customerType) => ({
+            id: customerType._id,
+            label: formatCustomerTypeLabel(customerType.type),
+          }),
+        )}
       />
-       
 
       <AddComboModal
         isOpen={isComboModalOpen}
@@ -560,9 +966,6 @@ export default function MenuPage() {
         onAdd={handleAddCombo}
         foodOptions={foods.map((f) => ({ label: f.name, value: f.name }))}
       />
-
-   
     </main>
   );
 }
-

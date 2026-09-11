@@ -2,149 +2,219 @@
 
 import FormCombobox, { selectType } from "@/src/components/form/FormCombobox";
 import FormInput from "@/src/components/form/FormInput";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
+import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { z } from "zod";
+import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 
-export type PrinterFormValues = {
-  printerName: string;
-  printerType: string;
-  printerIp: string;
-};
+// ─── Zod schema ───────────────────────────────────────────────────────────────
+const printerSchema = z.object({
+  printerName: z
+    .string()
+    .min(1, "Printer name is required")
+    .max(100, "Printer name must be 100 characters or less"),
+  printerType: z.string().min(1, "Printer type is required"),
+  customerTypeId: z.string().min(1, "Customer type is required"),
+  kitchenId: z.string().min(1, "Kitchen is required"),
+  printerIp: z
+    .string()
+    .min(1, "Printer IP / model is required")
+    .max(200, "Printer IP must be 200 characters or less"),
+  paperWidth: z.string().min(1, "Paper width is required"),
+  isDefault: z.boolean(),
+});
 
-export type NewPrinterInput = {
-  printerName: string;
-  printerType: string;
-  printerIp: string;
-};
+export type PrinterFormValues = z.infer<typeof printerSchema>;
+export type NewPrinterInput = PrinterFormValues;
 
 const emptyForm: PrinterFormValues = {
   printerName: "",
   printerType: "",
+  customerTypeId: "",
+  kitchenId: "",
   printerIp: "",
+  isDefault: false,
+  paperWidth: "",
 };
 
 const PRINTER_TYPE_OPTIONS: selectType[] = [
-  { label: "Kitchen Printer", value: "Kitchen Printer" },
-  { label: "Bill Printer", value: "Bill Printer" },
-  { label: "Bar Printer", value: "Bar Printer" },
+  { label: "Customer Type", value: "Customer Type" },
+  { label: "KOT", value: "KOT" },
+];
+
+const PAPER_WIDTH_OPTIONS: selectType[] = [
+  { label: "MM_58", value: "58mm" },
+  { label: "MM_80", value: "80mm" },
 ];
 
 type AddPrinterModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (printer: NewPrinterInput) => void;
+  mode?: "add" | "edit";
+  initialPrinter?: NewPrinterInput | null;
+  kitchenOptions: selectType[];
+  customerTypeOptions: selectType[];
 };
 
-export default function AddPrinterModal({ isOpen, onClose, onAdd }: AddPrinterModalProps) {
-  const methods = useForm<PrinterFormValues>({ defaultValues: emptyForm });
+export default function AddPrinterModal({
+  isOpen,
+  onClose,
+  onAdd,
+  mode = "add",
+  initialPrinter = null,
+  kitchenOptions,
+  customerTypeOptions,
+}: AddPrinterModalProps) {
+  const methods = useForm<PrinterFormValues>({
+    defaultValues: emptyForm,
+    resolver: zodResolver(printerSchema),
+  });
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen) return;
+    methods.reset(initialPrinter ?? emptyForm);
+  }, [initialPrinter, isOpen, methods]);
 
   const handleClose = () => {
     methods.reset(emptyForm);
     onClose();
   };
 
-  const handleSubmit = () => {
-    const values = methods.getValues();
-    if (!values.printerName || !values.printerName.trim()) return;
-
+  const handleSubmit = methods.handleSubmit((values) => {
     onAdd({
+      ...values,
       printerName: values.printerName.trim(),
-      printerType: values.printerType,
       printerIp: values.printerIp.trim(),
     });
-
     methods.reset(emptyForm);
-  };
+  });
 
   return (
-    <div className="fixed inset-0 z-50 backdrop-blur-[2px]">
-      <FormProvider {...methods}>
-        <div
-          className="absolute"
-          style={{
-            top: 204,
-            left: 106,
-            width: 812,
-            height: 333,
-            borderRadius: 20,
-            border: "1px solid #A6A6A6",
-            background: "#E9E9E9",
-            paddingTop: 26,
-            paddingRight: 34,
-            paddingBottom: 26,
-            paddingLeft: 34,
-            display: "flex",
-            flexDirection: "column",
-            gap: 10,
-            boxShadow: "0 0 30px rgba(0,0,0,0.35)",
-          }}
+    <Dialog
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) handleClose();
+      }}
+    >
+      <DialogContent
+        showCloseButton={false}
+        className="
+          w-[812px] max-w-[calc(100vw-2rem)]
+          flex flex-col gap-[10px]
+          rounded-[20px] border-[1px]
+          bg-[#E9E9E9]
+          pt-[26px] pr-[34px] pb-[26px] pl-[34px]
+          opacity-100 shadow-[0_0_30px_rgba(0,0,0,0.35)]
+        "
+      >
+        <button
+          type="button"
+          onClick={handleClose}
+          className="absolute right-[-18px] top-[-18px] z-10 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B] shadow-lg"
+          aria-label="Close printer modal"
         >
-          <button
-            type="button"
-            onClick={handleClose}
-            className="absolute right-[-18px] top-[-18px] z-10 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B] shadow-lg"
-            aria-label="Close printer modal"
-          >
-            <X size={20} strokeWidth={2.5} />
-          </button>
+          <X size={20} strokeWidth={2.5} />
+        </button>
 
-          <h3
-            style={{
-              fontFamily: "Poppins, sans-serif",
-              fontWeight: 600,
-              fontSize: 22,
-              lineHeight: "100%",
-              letterSpacing: "0%",
-              color: "#000000",
-            }}
-            className="mb-2"
-          >
-            Add Printer
-          </h3>
+        <DialogTitle className="mb-2 text-[22px] font-semibold text-black">
+          {mode === "edit" ? "Edit Printer" : "Add Printer"}
+        </DialogTitle>
 
+        <FormProvider {...methods}>
           <div
-            style={{
-              width: 742,
-              height: 176,
-              borderRadius: 10,
-              border: "1px solid #B5B5B5",
-              background: "#E9E9E9",
-              padding: 10,
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-            }}
+            className="
+              w-full rounded-[10px] border-[1px] border-[#B5B5B5]
+              bg-[#E9E9E9] p-[10px]
+            "
           >
             <div className="grid grid-cols-2 gap-x-[12px] gap-y-[10px]">
               <label className="block">
-                <FormInput name="printerName" placeholder="Enter Printer Name" label="Printer Name" />
+                <FormInput
+                  name="printerName"
+                  placeholder="Enter Printer Name"
+                  label="Printer Name"
+                  required
+                />
               </label>
 
               <label className="block">
                 <FormCombobox
                   name="printerType"
-                  placeholder="Select or search"
+                  placeholder="Select printer type"
                   options={PRINTER_TYPE_OPTIONS}
                   label="Printer Type"
+                  required
                 />
               </label>
 
-              <label className="col-span-2 block">
-                <FormInput name="printerIp" placeholder="Enter Printer Ip" label="Printer Ip" />
+              <label className="block">
+                <FormCombobox
+                  name="kitchenId"
+                  placeholder="Select kitchen"
+                  options={kitchenOptions}
+                  label="Kitchen"
+                  required
+                />
+              </label>
+
+              <label className="block">
+                <FormCombobox
+                  name="customerTypeId"
+                  placeholder="Select customer type"
+                  options={customerTypeOptions}
+                  label="Customer Type"
+                  required
+                />
+              </label>
+
+              <label className="block">
+                <FormInput
+                  name="printerIp"
+                  placeholder="Enter Printer IP"
+                  label="Printer IP"
+                  required
+                />
+              </label>
+
+              <label className="block">
+                <FormCombobox
+                  name="paperWidth"
+                  placeholder="Select paper width"
+                  options={PAPER_WIDTH_OPTIONS}
+                  label="Paper Width"
+                  required
+                />
+              </label>
+
+              <label className="col-span-2 flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-[#B5B5B5]"
+                  {...methods.register("isDefault")}
+                />
+                <span className="font-poppins text-[13px] font-medium text-black">
+                  Set as Default Printer
+                </span>
               </label>
             </div>
           </div>
 
-          <div className="mt-auto flex justify-end">
-            <Button type="button" variant="add" size="none" onClick={handleSubmit}>
-              ADD
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="add"
+              size="none"
+              onClick={handleSubmit}
+            >
+              {mode === "edit" ? "SAVE" : "ADD"}
             </Button>
           </div>
-        </div>
-      </FormProvider>
-    </div>
+        </FormProvider>
+      </DialogContent>
+    </Dialog>
   );
 }

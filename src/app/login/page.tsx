@@ -23,8 +23,7 @@ const ROLES = [
   { value: "cashier", label: "Cashier" },
 ];
 
-const KEYPAD_BUTTON_CLASS =
-  "w-[115px] h-[50px] rounded-[10px] ";
+const KEYPAD_BUTTON_CLASS = "w-[115px] h-[50px] rounded-[10px] ";
 
 const KEYPAD_NUMBER_TEXT_CLASS =
   " font-semibold text-[22px] leading-none tracking-[0%]";
@@ -70,8 +69,7 @@ export default function LoginPage() {
     });
   };
 
-  const handleClear = () =>
-    form.setValue("pin", "", { shouldValidate: true });
+  const handleClear = () => form.setValue("pin", "", { shouldValidate: true });
 
   const onSubmit = (values: LoginFormValues) => {
     userLogin({
@@ -97,31 +95,32 @@ export default function LoginPage() {
 
   return (
     <div className="relative w-full h-full">
-   {/* Background photo */}
-<div className="absolute inset-0 bg-[#141018] bg-cover bg-center bg-[url('/images/login/login-fpos.jpg')]" />
-{/* Darken + blur so the UI stays legible over the photo */}
-<div
-  className="absolute inset-0"
-  style={{
-    background: "#00000066",
-    backdropFilter: "blur(2.8px)",
-    WebkitBackdropFilter: "blur(4.8px)", 
-  }}
-/>
+      {/* Background photo */}
+      <div className="absolute inset-0 bg-[#141018] bg-cover bg-center bg-[url('/images/login/login-fpos.jpg')]" />
 
-        {/* Left: brand + live clock — top-aligned with the card at y=84 */}
-        <section className="absolute left-4 top-[80px] flex w-[90vw] max-w-[480px] flex-col md:left-16 md:top-[140px] md:w-[480px]">
-       
-          <div className="flex flex-col items-start">
+      {/* Darken + blur so the UI stays legible over the photo */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: "#00000066",
+          backdropFilter: "blur(2.8px)",
+          WebkitBackdropFilter: "blur(4.8px)",
+        }}
+      />
+
+      {/* Centered content group: brand/clock + login card, side by side and vertically centered */}
+      <div className="absolute inset-0 flex flex-col md:flex-row items-center justify-center gap-y-10  px-4 py-8 overflow-auto">
+        {/* Left: brand + live clock */}
+        <section className="flex w-full max-w-[480px] flex-col items-center text-center  md:text-left">
+          <div className="flex flex-col items-center md:items-start">
             <FposLogo />
           </div>
-            <span className="font-[GROCHES] text-[20px] md:text-[26px] font-normal leading-[100%] tracking-[0%] text-white ">
-              SERVE FAST SELL SMART
-            </span>
+          <span className="font-[GROCHES] text-[20px] md:text-[26px] font-normal leading-[100%] tracking-[0%] text-white">
+            SERVE FAST SELL SMART
+          </span>
 
-          {/* Gap to clock block — adjust this value to match Figma exactly */}
-          <div className="mt-[40px] md:mt-[80px] flex flex-col gap-1 text-white">
-            <div className="flex items-baseline gap-2 pl-3">
+          <div className="mt-[40px] md:mt-[80px] flex flex-col items-center gap-1 text-white md:items-start">
+            <div className="flex items-baseline gap-2 md:pl-3">
               <span className="font-[Inter,sans-serif] text-[52px] md:text-[82px] font-semibold leading-none tracking-[0%]">
                 {timeValue}
               </span>
@@ -138,14 +137,13 @@ export default function LoginPage() {
           </div>
         </section>
 
-        {/* Login card — 427×539, radius 20, at top:84 left:517 */}
+        {/* Login card */}
         <Form {...form}>
-        <form
-  onSubmit={form.handleSubmit(onSubmit)}
-  className="absolute top-[84px] left-1/2 -translate-x-1/2 flex w-[90vw] max-w-[427px] min-h-[539px] flex-col rounded-[20px]
-    border border-white/40 bg-white/8 pt-6 pr-[31px] pb-[15px] pl-[31px] shadow-2xl backdrop-blur-[2px]
-    md:left-[517px] md:translate-x-0 md:w-[427px]"
->
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="flex w-full max-w-[427px] min-h-[539px] shrink-0 flex-col rounded-[20px]
+              border border-white/40 bg-white/8 pt-6 pr-[31px] pb-[15px] pl-[31px] shadow-2xl backdrop-blur-[2px]"
+          >
             <h1 className="mb-[18px] text-center font-[Poppins,sans-serif] text-[32px] font-semibold leading-none tracking-[0%] text-white">
               Login
             </h1>
@@ -156,9 +154,7 @@ export default function LoginPage() {
               options={ROLES}
               className="mb-[10px]"
             />
-            
 
-           
             <LoginFormInput
               name="pin"
               type="password"
@@ -205,7 +201,7 @@ export default function LoginPage() {
                   "flex items-center justify-center bg-[#3B82F6] text-white shadow-sm transition hover:bg-[#3B82F6]/90 active:scale-[0.98] disabled:opacity-60"
                 )}
               >
-               <RefreshCw  />
+                <RefreshCw />
               </button>
               <button
                 type="button"
@@ -217,7 +213,7 @@ export default function LoginPage() {
                   "flex items-center justify-center bg-[#EF4444] text-white shadow-sm transition hover:bg-[#EF4444]/90 active:scale-[0.98] disabled:opacity-60"
                 )}
               >
-              <CornerDownLeft />
+                <CornerDownLeft />
               </button>
             </div>
 
@@ -231,6 +227,7 @@ export default function LoginPage() {
             </Button>
           </form>
         </Form>
+      </div>
     </div>
   );
 }

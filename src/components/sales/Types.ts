@@ -8,7 +8,7 @@ export type Category = {
 };
 
 export type Product = {
-  id: number;
+  id: string;
   name: string;
   price: number;
   image: string | StaticImageData;
@@ -29,3 +29,4 @@ export type Customer = {
   phone: string;
   credit: number;
 };
+

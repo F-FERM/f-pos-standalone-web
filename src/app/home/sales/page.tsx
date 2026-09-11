@@ -5,12 +5,13 @@ import { InvoiceHeader } from "@/src/components/sales/InvoiceHeader";
 import { OrderPanel } from "@/src/components/sales/OrderPanel";
 import { POSHeader } from "@/src/components/sales/PosHeader";
 import { ProductSection } from "@/src/components/sales/ProductSection";
+import { useState } from "react";
 
 export default function POSScreen() {
   const CARD_TOP = 77;
   const CARD_LEFT = 20;
-  const CARD_WIDTH = 984;
   const CARD_HEIGHT = 661;
+  const [selectedMenuType, setSelectedMenuType] = useState("All");
 
   return (
     <main
@@ -28,7 +29,7 @@ export default function POSScreen() {
         style={{
           top: CARD_TOP,
           left: CARD_LEFT,
-          width: CARD_WIDTH,
+          right: CARD_LEFT,
           height: CARD_HEIGHT,
           borderRadius: 15,
           backgroundColor: "#D2D2D2",
@@ -41,7 +42,7 @@ export default function POSScreen() {
         style={{
           top: 90,
           left: 30,
-          width: 613,
+          width: "calc(63.6% - 38px)",
           height: 56,
           gap: 10,
           borderRadius: 12,
@@ -52,7 +53,10 @@ export default function POSScreen() {
           backgroundColor: "#EFEFEF",
         }}
       >
-        <CategoryHeader />
+        <CategoryHeader
+          selectedFilter={selectedMenuType}
+          onSelectFilter={setSelectedMenuType}
+        />
       </div>
 
       {/* Section 2 — Order/invoice info bar — 341x56 */}
@@ -60,8 +64,8 @@ export default function POSScreen() {
         className="absolute flex items-center"
         style={{
           top: 90,
-          left: 653,
-          width: 341,
+          left: "calc(63.6% + 2px)",
+          right: 30,
           height: 56,
           gap: 10,
           borderRadius: 12,
@@ -81,22 +85,29 @@ export default function POSScreen() {
         style={{
           top: 159,
           left: 30,
-          width: 613,
+          width: "calc(63.6% - 38px)",
           height: 564,
         }}
       >
-        <ProductSection />
+        <ProductSection selectedMenuType={selectedMenuType} />
       </div>
 
       {/* Section 4 — Order panel — anchored at top:153 left:653 */}
-      <div className="absolute" style={{ top: 153, left: 653, width: 341 }}>
+      <div
+        className="absolute"
+        style={{ top: 153, left: "calc(63.6% + 2px)", right: 30 }}
+      >
         <OrderPanel />
       </div>
 
       {/* Footer copyright — sits BELOW the backdrop card, not overlapping it */}
       <div
         className="absolute flex items-center justify-center"
-        style={{ top: CARD_TOP + CARD_HEIGHT + 14, left: CARD_LEFT, width: CARD_WIDTH }}
+        style={{
+          top: CARD_TOP + CARD_HEIGHT + 14,
+          left: CARD_LEFT,
+          right: CARD_LEFT,
+        }}
       >
         <span
           style={{
@@ -108,9 +119,10 @@ export default function POSScreen() {
             color: "#939393",
           }}
         >
-          © 2026 Techon Innovations. All rights reserved.
+          © 2026 FFERM Digital Labs. All rights reserved.
         </span>
       </div>
     </main>
   );
 }
+

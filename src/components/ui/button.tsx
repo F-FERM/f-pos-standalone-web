@@ -33,7 +33,7 @@ const buttonVariants = cva(
         deleteicon:
           "h-4 p-1 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 cursor-pointer flex-shrink-0 text-red-600 hover:bg-red-100 hover:text-red-600 transition-colors",
         editicon:
-          "h-4 p-1 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 cursor-pointer flex-shrink-0 hover:bg-primary-100 transition-colors text-primary",
+          "h-4 p-1 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 cursor-pointer flex-shrink-0 hover:bg-gray-100 transition-colors text-gray-800",
         viewicon:
           "h-4 p-1 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 cursor-pointer hover:bg-gray-200",
         addcustomer:
