@@ -1,31 +1,35 @@
 "use client";
 
 import { ChevronLeft, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
 type POSHeaderProps = {
   variant?: "default" | "compact";
 };
+
 export function POSHeader() {
+  const router = useRouter();
+
   return (
     <header
       className="flex items-center justify-between bg-[#EFEFEF]"
       style={{
-        width: 1024,
+        // width: 1024,
         height: 77,
         gap: 10,
         paddingTop: 22,
         paddingRight: 20,
         paddingBottom: 22,
         paddingLeft: 20,
-        
-
       }}
     >
       {/* Left: back button — 40x40, radius 5, padding 6, bg #B3B3B336 */}
       <Button
         variant="ghost"
         size="icon"
+        onClick={() => router.back()}
         className="shrink-0 rounded-[5px] p-[6px] text-black text-xl hover:bg-[#B3B3B336]"
         style={{
           width: 40,
@@ -68,7 +72,10 @@ export function POSHeader() {
       </div>
 
       {/* Right: admin profile — 150x40, gap 10 */}
-      <div className="flex shrink-0 items-center" style={{ width: 150, height: 40, gap: 10 }}>
+      <div
+        className="flex shrink-0 items-center"
+        style={{ width: 150, height: 40, gap: 10 }}
+      >
         <Avatar
           className="flex items-center justify-center bg-[#EFEFEF]"
           style={{
@@ -113,3 +120,4 @@ export function POSHeader() {
     </header>
   );
 }
+

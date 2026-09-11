@@ -17,7 +17,7 @@ const processQueue = (error: any, token: string | null = null) => {
 };
 
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001/api/",
+  baseURL: process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3005/api/",
   headers: {
     "Content-Type": "application/json",
   },
@@ -36,7 +36,7 @@ axiosInstance.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor
@@ -100,7 +100,8 @@ axiosInstance.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;
+

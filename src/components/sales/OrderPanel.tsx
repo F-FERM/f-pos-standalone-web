@@ -1,13 +1,32 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Minus, Plus, X, UsersRound, Table2, ClipboardList } from "lucide-react";
-import { products } from "./Data";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  Minus,
+  Plus,
+  X,
+  UsersRound,
+  Table2,
+  ClipboardList,
+} from "lucide-react";
+import {
+  listCustomerTypes,
+  type CustomerTypeValue,
+} from "@/src/api/customer-type";
+import { listFoods, type FoodRecord } from "@/src/api/food";
+import { createOrder, type OrderStatus } from "@/src/api/order";
 import { TableModal } from "./TableModal";
 import { OrderModal } from "./OrderModal";
 import { CustomerModal } from "./CustomerModal";
 
-const orderTypes = ["Dine", "Take Away", "Online", "Home delivery"];
+const CUSTOMER_TYPE_LABELS: Record<CustomerTypeValue, string> = {
+  DINE_IN: "Dine",
+  TAKE_AWAY: "Take Away",
+  ONLINE: "Online",
+  HOME_DELIVERY: "Home delivery",
+};
 const footerActions = [
   { icon: Table2, label: "Table" },
   { icon: ClipboardList, label: "Order" },
@@ -15,12 +34,147 @@ const footerActions = [
 ];
 
 export function OrderPanel() {
-  const [selectedType, setSelectedType] = useState("Online");
+  const [selectedType, setSelectedType] = useState<CustomerTypeValue | null>(
+    null,
+  );
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  // per-item quantity, keyed by foodId — this is what the +/- buttons drive
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const customerTypesQuery = useQuery({
+    queryKey: ["customer-types"],
+    queryFn: listCustomerTypes,
+  });
+  const foodsQuery = useQuery({
+    queryKey: ["foods"],
+    queryFn: listFoods,
+  });
 
-  const cartItems = Array(6).fill(products[0]); // placeholder — wire to real cart state
+  const customerTypes = customerTypesQuery.data?.data || [];
+  const foods = foodsQuery.data?.data || [];
+
+  // default to the first customer type once the list loads, instead of a
+  // hardcoded value that may not exist in this account's list
+  useEffect(() => {
+    if (!selectedType && customerTypes.length > 0) {
+      setSelectedType(customerTypes[0].type);
+    }
+  }, [customerTypes, selectedType]);
+
+  const selectedCustomerType = customerTypes.find(
+    (customerType) => customerType.type === selectedType,
+  );
+  const cartItems = foods;
+
+  const getQty = (foodId: string) => quantities[foodId] ?? 1;
+
+  const getSelectedPortion = (food: FoodRecord) =>
+    food.isPortionEnabled ? food.portions?.[0] : undefined;
+
+  // the customer-type-specific price this food defines for the currently
+  // selected type, falling back to the food's flat basePrice if it has none
+  const getCustomerTypePrice = (food: FoodRecord) => {
+    const override = selectedCustomerType
+      ? food.customerTypes?.find(
+          (ct) => ct.customerTypeId._id === selectedCustomerType._id,
+        )
+      : undefined;
+    return override?.price ?? food.basePrice;
+  };
+
+  // selling price: the selected portion's basePrice when portions apply,
+  // otherwise the customer-type price
+  const getItemPrice = (food: FoodRecord) => {
+    const portion = getSelectedPortion(food);
+    return portion ? portion.basePrice : getCustomerTypePrice(food);
+  };
+
+  // originalPrice reports the customer-type price regardless of portion
+  const getItemOriginalPrice = (food: FoodRecord) => getCustomerTypePrice(food);
+
+  const getItemPortionId = (food: FoodRecord): string | null =>
+    getSelectedPortion(food)?._id ?? null;
+
+  // only sent when this food actually defines a price override for the
+  // selected customer type — otherwise there's nothing to report
+  const getPriceDetails = (food: FoodRecord) => {
+    const override = selectedCustomerType
+      ? food.customerTypes?.find(
+          (ct) => ct.customerTypeId._id === selectedCustomerType._id,
+        )
+      : undefined;
+    if (!override || !selectedCustomerType) return undefined;
+    return {
+      customerTypeId: selectedCustomerType._id,
+      price: override.price,
+    };
+  };
+
+  const handleIncrement = (foodId: string) => {
+    setQuantities((prev) => ({ ...prev, [foodId]: getQty(foodId) + 1 }));
+  };
+
+  const handleDecrement = (foodId: string) => {
+    setQuantities((prev) => ({
+      ...prev,
+      [foodId]: Math.max(1, getQty(foodId) - 1),
+    }));
+  };
+
+  const subtotal = cartItems.reduce(
+    (sum, food) => sum + getItemPrice(food) * getQty(food._id),
+    0,
+  );
+  const vat = 0;
+  const total = subtotal + vat;
+
+  const handleOrderAction = async (status: OrderStatus) => {
+    if (!selectedCustomerType || cartItems.length === 0) return;
+
+    try {
+      await createOrder({
+        customerTypeId: selectedCustomerType._id,
+        vat,
+        items: cartItems.map((food: FoodRecord) => {
+          const qty = getQty(food._id);
+          const price = getItemPrice(food);
+          const originalPrice = getItemOriginalPrice(food);
+          return {
+            foodId: food._id,
+            portion: getItemPortionId(food),
+            price,
+            originalPrice,
+            qty,
+            total: price * qty,
+            foodName: food.name,
+            priceDetails: getPriceDetails(food),
+          };
+        }),
+        subTotal: subtotal,
+        total,
+        discount: 0,
+        status,
+      });
+
+      if (status === "Placed") {
+        toast.success("Order saved successfully!");
+      } else if (status === "Printed") {
+        toast.success("Order sent to print!");
+      } else if (status === "Cancelled") {
+        toast.success("Order cancelled.");
+      }
+    } catch (error: any) {
+      // surface the backend's actual rejection reason instead of a bare error object
+      console.error(
+        "Unable to create order",
+        error?.response?.data ?? error,
+      );
+      toast.error(
+        error?.response?.data?.message ?? error?.message ?? "Unable to process order",
+      );
+    }
+  };
 
   // --- cart scroll indicator (same pattern as CategorySidebar) ---
   const cartScrollRef = useRef<HTMLDivElement>(null);
@@ -64,21 +218,27 @@ export function OrderPanel() {
   return (
     <>
       <div className="relative flex flex-col">
-        {/* Order-type toggle bar — 341x20 */}
+        {/* Order-type toggle bar — full width, 20 tall */}
         <div
           className="flex items-center"
-          style={{ width: 341, height: 20, borderRadius: 10, background: "#D2D2D2", justifyContent: "space-between" }}
+          style={{
+            width: "100%",
+            height: 20,
+            borderRadius: 10,
+            background: "#D2D2D2",
+            justifyContent: "space-between",
+          }}
         >
-          {orderTypes.map((type) => {
-            const active = type === selectedType;
+          {customerTypes.map((customerType) => {
+            const active = customerType.type === selectedType;
+            const label = CUSTOMER_TYPE_LABELS[customerType.type];
             return (
               <button
-                key={type}
+                key={customerType._id}
                 type="button"
-                onClick={() => setSelectedType(type)}
-                className="flex items-center justify-center"
+                onClick={() => setSelectedType(customerType.type)}
+                className="flex flex-1 items-center justify-center"
                 style={{
-                  width: 77,
                   height: 20,
                   borderRadius: 6,
                   paddingTop: 8,
@@ -97,19 +257,19 @@ export function OrderPanel() {
                     color: active ? "#FFFFFF" : "#3B0038",
                   }}
                 >
-                  {type}
+                  {label}
                 </span>
               </button>
             );
           })}
         </div>
 
-        {/* Card — 341x546 */}
+        {/* Card — full width, 546 tall */}
         <div
           className="flex flex-col overflow-hidden"
           style={{
             marginTop: 6,
-            width: 341,
+            width: "100%",
             height: 546,
             borderRadius: 15,
             border: "1px solid #C4C4C4",
@@ -131,13 +291,34 @@ export function OrderPanel() {
               borderTopRightRadius: 15,
             }}
           >
-            <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 10, color: "#3B0038" }}>
+            <span
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontWeight: 400,
+                fontSize: 10,
+                color: "#3B0038",
+              }}
+            >
               Item
             </span>
-            <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 10, color: "#3B0038" }}>
+            <span
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontWeight: 400,
+                fontSize: 10,
+                color: "#3B0038",
+              }}
+            >
               Quantity
             </span>
-            <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 400, fontSize: 10, color: "#3B0038" }}>
+            <span
+              style={{
+                fontFamily: "Inter, sans-serif",
+                fontWeight: 400,
+                fontSize: 10,
+                color: "#3B0038",
+              }}
+            >
               Amount
             </span>
           </div>
@@ -166,115 +347,209 @@ export function OrderPanel() {
               "
               style={{ padding: "10px 6px 6px 10px", gap: 8 }}
             >
-              {cartItems.map((product, i) => (
-                <div
-                  key={i}
-                  className="flex shrink-0 items-center"
-                  style={{
-                    width: 322,
-                    height: 46,
-                    borderRadius: 6,
-                    border: "1px solid #CECECE",
-                    paddingTop: 3,
-                    paddingRight: 5,
-                    paddingBottom: 3,
-                    paddingLeft: 5,
-                  }}
-                >
-                  <img
-                    src={product.image}
-                    alt=""
-                    className="shrink-0 object-cover"
-                    style={{ width: 97, height: 41, borderRadius: 5 }}
-                  />
+              {cartItems.map((product) => {
+                const qty = getQty(product._id);
+                const lineTotal = getItemPrice(product) * qty;
 
-                  <div className="flex min-w-0 flex-1 flex-col justify-center" style={{ marginLeft: 8, gap: 2 }}>
-                    <p
-                      className="truncate"
-                      style={{ fontFamily: "Poppins, sans-serif", fontWeight: 500, fontSize: 12, color: "#000000" }}
+                return (
+                  <div
+                    key={product._id}
+                    className="flex shrink-0 items-center"
+                    style={{
+                      width: "100%",
+                      height: 46,
+                      borderRadius: 6,
+                      border: "1px solid #CECECE",
+                      paddingTop: 3,
+                      paddingRight: 5,
+                      paddingBottom: 3,
+                      paddingLeft: 5,
+                    }}
+                  >
+                    <img
+                      src={product.foodImage || "/images/icons/butterscotch.jpg"}
+                      alt={product.name}
+                      className="shrink-0 object-cover"
+                      style={{ width: 97, height: 41, borderRadius: 5 }}
+                    />
+
+                    <div
+                      className="flex min-w-0 flex-1 flex-col justify-center"
+                      style={{ marginLeft: 8, gap: 2 }}
                     >
-                      {product.name}
-                    </p>
+                      <p
+                        className="truncate"
+                        style={{
+                          fontFamily: "Poppins, sans-serif",
+                          fontWeight: 500,
+                          fontSize: 12,
+                          color: "#000000",
+                        }}
+                      >
+                        {product.name}
+                      </p>
 
-                    <div className="flex items-center" style={{ gap: 7 }}>
-                      <button
-                        type="button"
-                        className="flex h-[15px] w-[15px] items-center justify-center rounded-full"
-                        style={{ background: "white", border: "1px solid #C4C4C4" }}
-                      >
-                        <Minus size={9} className="text-black" />
-                      </button>
-                      <span className="text-[13px] font-medium" style={{ color: "#000000" }}>
-                        1
-                      </span>
-                      <button
-                        type="button"
-                        className="flex h-[15px] w-[15px] items-center justify-center rounded-full"
-                        style={{ background: "#670063" }}
-                      >
-                        <Plus size={9} className="text-white" />
-                      </button>
+                      <div className="flex items-center" style={{ gap: 7 }}>
+                        <button
+                          type="button"
+                          onClick={() => handleDecrement(product._id)}
+                          className="flex h-[15px] w-[15px] items-center justify-center rounded-full"
+                          style={{
+                            background: "white",
+                            border: "1px solid #C4C4C4",
+                          }}
+                        >
+                          <Minus size={9} className="text-black" />
+                        </button>
+                        <span
+                          className="text-[13px] font-medium"
+                          style={{ color: "#000000" }}
+                        >
+                          {qty}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleIncrement(product._id)}
+                          className="flex h-[15px] w-[15px] items-center justify-center rounded-full"
+                          style={{ background: "#670063" }}
+                        >
+                          <Plus size={9} className="text-white" />
+                        </button>
+                      </div>
                     </div>
+
+                    <span
+                      className="shrink-0 pl-2"
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontWeight: 600,
+                        fontSize: 16,
+                        color: "#000000",
+                      }}
+                    >
+                      ₹{lineTotal}
+                    </span>
+
+                    <button
+                      type="button"
+                      className="ml-[10px] flex shrink-0 items-center justify-center"
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: 10,
+                        padding: 2,
+                        background: "#FF0F0F",
+                      }}
+                    >
+                      <X size={10} className="text-white" />
+                    </button>
                   </div>
-
-                  <span
-                    className="shrink-0 pl-2"
-                    style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: 16, color: "#000000" }}
-                  >
-                    ₹{product.price}
-                  </span>
-
-                  <button
-                    type="button"
-                    className="ml-[10px] flex shrink-0 items-center justify-center"
-                    style={{ width: 16, height: 16, borderRadius: 10, padding: 2, background: "#FF0F0F" }}
-                  >
-                    <X size={10} className="text-white" />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           {/* small gap + hairline before totals */}
           <div style={{ height: 4 }} />
-          <div className=" shrink-0" style={{ width: 321, margin: "0 auto", borderColor: "#CECECE" }} />
+          <div
+            className=" shrink-0"
+            style={{ width: "calc(100% - 20px)", margin: "0 auto", borderColor: "#CECECE" }}
+          />
           <div style={{ height: 6 }} />
 
-          {/* Bottom stack: totals + action buttons + footer, 321 wide, gap 5 */}
-          <div className="flex shrink-0 flex-col" style={{ width: 321, margin: "0 auto", gap: 2, paddingBottom: 10 }}>
+          {/* Bottom stack: totals + action buttons + footer */}
+          <div
+            className="flex shrink-0 flex-col"
+            style={{ width: "calc(100% - 20px)", margin: "0 auto", gap: 2, paddingBottom: 10 }}
+          >
             <div
               className="flex justify-between"
-              style={{ fontFamily: "Poppins, sans-serif", fontWeight: 500, fontSize: 12, color: "#000000" }}
+              style={{
+                fontFamily: "Poppins, sans-serif",
+                fontWeight: 500,
+                fontSize: 12,
+                color: "#000000",
+              }}
             >
               <span>Items ({cartItems.length})</span>
-              <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 400, fontSize: 10 }}>200.00</span>
+              <span
+                style={{
+                  fontFamily: "Poppins, sans-serif",
+                  fontWeight: 400,
+                  fontSize: 10,
+                }}
+              >
+                {subtotal.toFixed(2)}
+              </span>
             </div>
 
             <div
               className="flex justify-between"
-              style={{ fontFamily: "Poppins, sans-serif", fontWeight: 500, fontSize: 12, color: "#000000" }}
+              style={{
+                fontFamily: "Poppins, sans-serif",
+                fontWeight: 500,
+                fontSize: 12,
+                color: "#000000",
+              }}
             >
               <span>Subtotal</span>
-              <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 400, fontSize: 10 }}>200.00</span>
+              <span
+                style={{
+                  fontFamily: "Poppins, sans-serif",
+                  fontWeight: 400,
+                  fontSize: 10,
+                }}
+              >
+                {subtotal.toFixed(2)}
+              </span>
             </div>
 
             <div
               className="flex justify-between"
-              style={{ fontFamily: "Poppins, sans-serif", fontWeight: 500, fontSize: 12, color: "#000000" }}
+              style={{
+                fontFamily: "Poppins, sans-serif",
+                fontWeight: 500,
+                fontSize: 12,
+                color: "#000000",
+              }}
             >
               <span>VAT(0%)</span>
-              <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 400, fontSize: 10 }}>0.00</span>
+              <span
+                style={{
+                  fontFamily: "Poppins, sans-serif",
+                  fontWeight: 400,
+                  fontSize: 10,
+                }}
+              >
+                {vat.toFixed(2)}
+              </span>
             </div>
 
-            <div className="border-t mt-1 mb-1" style={{ borderColor: "#878787" }} />
+            <div
+              className="border-t mt-1 mb-1"
+              style={{ borderColor: "#878787" }}
+            />
 
             <div className="flex justify-between items-center">
-              <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 16, color: "#000000" }}>
+              <span
+                style={{
+                  fontFamily: "Poppins, sans-serif",
+                  fontWeight: 700,
+                  fontSize: 16,
+                  color: "#000000",
+                }}
+              >
                 Total
               </span>
-              <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 16, color: "#000000" }}>
-                200.00
+              <span
+                style={{
+                  fontFamily: "Poppins, sans-serif",
+                  fontWeight: 700,
+                  fontSize: 16,
+                  color: "#000000",
+                }}
+              >
+                {total.toFixed(2)}
               </span>
             </div>
 
@@ -282,22 +557,47 @@ export function OrderPanel() {
               <button
                 type="button"
                 className="flex items-center justify-center text-white"
-                style={{ width: 105, height: 32, borderRadius: 10, background: "#3EA200", fontSize: 12, fontWeight: 600 }}
+                style={{
+                  width: 105,
+                  height: 32,
+                  borderRadius: 10,
+                  background: "#3EA200",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+                onClick={() => handleOrderAction("Placed")}
               >
                 Save
               </button>
               <button
                 type="button"
                 className="flex items-center justify-center text-white"
-                style={{ width: 105, height: 32, borderRadius: 10, background: "#3B0038", fontSize: 12, fontWeight: 600 }}
-                onClick={() => setIsOrderModalOpen(true)}
+                style={{
+                  width: 105,
+                  height: 32,
+                  borderRadius: 10,
+                  background: "#3B0038",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+                onClick={() => {
+                  void handleOrderAction("Printed");
+                }}
               >
                 Print
               </button>
               <button
                 type="button"
                 className="flex items-center justify-center text-white"
-                style={{ width: 105, height: 32, borderRadius: 10, background: "#FF0F0F", fontSize: 12, fontWeight: 600 }}
+                style={{
+                  width: 105,
+                  height: 32,
+                  borderRadius: 10,
+                  background: "#FF0F0F",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+                onClick={() => handleOrderAction("Cancelled")}
               >
                 Cancel
               </button>
@@ -306,7 +606,7 @@ export function OrderPanel() {
             <div
               className="flex items-center"
               style={{
-                width: 321,
+                width: "100%",
                 height: 64,
                 borderRadius: 10,
                 background: "#D2D2D2",
@@ -340,7 +640,14 @@ export function OrderPanel() {
                   }}
                 >
                   <Icon size={18} style={{ color: "#3B0038" }} />
-                  <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 400, fontSize: 8, color: "#3B0038" }}>
+                  <span
+                    style={{
+                      fontFamily: "Poppins, sans-serif",
+                      fontWeight: 400,
+                      fontSize: 8,
+                      color: "#3B0038",
+                    }}
+                  >
                     {label}
                   </span>
                 </button>
@@ -350,9 +657,18 @@ export function OrderPanel() {
         </div>
       </div>
 
-      <TableModal open={isTableModalOpen} onClose={() => setIsTableModalOpen(false)} />
-      <OrderModal open={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} />
-      <CustomerModal open={isCustomerModalOpen} onClose={() => setIsCustomerModalOpen(false)} />
+      <TableModal
+        open={isTableModalOpen}
+        onClose={() => setIsTableModalOpen(false)}
+      />
+      <OrderModal
+        open={isOrderModalOpen}
+        onClose={() => setIsOrderModalOpen(false)}
+      />
+      <CustomerModal
+        open={isCustomerModalOpen}
+        onClose={() => setIsCustomerModalOpen(false)}
+      />
     </>
   );
 }

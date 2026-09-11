@@ -1,45 +1,87 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Plus, X } from "lucide-react";
-import { Controller, FormProvider, useFieldArray, useForm } from "react-hook-form";
+import {
+  FormProvider,
+  useFieldArray,
+  useForm,
+  type FieldError,
+  type Resolver,
+} from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
 import FormInput from "@/src/components/form/FormInput";
 import FormMultiSelectInput, {
   selectType,
 } from "@/src/components/form/FormMultiSelectInput";
-import { FormDatePicker } from "@/src/components/form/FormDatePicker";
+import FormCombobox from "@/src/components/form/FormCombobox";
 
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 
-export type PortionInput = {
-  name: string;
-  price: number;
-};
+// ─── Zod schema ───────────────────────────────────────────────────────────────
+// Required fields: foodName, foodType, menuTypes, category, kitchen, basePrice.
+// Everything else (portions, pricing, offer dates/discount, choices, prep time)
+// is optional, and 0 is a valid value wherever a number field isn't required.
+const portionSchema = z.object({
+  name: z.string().min(1, "Portion name is required"),
+  price: z.coerce.number().min(0, "Price must be 0 or more"),
+});
 
-export type FoodFormValues = {
-  foodName: string;
-  foodImage?: string;
-  foodType: "Veg" | "Non-Veg";
-  menuTypes: string[];
-  category: string;
-  kitchen: string;
-  hasPortions: boolean;
-  portions: PortionInput[];
-  basePrice: number;
-  dineInPrice: number;
-  takeAwayPrice: number;
-  onlinePrice: number;
-  homeDeliveryPrice: number;
-  hasOffer: boolean;
-  offerStartDate?: Date;
-  offerEndDate?: Date;
-  discountPercent: number;
-  choices: string[];
-  preparationTime: number;
-};
+const foodSchema = z
+  .object({
+    foodName: z
+      .string()
+      .min(1, "Food name is required")
+      .max(150, "Food name must be 150 characters or less"),
+   foodImage: z.string().nullish(),
+    foodType: z.enum(["Veg", "Non-Veg"]),
+    menuTypes: z.array(z.string()).min(1, "Select at least one menu type"),
+    category: z.string().min(1, "Category is required"),
+    kitchen: z.string().min(1, "Kitchen is required"),
+    hasPortions: z.boolean(),
+    portions: z.array(portionSchema),
+    // basePrice: unlike z.coerce.number() alone, this rejects a blank field
+    // instead of silently coercing "" -> 0. 0 typed explicitly is still valid.
+    basePrice: z
+      .union([z.string(), z.number()])
+      .transform((val) => (typeof val === "string" ? val.trim() : val))
+      .refine((val) => val !== "" && val !== undefined && val !== null, {
+        message: "Base price is required",
+      })
+      .transform((val) => Number(val))
+      .refine((val) => !Number.isNaN(val), {
+        message: "Base price must be a valid number",
+      })
+      .refine((val) => val >= 0, {
+        message: "Base price must be 0 or more",
+      }),
+    // Keyed by customer type id — optional pricing, 0 is fine per channel.
+    customerPrices: z.record(z.string(), z.coerce.number().min(0)),
+    hasOffer: z.boolean(),
+    startDate: z.string().optional().or(z.literal("")),
+    endDate: z.string().optional().or(z.literal("")),
+    discountPercent: z.coerce.number().min(0).max(100),
+    choices: z.array(z.string()),
+    preparationTime: z.coerce.number().min(0, "Must be 0 or more"),
+  })
+  // Only remaining cross-field rule: if both dates happen to be filled in,
+  // keep them in order. Neither portions, nor start/end date, are required.
+  .refine(
+    (data) =>
+      !data.hasOffer ||
+      !data.startDate ||
+      !data.endDate ||
+      new Date(data.endDate) >= new Date(data.startDate),
+    {
+      message: "End date must be on or after the start date",
+      path: ["endDate"],
+    },
+  );
 
+export type FoodFormValues = z.infer<typeof foodSchema>;
 export type NewFoodInput = FoodFormValues;
 
 const emptyForm: FoodFormValues = {
@@ -52,27 +94,33 @@ const emptyForm: FoodFormValues = {
   hasPortions: false,
   portions: [],
   basePrice: 0,
-  dineInPrice: 0,
-  takeAwayPrice: 0,
-  onlinePrice: 0,
-  homeDeliveryPrice: 0,
+  customerPrices: {},
   hasOffer: false,
-  offerStartDate: undefined,
-  offerEndDate: undefined,
+  startDate: "",
+  endDate: "",
   discountPercent: 0,
   choices: [],
   preparationTime: 0,
 };
 
+// One entry per customer type coming back from the customer-type API
+// (e.g. { id: "6aa37e69...", label: "Take Away" }) — the Pricing section
+// renders one price card per entry instead of four hardcoded channels.
+export type CustomerTypeOption = {
+  id: string;
+  label: string;
+};
 type AddFoodModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (data: NewFoodInput) => void;
+  onAdd: (data: NewFoodInput, imageFile?: File) => void;
   categoryOptions: selectType[];
   menuTypeOptions: selectType[];
   kitchenOptions?: selectType[];
+  customerTypeOptions: CustomerTypeOption[];
+  mode?: "add" | "edit";
+  initialFood?: FoodFormValues | null;
 };
-
 const foodTypeLabelStyle: React.CSSProperties = {
   fontFamily: "Poppins",
   fontWeight: 400,
@@ -82,6 +130,15 @@ const foodTypeLabelStyle: React.CSSProperties = {
   color: "#808080",
 };
 
+// Small helper so we never have to `as string` a FieldError/Merge union —
+// FieldError.message is already `string | undefined`, this just narrows
+// the wider RHF error-shape (arrays/objects) down safely for display.
+function getErrorMessage(
+  error: FieldError | { message?: string } | undefined,
+): string | undefined {
+  return error && typeof error.message === "string" ? error.message : undefined;
+}
+
 export default function AddFoodModal({
   isOpen,
   onClose,
@@ -89,12 +146,19 @@ export default function AddFoodModal({
   categoryOptions,
   menuTypeOptions,
   kitchenOptions = [],
+  customerTypeOptions,
+  mode = "add",
+  initialFood = null,
 }: AddFoodModalProps) {
-  const methods = useForm<FoodFormValues>({ defaultValues: emptyForm });
+  const methods = useForm<FoodFormValues>({
+    defaultValues: emptyForm,
+    resolver: zodResolver(foodSchema) as Resolver<FoodFormValues>,
+  });
   const [imagePreview, setImagePreview] = useState<string | undefined>(
     undefined,
   );
-  const [createdChoices, setCreatedChoices] = useState<selectType[]>([]);
+  const [imageFile, setImageFile] = useState<File | undefined>(undefined);
+  const [choiceInput, setChoiceInput] = useState("");
 
   const hasOffer = methods.watch("hasOffer");
   const hasPortions = methods.watch("hasPortions");
@@ -104,6 +168,35 @@ export default function AddFoodModal({
     append: appendPortion,
     remove: removePortion,
   } = useFieldArray({ control: methods.control, name: "portions" });
+
+  
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const defaultCustomerPrices = customerTypeOptions.reduce<Record<string, number>>(
+      (acc, option) => {
+        acc[option.id] = 0;
+        return acc;
+      },
+      {},
+    );
+
+    const values: FoodFormValues =
+      mode === "edit" && initialFood
+        ? {
+            ...initialFood,
+            customerPrices: {
+              ...defaultCustomerPrices,
+              ...initialFood.customerPrices,
+            },
+          }
+        : { ...emptyForm, customerPrices: defaultCustomerPrices };
+
+    methods.reset(values);
+    setImagePreview(values.foodImage ?? undefined);
+    setChoiceInput("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, mode, initialFood, customerTypeOptions]);
 
   const handlePortionsToggle = (checked: boolean) => {
     methods.setValue("hasPortions", checked);
@@ -115,27 +208,55 @@ export default function AddFoodModal({
   const handleClose = () => {
     methods.reset(emptyForm);
     setImagePreview(undefined);
-    setCreatedChoices([]);
+    setImageFile(undefined);
     onClose();
   };
 
   const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    setImageFile(file); // keep the real file
     const url = URL.createObjectURL(file);
-    setImagePreview(url);
-    methods.setValue("foodImage", url);
+    setImagePreview(url); // only for on-screen preview
+    // don't setValue("foodImage", url) — it's not a durable value
   };
 
-  const handleSubmit = () => {
-    const values = methods.getValues();
-    if (!values.foodName || !values.foodName.trim()) return;
+  const handleAddChoice = () => {
+    const value = choiceInput.trim();
+    if (!value) return;
 
-    onAdd(values);
+    const current = methods.getValues("choices") || [];
+    if (current.includes(value)) {
+      setChoiceInput("");
+      return;
+    }
+
+    methods.setValue("choices", [...current, value]);
+    setChoiceInput("");
+  };
+
+  const handleRemoveChoice = (value: string) => {
+    const current = methods.getValues("choices") || [];
+    methods.setValue(
+      "choices",
+      current.filter((choice) => choice !== value),
+    );
+  };
+
+ const handleSubmit = methods.handleSubmit(
+  (values) => {
+    // ✅ validation passed
+    onAdd(values, imageFile);
     methods.reset(emptyForm);
     setImagePreview(undefined);
-    setCreatedChoices([]);
-  };
+    setImageFile(undefined);
+  },
+  (errors) => {
+    // ❌ validation failed — this is where you "get" the errors
+    console.log("Form validation errors:", errors);
+  },
+);
 
   return (
     <Dialog
@@ -167,7 +288,7 @@ export default function AddFoodModal({
         </button>
 
         <DialogTitle className="text-[22px] font-semibold text-black">
-          Add Food
+          {mode === "edit" ? "Edit Food" : "Add Food"}
         </DialogTitle>
 
         <FormProvider {...methods}>
@@ -185,7 +306,7 @@ export default function AddFoodModal({
                 {/* Food Type */}
                 <div className="mt-4" style={{ width: 366, height: 70 }}>
                   <label className="block text-base font-medium mb-3 text-black">
-                    Food Type
+                    Food Type <span className="text-[#FF3B3B]">*</span>
                   </label>
 
                   <div
@@ -203,7 +324,10 @@ export default function AddFoodModal({
                       className="h-[18px] w-[18px] appearance-none rounded-full border-2 border-[#9C9C9C] checked:border-[4px] checked:border-[#450042]"
                     />
 
-                    <label htmlFor="food-type-nonveg" className="cursor-pointer">
+                    <label
+                      htmlFor="food-type-nonveg"
+                      className="cursor-pointer"
+                    >
                       Non-Veg
                     </label>
                     <input
@@ -264,50 +388,48 @@ export default function AddFoodModal({
               options={menuTypeOptions}
               placeholder="Select Or search"
               allowCreate
+              required
             />
 
             {/* Category + Kitchen */}
             <div className="grid grid-cols-2 gap-4">
-              <FormMultiSelectInput
+              <FormCombobox
                 name="category"
                 label="Category"
                 options={categoryOptions}
                 placeholder="Select Or search"
+                required
               />
 
-              <FormMultiSelectInput
+              <FormCombobox
                 name="kitchen"
                 label="Kitchen"
                 options={kitchenOptions}
                 placeholder="Select Or search"
+                required
               />
             </div>
 
-            {/* Portions */}
+            {/* Portions — fully optional, 0 price allowed */}
             <div>
               <label className="mb-3 block text-base font-medium text-black">
                 Portions
               </label>
               <label className="flex items-center gap-2 text-base text-[#A1A1A1]">
-  <span
-    onClick={() => handlePortionsToggle(!hasPortions)}
-    className={`flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm border border-black ${
-      hasPortions
-        ? "border-[#450042] bg-[#450042]"
-        : "border-black bg-[#E9E9E9]"
-    }`}
-  >
-    {hasPortions && (
-      <Check
-        size={12}
-        strokeWidth={3}
-        className="text-white"
-      />
-    )}
-  </span>
-
-  Portions
-</label>
+                <span
+                  onClick={() => handlePortionsToggle(!hasPortions)}
+                  className={`flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm border border-black ${
+                    hasPortions
+                      ? "border-[#450042] bg-[#450042]"
+                      : "border-black bg-[#E9E9E9]"
+                  }`}
+                >
+                  {hasPortions && (
+                    <Check size={12} strokeWidth={3} className="text-white" />
+                  )}
+                </span>
+                Portions
+              </label>
 
               {hasPortions && (
                 <div className="mt-3">
@@ -315,163 +437,159 @@ export default function AddFoodModal({
                     The First potion added serves as the base for the recipe
                   </p>
 
-                  {portionFields.map((field, index) => (
-                    <div key={field.id} className="mb-3 grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-base font-medium mb-3 text-black">
-                          Potion name
-                        </label>
-                        <div className="relative">
-                          <input
-                            {...methods.register(`portions.${index}.name` as const)}
-                            placeholder="Enter position name"
-                            className="w-full rounded-[8px] border border-[#E9E9E9] bg-[#D2D2D2] px-3 py-2 text-sm text-black placeholder:text-[#8A8A8A] outline-none"
-                          />
-                          {index === 0 && (
-                            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-base text-[#8A8A8A]">
-                              (Base potion)
-                            </span>
+                  {portionFields.map((field, index) => {
+                    const rowErrors = methods.formState.errors.portions?.[index];
+                    const nameErrorMessage = getErrorMessage(rowErrors?.name);
+                    const priceErrorMessage = getErrorMessage(rowErrors?.price);
+
+                    return (
+                      <div key={field.id} className="mb-3 grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-base font-medium mb-3 text-black">
+                            Potion name
+                          </label>
+                          <div className="relative">
+                            <input
+                              {...methods.register(
+                                `portions.${index}.name` as const,
+                              )}
+                              placeholder="Enter position name"
+                              className="w-full rounded-[8px] border border-[#E9E9E9] bg-[#D2D2D2] px-3 py-2 text-sm text-black placeholder:text-[#8A8A8A] outline-none"
+                            />
+                            {index === 0 && (
+                              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-base text-[#8A8A8A]">
+                                (Base potion)
+                              </span>
+                            )}
+                          </div>
+                          {nameErrorMessage && (
+                            <p className="mt-1 text-sm text-[#FF3B3B]">
+                              {nameErrorMessage}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-end gap-2">
+                          <div className="flex-1">
+                            <label className="block text-base font-medium mb-3 text-black">
+                              Base Price
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              {...methods.register(
+                                `portions.${index}.price` as const,
+                              )}
+                              className="w-full rounded-[8px] border border-[#E9E9E9] bg-[#D2D2D2] px-3 py-2 text-sm text-black outline-none"
+                            />
+                            {priceErrorMessage && (
+                              <p className="mt-1 text-sm text-[#FF3B3B]">
+                                {priceErrorMessage}
+                              </p>
+                            )}
+                          </div>
+
+                          {index === portionFields.length - 1 ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                appendPortion({ name: "", price: 0 })
+                              }
+                              className="flex h-[38px] w-[38px] items-center justify-center rounded-[8px] bg-[#D2D2D2] text-black"
+                              aria-label="Add potion"
+                            >
+                              <Plus size={16} />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => removePortion(index)}
+                              className="flex h-[38px] w-[38px] items-center justify-center rounded-[8px] border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B]"
+                              aria-label="Remove potion"
+                            >
+                              <X size={16} />
+                            </button>
                           )}
                         </div>
                       </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
-                      <div className="flex items-end gap-2">
-                        <div className="flex-1">
-                          <label className="block text-base font-medium mb-3 text-black">
-                            Base Prize
-                          </label>
-                          <input
-                            type="number"
-                            {...methods.register(`portions.${index}.price` as const)}
-                            className="w-full rounded-[8px] border border-[#E9E9E9] bg-[#D2D2D2] px-3 py-2 text-sm text-black outline-none"
-                          />
-                        </div>
+            {/* Base Price — required, 0 allowed (but blank is rejected) */}
+            <FormInput
+              name="basePrice"
+              label="Base Price"
+              placeholder="Enter Base Price"
+              type="number"
+              required
+            />
 
-                        {index === portionFields.length - 1 ? (
-                          <button
-                            type="button"
-                            onClick={() => appendPortion({ name: "", price: 0 })}
-                            className="flex h-[38px] w-[38px] items-center justify-center rounded-[8px] bg-[#D2D2D2] text-black"
-                            aria-label="Add potion"
-                          >
-                            <Plus size={16} />
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => removePortion(index)}
-                            className="flex h-[38px] w-[38px] items-center justify-center rounded-[8px] border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B]"
-                            aria-label="Remove potion"
-                          >
-                            <X size={16} />
-                          </button>
-                        )}
-                      </div>
+            {/* Pricing — optional, one card per customer type returned by the API */}
+            <div>
+              <label className="mb-3 block text-base font-medium text-black">
+                Pricing
+              </label>
+
+              {customerTypeOptions.length === 0 ? (
+                <p className="text-sm text-[#A1A1A1]">
+                  No customer types available.
+                </p>
+              ) : (
+                <div className="grid grid-cols-3 gap-4">
+                  {customerTypeOptions.map((option) => (
+                    <div
+                      key={option.id}
+                      className="rounded-lg border border-gray-400 p-4"
+                    >
+                      <p className="mb-3 text-base font-medium text-black">
+                        {option.label}
+                      </p>
+                      <FormInput
+                        name={`customerPrices.${option.id}`}
+                        label="Price"
+                        type="number"
+                        labelClassName="mb-0 text-gray-500 text-sm font-medium "
+                      />
                     </div>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Base Price */}
-            <FormInput
-              name="basePrice"
-              label="Base Price"
-              placeholder="Enter Base Price"
-              type="number"
-            />
-
-            {/* Pricing */}
-            <div>
-              <label className="mb-3 block text-base font-medium text-black">
-                Pricing
-              </label>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="rounded-lg border border-gray-400 p-3">
-                  <p className="mb-3 text-base font-medium text-black">
-                    Dine-In
-                  </p>
-                  <FormInput name="dineInPrice" label="Price" type="number" labelClassName="mb-0 text-gray-500 text-sm font-medium " />
-                </div>
-                <div className="rounded-lg border border-gray-400 p-4">
-                  <p className="mb-3 text-base font-medium text-black">
-                    Take Away
-                  </p>
-                  <FormInput
-                    name="takeAwayPrice"
-                    label="Price"
-                    type="number"
-labelClassName="mb-0 text-gray-500 text-sm font-medium "                  />
-                </div>
-                <div className="rounded-lg border border-gray-400 p-4">
-                  <p className="mb-3 text-base font-medium text-black">
-                    Online
-                  </p>
-                  <FormInput
-                    name="onlinePrice"
-                    label="Swiggy Price"
-                    type="number"
-labelClassName="mb-0 text-gray-500 text-sm font-medium "                  />
-                </div>
-                <div className="rounded-lg border border-gray-400 p-4">
-                  <p className="mb-3 text-base font-medium text-black">
-                    Home Delivery
-                  </p>
-                  <FormInput
-                    name="homeDeliveryPrice"
-                    label="Price"
-                    type="number"
-labelClassName="mb-0 text-gray-500 text-sm font-medium "                  />
-                </div>
-              </div>
-            </div>
-
-         
-
-   
-              <label className="flex items-center gap-2 text-base text-[#A1A1A1]">
-  <span
- onClick={() =>
-      methods.setValue(
-        "hasOffer",
-        !methods.getValues("hasOffer")
-      )
-    }    className={`flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm border border-black ${
-      hasOffer
-        ? "border-[#450042] bg-[#450042]"
-        : "border-black bg-[#E9E9E9]"
-    }`}
-  >
-   {methods.watch("hasOffer") && (
-      <Check
-        size={12}
-        strokeWidth={3}
-        className="text-white"
-      />
-    )}
-  </span>
-
-  Offer
-</label>
+            <label className="flex items-center gap-2 text-base text-[#A1A1A1]">
+              <span
+                onClick={() =>
+                  methods.setValue("hasOffer", !methods.getValues("hasOffer"))
+                }
+                className={`flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm border border-black ${
+                  hasOffer
+                    ? "border-[#450042] bg-[#450042]"
+                    : "border-black bg-[#E9E9E9]"
+                }`}
+              >
+                {hasOffer && (
+                  <Check size={12} strokeWidth={3} className="text-white" />
+                )}
+              </span>
+              Offer
+            </label>
 
             {hasOffer && (
               <>
                 <div className="grid grid-cols-1 gap-4">
                   <div>
-                     <FormInput
-                  name="startDate"
-                  label="Start Date"
-                  type="date"
-                />
+                    <FormInput
+                      name="startDate"
+                      label="Start Date"
+                      type="date"
+                    />
                   </div>
-  <div>
-                     <FormInput
-                  name="endDate"
-                  label="End Date"
-                  type="date"
-                />
+                  <div>
+                    <FormInput name="endDate" label="End Date" type="date" />
                   </div>
-                
                 </div>
 
                 <FormInput
@@ -492,12 +610,54 @@ labelClassName="mb-0 text-gray-500 text-sm font-medium "                  />
               </p>
 
               <div className="grid grid-cols-2 gap-4">
-                <FormInput
-                  name="choices"
-                  label="Choices"
-                  placeholder="Enter Choices..."
-                 
-                />
+                <div>
+                  <label className="block text-base font-medium mb-3 text-black">
+                    Choices
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={choiceInput}
+                      onChange={(e) => setChoiceInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddChoice();
+                        }
+                      }}
+                      placeholder="Enter Choices..."
+                      className="w-full rounded-[8px] border border-[#E9E9E9] bg-[#D2D2D2] px-3 py-2 text-sm text-black placeholder:text-[#8A8A8A] outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddChoice}
+                      aria-label="Add choice"
+                      className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] bg-[#D2D2D2] text-black"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+
+                  {(methods.watch("choices") || []).length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {(methods.watch("choices") || []).map((choice) => (
+                        <span
+                          key={choice}
+                          className="flex items-center gap-1 rounded-[6px] bg-[#9A379633] px-2 py-[3px] text-xs text-[#450042]"
+                        >
+                          <span className="truncate max-w-[160px]">
+                            {choice}
+                          </span>
+                          <X
+                            size={12}
+                            className="cursor-pointer hover:text-red-500"
+                            onClick={() => handleRemoveChoice(choice)}
+                          />
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <FormInput
                   name="preparationTime"
@@ -516,7 +676,7 @@ labelClassName="mb-0 text-gray-500 text-sm font-medium "                  />
               size="none"
               onClick={handleSubmit}
             >
-              ADD
+              {mode === "edit" ? "SAVE" : "ADD"}
             </Button>
           </div>
         </FormProvider>

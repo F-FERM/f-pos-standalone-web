@@ -1,19 +1,24 @@
 "use client";
 
-
 import FormInput from "@/src/components/form/FormInput";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
+import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { z } from "zod";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 
-export type CategoryFormValues = {
-  categoryName: string;
-};
+// ─── Zod schema ───────────────────────────────────────────────────────────────
+const categorySchema = z.object({
+  categoryName: z
+    .string()
+    .min(1, "Category name is required")
+    .max(100, "Category name must be 100 characters or less"),
+});
 
-export type NewCategoryInput = {
-  categoryName: string;
-};
+export type CategoryFormValues = z.infer<typeof categorySchema>;
+export type NewCategoryInput = CategoryFormValues;
 
 const emptyForm: CategoryFormValues = { categoryName: "" };
 
@@ -21,27 +26,36 @@ type AddCategoryModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (category: NewCategoryInput) => void;
+  initialCategory?: NewCategoryInput | null;
+  mode?: "add" | "edit";
 };
 
 export default function AddCategoryModal({
   isOpen,
   onClose,
   onAdd,
+  initialCategory = null,
+  mode = "add",
 }: AddCategoryModalProps) {
-  const methods = useForm<CategoryFormValues>({ defaultValues: emptyForm });
+  const methods = useForm<CategoryFormValues>({
+    defaultValues: emptyForm,
+    resolver: zodResolver(categorySchema),
+  });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    methods.reset(initialCategory ?? emptyForm);
+  }, [initialCategory, isOpen, methods]);
 
   const handleClose = () => {
     methods.reset(emptyForm);
     onClose();
   };
 
-  const handleSubmit = () => {
-    const values = methods.getValues();
-    if (!values.categoryName || !values.categoryName.trim()) return;
-
+  const handleSubmit = methods.handleSubmit((values) => {
     onAdd({ categoryName: values.categoryName.trim() });
     methods.reset(emptyForm);
-  };
+  });
 
   return (
     <Dialog
@@ -60,7 +74,7 @@ export default function AddCategoryModal({
           bg-[#E9E9E9] text-white
          pt-[26px] pr-[34px] pb-[26px] pl-[34px]
           opacity-100 shadow-[0_0_30px_rgba(0,0,0,0.35)]
-        "  
+        "
       >
         <button
           type="button"
@@ -73,18 +87,22 @@ export default function AddCategoryModal({
 
         <div>
           <DialogTitle className=" text-[22px] font-semibold text-black">
-            Add Category
+            {mode === "edit" ? "Edit Category" : "Add Category"}
           </DialogTitle>
           <p className="text-[14px] text-[#A4A4A4] font-medium mb-2">
-            Define food categories to streamline menu management (e.g.
-            Desserts, Beverages).
+            Define food categories to streamline menu management (e.g. Desserts,
+            Beverages).
           </p>
         </div>
 
         <FormProvider {...methods}>
           <label className="block">
-          
-            <FormInput name="categoryName" label="Category Name" placeholder="Enter Category Name" />
+            <FormInput
+              name="categoryName"
+              label="Category Name"
+              placeholder="Enter Category Name"
+              required
+            />
           </label>
 
           <div className="flex justify-end">
@@ -94,7 +112,7 @@ export default function AddCategoryModal({
               size="none"
               onClick={handleSubmit}
             >
-              ADD
+              {mode === "edit" ? "SAVE" : "ADD"}
             </Button>
           </div>
         </FormProvider>

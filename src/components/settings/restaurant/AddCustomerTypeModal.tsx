@@ -1,25 +1,30 @@
 "use client";
 
-import FormMultiSelectInput, { selectType } from "@/src/components/form/FormMultiSelectInput";
+import FormCombobox, {
+  selectType,
+} from "@/src/components/form/FormCombobox";
 import { X } from "lucide-react";
+import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { Button } from "../../ui/button";
 
 export type CustomerTypeFormValues = {
-  types: string[];
+  type: string;
 };
 
 export type NewCustomerTypeInput = {
   types: string[];
 };
 
-const emptyForm: CustomerTypeFormValues = { types: [] };
+const emptyForm: CustomerTypeFormValues = { type: "" };
 
 type AddCustomerTypeModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (customerType: NewCustomerTypeInput) => void;
   existingTypeOptions?: selectType[];
+  initialType?: string | null;
+  mode?: "add" | "edit";
 };
 
 export default function AddCustomerTypeModal({
@@ -27,8 +32,15 @@ export default function AddCustomerTypeModal({
   onClose,
   onAdd,
   existingTypeOptions = [],
+  initialType = null,
+  mode = "add",
 }: AddCustomerTypeModalProps) {
   const methods = useForm<CustomerTypeFormValues>({ defaultValues: emptyForm });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    methods.reset({ type: initialType ?? "" });
+  }, [initialType, isOpen, methods]);
 
   if (!isOpen) return null;
 
@@ -39,10 +51,10 @@ export default function AddCustomerTypeModal({
 
   const handleSubmit = () => {
     const values = methods.getValues();
-    const types = (values.types || []).map((t) => t.trim()).filter(Boolean);
-    if (types.length === 0) return;
+    const type = (values.type || "").trim();
+    if (!type) return;
 
-    onAdd({ types });
+    onAdd({ types: [type] });
     methods.reset(emptyForm);
   };
 
@@ -61,23 +73,26 @@ export default function AddCustomerTypeModal({
 
           <div className="flex min-h-[249px] w-full flex-col gap-[16px] rounded-[20px] border border-[#A6A6A6] bg-[#E9E9E9] px-4 py-6 shadow-[0_0_30px_rgba(0,0,0,0.35)] sm:px-[34px] ">
             <h3 className="font-poppins text-[22px] font-semibold leading-none text-black">
-              Add Customer Type
+              {mode === "edit" ? "Edit Customer Type" : "Add Customer Type"}
             </h3>
 
             <div className="flex w-full flex-col gap-[10px] rounded-[10px] border border-[#B5B5B5] bg-[#E9E9E9] p-2.5 sm:max-w-[742px]">
-              <label className="block">
-                <FormMultiSelectInput
-                  name="types"
-                  label="Type"
-                  placeholder="Select or add customer type"
-                  options={existingTypeOptions}
-                />
-              </label>
+              <FormCombobox
+                name="type"
+                label="Type"
+                placeholder="Select customer type"
+                options={existingTypeOptions}
+              />
             </div>
 
             <div className="mt-auto flex justify-end">
-              <Button type="button" variant="add" size="none" onClick={handleSubmit}>
-                ADD
+              <Button
+                type="button"
+                variant="add"
+                size="none"
+                onClick={handleSubmit}
+              >
+                {mode === "edit" ? "SAVE" : "ADD"}
               </Button>
             </div>
           </div>

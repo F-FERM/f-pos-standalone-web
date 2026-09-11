@@ -14,3 +14,4 @@ export const AddCustomer = async (Payload: AddCustomerPayload) => {
     throw error;
   }
 };
+

@@ -1,8 +1,8 @@
 "use client";
 
 import { SearchInput } from "../common/SearchInput";
-
-const filters = ["All", "Scoop", "Corn", "Stick"];
+import { useQuery } from "@tanstack/react-query";
+import { listMenuTypes } from "@/src/api/menu-type";
 
 type CategoryHeaderProps = {
   selectedFilter?: string;
@@ -13,8 +13,17 @@ export function CategoryHeader({
   selectedFilter = "All",
   onSelectFilter,
 }: CategoryHeaderProps) {
+  const menuTypesQuery = useQuery({
+    queryKey: ["menu-types"],
+    queryFn: listMenuTypes,
+  });
+  const filters = [
+    "",
+    ...(menuTypesQuery.data?.data || []).map((menuType) => menuType.name),
+  ];
+
   return (
-    <div className="flex h-full w-full items-center justify-between">
+    <div className="flex h-full w-full items-center gap-3">
       <h2
         className="whitespace-nowrap"
         style={{
@@ -32,8 +41,13 @@ export function CategoryHeader({
       <SearchInput variant="compact" />
 
       <div
-        className="flex shrink-0 items-center"
-        style={{ width: 194, height: 18, justifyContent: "space-between" }}
+        className="ml-auto flex shrink-0 items-center"
+        style={{
+          minWidth: 194,
+          height: 18,
+          justifyContent: "space-between",
+          gap: 12,
+        }}
       >
         {filters.map((filter) => {
           const isActive = filter === selectedFilter;
@@ -60,3 +74,4 @@ export function CategoryHeader({
     </div>
   );
 }
+

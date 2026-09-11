@@ -1,56 +1,61 @@
 "use client";
 
-import FormMultiSelectInput, {
-  selectType,
-} from "@/src/components/form/FormMultiSelectInput";
+import FormInput from "@/src/components/form/FormInput";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
-import { useState } from "react";
+import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { z } from "zod";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 
-export type MenuTypeFormValues = {
-  menuTypes: string[];
-};
+// ─── Zod schema ───────────────────────────────────────────────────────────────
+const menuTypeSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Menu type name is required")
+    .max(100, "Menu type name must be 100 characters or less"),
+});
 
-export type NewMenuTypeInput = {
-  menuType: string;
-};
+export type MenuTypeFormValues = z.infer<typeof menuTypeSchema>;
+export type NewMenuTypeInput = MenuTypeFormValues;
 
-const emptyForm: MenuTypeFormValues = { menuTypes: [] };
+const emptyForm: MenuTypeFormValues = { name: "" };
 
 type AddMenuTypeModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (menuType: NewMenuTypeInput) => void;
-  existingOptions?: selectType[];
+  initialMenuType?: string | null;
+  mode?: "add" | "edit";
 };
 
 export default function AddMenuTypeModal({
   isOpen,
   onClose,
   onAdd,
-  existingOptions = [],
+  initialMenuType = null,
+  mode = "add",
 }: AddMenuTypeModalProps) {
-  const methods = useForm<MenuTypeFormValues>({ defaultValues: emptyForm });
-  const [createdOptions, setCreatedOptions] = useState<selectType[]>([]);
+  const methods = useForm<MenuTypeFormValues>({
+    defaultValues: emptyForm,
+    resolver: zodResolver(menuTypeSchema),
+  });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    methods.reset({ name: initialMenuType ?? "" });
+  }, [initialMenuType, isOpen, methods]);
 
   const handleClose = () => {
     methods.reset(emptyForm);
-    setCreatedOptions([]);
     onClose();
   };
 
-  const handleSubmit = () => {
-    const values = methods.getValues();
-    const menuTypes = values.menuTypes.filter((v) => v && v.trim());
-    if (menuTypes.length === 0) return;
-
-    menuTypes.forEach((menuType) => onAdd({ menuType }));
-
+  const handleSubmit = methods.handleSubmit((values) => {
+    onAdd({ name: values.name.trim() });
     methods.reset(emptyForm);
-    setCreatedOptions([]);
-  };
+  });
 
   return (
     <Dialog
@@ -82,31 +87,21 @@ export default function AddMenuTypeModal({
 
         <div>
           <DialogTitle className="text-[22px] font-semibold text-black">
-            Add Menu Type
+            {mode === "edit" ? "Edit Menu Type" : "Add Menu Type"}
           </DialogTitle>
           <p className="text-[14px] text-[#A4A4A4] font-medium mb-2">
-            Define food categories to streamline menu management (e.g.
-            Desserts, Beverages).
+            Define food categories to streamline menu management (e.g. Desserts,
+            Beverages).
           </p>
         </div>
 
         <FormProvider {...methods}>
           <label className="block w-full">
-            <FormMultiSelectInput
-              name="menuTypes"
-              label="Add Menu Type"
-              placeholder="Enter Menu Type..."
-              searchPlaceholder="Type a menu type and press +"
-              options={[...existingOptions, ...createdOptions]}
-              allowCreate
-              className="w-full"
-              onCreate={(label) =>
-                setCreatedOptions((prev) =>
-                  prev.some((o) => o.value === label)
-                    ? prev
-                    : [...prev, { label, value: label }],
-                )
-              }
+            <FormInput
+              name="name"
+              label="Menu Type Name"
+              placeholder="Enter Menu Type Name"
+              required
             />
           </label>
 
@@ -117,7 +112,7 @@ export default function AddMenuTypeModal({
               size="none"
               onClick={handleSubmit}
             >
-              ADD
+              {mode === "edit" ? "SAVE" : "ADD"}
             </Button>
           </div>
         </FormProvider>
