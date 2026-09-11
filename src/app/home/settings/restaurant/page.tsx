@@ -30,7 +30,13 @@ import AddFloorModal, {
 import AddTableModal, {
   NewTableInput,
 } from "@/src/components/settings/restaurant/AddTableModal";
-import { listRestaurants, type RestaurantRecord } from "@/src/api/restaurant";
+import {
+  listRestaurants,
+  updateRestaurant,
+  type RestaurantRecord,
+  type RestaurantPayload,
+} from "@/src/api/restaurant";
+import EditRestaurantModal from "@/src/components/settings/restaurant/EditRestaurantModal";
 import {
   CUSTOMER_TYPE_OPTIONS,
   createCustomerType,
@@ -240,6 +246,8 @@ export default function RestaurantSettingsPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const [profile, setProfile] = useState<RestaurantProfile>(defaultProfile);
+  const [rawRestaurant, setRawRestaurant] = useState<RestaurantRecord | null>(null);
+  const [isEditRestaurantOpen, setIsEditRestaurantOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -252,6 +260,7 @@ export default function RestaurantSettingsPage() {
 
         if (!cancelled && restaurant) {
           setProfile(mapRestaurantProfile(restaurant));
+          setRawRestaurant(restaurant);
         }
       })
       .catch(() => {
@@ -335,6 +344,21 @@ export default function RestaurantSettingsPage() {
     reader.onload = () =>
       setProfile((current) => ({ ...current, image: reader.result as string }));
     reader.readAsDataURL(file);
+  };
+
+  const handleSaveRestaurant = async (payload: RestaurantPayload) => {
+    if (!rawRestaurant) return;
+    try {
+      const response = await updateRestaurant(rawRestaurant._id, payload);
+      setProfile(mapRestaurantProfile(response.data));
+      setRawRestaurant(response.data);
+      setIsEditRestaurantOpen(false);
+      toast.success("Restaurant updated successfully");
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to update restaurant",
+      );
+    }
   };
 
   const handleSaveCustomerType = async (data: NewCustomerTypeInput) => {
@@ -603,6 +627,14 @@ export default function RestaurantSettingsPage() {
                 <div className="mb-2 flex items-center gap-2 font-poppins text-[18px] font-semibold leading-none text-black">
                   <Building2 size={18} />
                   {profile.name}
+                  <button
+                    type="button"
+                    onClick={() => setIsEditRestaurantOpen(true)}
+                    className="ml-1 flex items-center justify-center rounded-full bg-[#450042] p-1.5 text-white hover:bg-[#3b0038] transition-colors"
+                    aria-label="Edit restaurant profile"
+                  >
+                    <Pencil size={13} />
+                  </button>
                 </div>
 
                 <div className="flex flex-col">
@@ -897,6 +929,12 @@ export default function RestaurantSettingsPage() {
           label: floor.floorName,
           value: floor.id,
         }))}
+      />
+      <EditRestaurantModal
+        isOpen={isEditRestaurantOpen}
+        onClose={() => setIsEditRestaurantOpen(false)}
+        onSave={handleSaveRestaurant}
+        initialRecord={rawRestaurant}
       />
     </main>
   );

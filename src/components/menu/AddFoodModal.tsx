@@ -169,10 +169,7 @@ export default function AddFoodModal({
     remove: removePortion,
   } = useFieldArray({ control: methods.control, name: "portions" });
 
-  // Populate the form when opening in edit mode (or reset for add),
-  // same pattern as AddCategoryModal / AddMenuTypeModal. Also seeds
-  // customerPrices with a 0 entry per customer type so each price
-  // field starts as a controlled input instead of undefined.
+  
   useEffect(() => {
     if (!isOpen) return;
 
