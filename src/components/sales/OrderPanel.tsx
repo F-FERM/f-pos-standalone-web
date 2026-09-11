@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   Minus,
   Plus,
@@ -155,11 +156,22 @@ export function OrderPanel() {
         discount: 0,
         status,
       });
+
+      if (status === "Placed") {
+        toast.success("Order saved successfully!");
+      } else if (status === "Printed") {
+        toast.success("Order sent to print!");
+      } else if (status === "Cancelled") {
+        toast.success("Order cancelled.");
+      }
     } catch (error: any) {
       // surface the backend's actual rejection reason instead of a bare error object
       console.error(
         "Unable to create order",
         error?.response?.data ?? error,
+      );
+      toast.error(
+        error?.response?.data?.message ?? error?.message ?? "Unable to process order",
       );
     }
   };
