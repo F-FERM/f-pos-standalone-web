@@ -47,6 +47,24 @@ import {
   type FoodRecord,
 } from "@/src/api/food";
 
+// ─── Media base URL ─────────────────────────────────────────────────────────
+// The API returns relative paths for uploaded images, e.g.
+// "/uploads/foods/1789119719841-222955978.png". These need the API's own
+// origin prepended before they can be used in <img src>, since the frontend
+// runs on a different origin/port than the API.
+// Prefer an env var so this isn't hardcoded per-environment; falls back to
+// localhost:3005 for local dev.
+const API_MEDIA_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
+  "http://localhost:3005";
+
+function getMediaUrl(path?: string | null): string | undefined {
+  if (!path) return undefined;
+  // Already absolute (e.g. http://..., https://..., or a blob: preview URL) — leave as-is.
+  if (/^(https?:|blob:|data:)/i.test(path)) return path;
+  return `${API_MEDIA_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 type Category = {
   id: string;
   name: string;
@@ -182,7 +200,7 @@ function mapMenuType(menuType: MenuTypeRecord): MenuType {
 function mapFood(food: FoodRecord): Food {
   return {
     id: food._id,
-    image: food.foodImage,
+    image: getMediaUrl(food.foodImage), // relative path -> absolute API URL
     name: food.name,
     category: food.categoryId.name || "-",
     kitchen: food.kitchenId.name || "-",
@@ -221,7 +239,10 @@ function mapFoodToFormValues(food: FoodRecord): NewFoodInput {
 
   return {
     foodName: record.name,
-    foodImage: record.foodImage,
+    // getMediaUrl here so AddFoodModal's imagePreview (seeded from
+    // initialFood.foodImage) shows the real image instead of a broken
+    // relative-path <img src> on edit.
+    foodImage: getMediaUrl(record.foodImage),
     foodType: record.foodType === "VEG" ? "Veg" : "Non-Veg",
     menuTypes: menuTypeId ? [menuTypeId] : [],
     category: record.categoryId?._id || "",

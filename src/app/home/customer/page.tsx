@@ -312,9 +312,9 @@ export default function CustomerPage() {
             ))
           )}
 
-          <span className="absolute bottom-3 right-3 rounded-sm bg-[#868686] px-4 py-2 text-[13px] font-medium text-white">
+          {/* <span className="absolute bottom-3 right-3 rounded-sm bg-[#868686] px-4 py-2 text-[13px] font-medium text-white">
             No Credit : {totalCredit}
-          </span>
+          </span> */}
         </div>
 
         <div
