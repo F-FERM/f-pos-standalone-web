@@ -70,7 +70,7 @@ export default function AddTableModal({
       capacity: Number(values.capacity) || 0,
     });
 
-    methods.reset(emptyForm);
+    methods.reset(emptyForm); 
   };
 
   return (
@@ -135,3 +135,4 @@ export default function AddTableModal({
     </div>
   );
 }
+

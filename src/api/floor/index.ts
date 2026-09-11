@@ -41,3 +41,4 @@ export const deleteFloor = async (id: string) => {
   const response = await axiosInstance.delete<FloorResponse>(`floor/${id}`);
   return response.data;
 };
+

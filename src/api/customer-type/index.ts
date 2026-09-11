@@ -60,3 +60,4 @@ export const deleteCustomerType = async (id: string) => {
   );
   return response.data;
 };
+

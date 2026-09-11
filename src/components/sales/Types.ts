@@ -29,3 +29,4 @@ export type Customer = {
   phone: string;
   credit: number;
 };
+

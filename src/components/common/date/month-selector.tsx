@@ -27,3 +27,4 @@ export function MonthSelector({ value, onChange, disabled }: MonthSelectorProps)
     </Select>
   )
 }
+

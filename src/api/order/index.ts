@@ -4,7 +4,7 @@ export type OrderStatus = "Placed" | "Printed" | "Cancelled";
 
 export interface OrderItemPayload {
   foodId: string;
-  portion: string | null;
+   portion: null | string;
   price: number;
   originalPrice: number;
   qty: number;

@@ -133,7 +133,7 @@ export function CategorySidebar({
 
           return (
             <div
-              key={category.id}
+              key={category._id}
               ref={(el) => {
                 itemRefs.current[category._id] = el;
               }}
@@ -158,13 +158,14 @@ export function CategorySidebar({
                 <button
                   type="button"
                   onClick={() => onSelect(category._id)}
-                  className="relative z-10 flex w-full flex-col items-center justify-center px-4 py-3"
+                  title={category.name}
+                  className="relative z-10 flex w-full flex-col items-center justify-center px-1 py-3"
                 >
                   <Icon
                     className="h-[22px] w-[22px] shrink-0 text-secondary xs:h-[26px] xs:w-[26px]"
                     strokeWidth={1.7}
                   />
-                  <span className="mt-0.5 w-full text-center text-[10px] font-medium leading-tight text-[#3B0038] xs:text-[12px] md:text-[12px] md:leading-[20px]">
+                  <span className="mt-0.5 block w-full truncate text-center text-[10px] font-medium leading-tight text-[#3B0038] xs:text-[12px] md:text-[12px] md:leading-[20px]">
                     {category.name}
                   </span>
                 </button>

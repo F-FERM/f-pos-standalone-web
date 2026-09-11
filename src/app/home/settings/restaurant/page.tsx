@@ -199,13 +199,38 @@ function mapFloor(floor: FloorRecord): Floor {
 function mapTable(table: TableRecord): TableRow {
   return {
     id: table._id,
-    floorId: table.floorId._id,
-    floorName: table.floorId.name,
+    floorId: table.floorId?._id ?? "",
+    floorName: table.floorId?.name ?? "",
     tableName: table.name,
     seats: table.capacity,
     createdDate: formatProfileDate(table.createdAt),
     updatedDate: formatProfileDate(table.updatedAt),
   };
+}
+
+// Create/update responses from the table API don't always come back with a
+// populated `floorId` (sometimes it's just the raw id string, or missing
+// entirely), so `mapTable()` can produce an empty `floorName` right after a
+// save — even though `listTables()` returns it populated. When that happens,
+// fall back to the floor we already know about locally so the row shows the
+// correct floor immediately instead of only after a refetch.
+function resolveFloorName(floors: Floor[], floorId: string): string {
+  return floors.find((floor) => floor.id === floorId)?.floorName ?? "";
+}
+
+function mapTableWithFloorFallback(
+  table: TableRecord,
+  floors: Floor[],
+  fallbackFloorId: string,
+): TableRow {
+  const mapped = mapTable(table);
+
+  if (!mapped.floorName) {
+    mapped.floorId = mapped.floorId || fallbackFloorId;
+    mapped.floorName = resolveFloorName(floors, mapped.floorId);
+  }
+
+  return mapped;
 }
 
 export default function RestaurantSettingsPage() {
@@ -367,7 +392,7 @@ export default function RestaurantSettingsPage() {
   };
 
   const handleSaveFloor = async (data: NewFloorInput) => {
-    const floorName = data.floorNames[0]?.trim();
+    const floorName = data.name.trim();
     if (!floorName) return;
 
     try {
@@ -418,15 +443,25 @@ export default function RestaurantSettingsPage() {
     try {
       if (editingTable) {
         const response = await updateTable(editingTable.id, payload);
+        const mapped = mapTableWithFloorFallback(
+          response.data,
+          floors,
+          data.floor,
+        );
         setTables((current) =>
           current.map((table) =>
-            table.id === editingTable.id ? mapTable(response.data) : table,
+            table.id === editingTable.id ? mapped : table,
           ),
         );
         toast.success("Table updated successfully");
       } else {
         const response = await createTable(payload);
-        setTables((current) => [mapTable(response.data), ...current]);
+        const mapped = mapTableWithFloorFallback(
+          response.data,
+          floors,
+          data.floor,
+        );
+        setTables((current) => [mapped, ...current]);
         toast.success("Table created successfully");
       }
 
@@ -811,7 +846,7 @@ export default function RestaurantSettingsPage() {
         </div>
 
         <span className="font-poppins text-[12px] font-medium text-[#939393]">
-          © 2026 Techon Innovations. All rights reserved.
+          © 2026 FFERM Digital Labs. All rights reserved.
         </span>
       </div>
 
@@ -839,10 +874,6 @@ export default function RestaurantSettingsPage() {
         onAdd={handleSaveFloor}
         mode={editingFloor ? "edit" : "add"}
         initialFloor={editingFloor?.floorName ?? null}
-        existingFloorOptions={floors.map((floor) => ({
-          label: floor.floorName,
-          value: floor.floorName,
-        }))}
       />
 
       <AddTableModal

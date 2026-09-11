@@ -54,3 +54,4 @@ export const deleteTable = async (id: string) => {
   const response = await axiosInstance.delete<TableResponse>(`table/${id}`);
   return response.data;
 };
+

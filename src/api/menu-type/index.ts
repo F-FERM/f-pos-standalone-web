@@ -46,3 +46,4 @@ export const deleteMenuType = async (id: string) => {
   );
   return response.data;
 };
+

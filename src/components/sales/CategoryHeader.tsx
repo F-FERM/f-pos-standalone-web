@@ -18,12 +18,12 @@ export function CategoryHeader({
     queryFn: listMenuTypes,
   });
   const filters = [
-    "All",
+    "",
     ...(menuTypesQuery.data?.data || []).map((menuType) => menuType.name),
   ];
 
   return (
-    <div className="flex h-full w-full items-center justify-between">
+    <div className="flex h-full w-full items-center gap-3">
       <h2
         className="whitespace-nowrap"
         style={{
@@ -41,7 +41,7 @@ export function CategoryHeader({
       <SearchInput variant="compact" />
 
       <div
-        className="flex shrink-0 items-center"
+        className="ml-auto flex shrink-0 items-center"
         style={{
           minWidth: 194,
           height: 18,
@@ -74,3 +74,4 @@ export function CategoryHeader({
     </div>
   );
 }
+

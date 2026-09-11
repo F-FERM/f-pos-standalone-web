@@ -1,30 +1,26 @@
 "use client";
 
-import FormMultiSelectInput, {
-  selectType,
-} from "@/src/components/form/FormMultiSelectInput";
+import FormInput from "@/src/components/form/FormInput";
 import { X } from "lucide-react";
 import { useEffect } from "react";
-import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 
 export type MenuTypeFormValues = {
-  menuTypes: string[];
+  name: string;
 };
 
 export type NewMenuTypeInput = {
-  menuType: string;
+  name: string;
 };
 
-const emptyForm: MenuTypeFormValues = { menuTypes: [] };
+const emptyForm: MenuTypeFormValues = { name: "" };
 
 type AddMenuTypeModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (menuType: NewMenuTypeInput) => void;
-  existingOptions?: selectType[];
   initialMenuType?: string | null;
   mode?: "add" | "edit";
 };
@@ -33,33 +29,28 @@ export default function AddMenuTypeModal({
   isOpen,
   onClose,
   onAdd,
-  existingOptions = [],
   initialMenuType = null,
   mode = "add",
 }: AddMenuTypeModalProps) {
   const methods = useForm<MenuTypeFormValues>({ defaultValues: emptyForm });
-  const [createdOptions, setCreatedOptions] = useState<selectType[]>([]);
 
   useEffect(() => {
     if (!isOpen) return;
-    methods.reset({ menuTypes: initialMenuType ? [initialMenuType] : [] });
+    methods.reset({ name: initialMenuType ?? "" });
   }, [initialMenuType, isOpen, methods]);
 
   const handleClose = () => {
     methods.reset(emptyForm);
-    setCreatedOptions([]);
     onClose();
   };
 
   const handleSubmit = () => {
     const values = methods.getValues();
-    const menuTypes = values.menuTypes.filter((v) => v && v.trim());
-    if (menuTypes.length === 0) return;
+    const name = values.name.trim();
+    if (!name) return;
 
-    menuTypes.forEach((menuType) => onAdd({ menuType }));
-
+    onAdd({ name });
     methods.reset(emptyForm);
-    setCreatedOptions([]);
   };
 
   return (
@@ -102,21 +93,10 @@ export default function AddMenuTypeModal({
 
         <FormProvider {...methods}>
           <label className="block w-full">
-            <FormMultiSelectInput
-              name="menuTypes"
-              label="Add Menu Type"
-              placeholder="Enter Menu Type..."
-              searchPlaceholder="Type a menu type and press +"
-              options={[...existingOptions, ...createdOptions]}
-              allowCreate
-              className="w-full"
-              onCreate={(label) =>
-                setCreatedOptions((prev) =>
-                  prev.some((o) => o.value === label)
-                    ? prev
-                    : [...prev, { label, value: label }],
-                )
-              }
+            <FormInput
+              name="name"
+              label="Menu Type Name"
+              placeholder="Enter Menu Type Name"
             />
           </label>
 

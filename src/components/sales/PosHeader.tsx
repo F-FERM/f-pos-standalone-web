@@ -1,12 +1,17 @@
 "use client";
 
 import { ChevronLeft, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
 type POSHeaderProps = {
   variant?: "default" | "compact";
 };
+
 export function POSHeader() {
+  const router = useRouter();
+
   return (
     <header
       className="flex items-center justify-between bg-[#EFEFEF]"
@@ -24,6 +29,7 @@ export function POSHeader() {
       <Button
         variant="ghost"
         size="icon"
+        onClick={() => router.back()}
         className="shrink-0 rounded-[5px] p-[6px] text-black text-xl hover:bg-[#B3B3B336]"
         style={{
           width: 40,
@@ -114,3 +120,4 @@ export function POSHeader() {
     </header>
   );
 }
+

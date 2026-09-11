@@ -38,3 +38,4 @@ export const listRestaurants = async () => {
     await axiosInstance.get<RestaurantListResponse>("restaurant");
   return response.data;
 };
+

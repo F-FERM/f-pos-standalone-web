@@ -56,3 +56,4 @@ export const products: Product[] = [
     image: butterscotch,
   },
 ];
+

@@ -338,7 +338,21 @@ const FormMultiSelectInput = ({
                   setOpen(next);
                 }}
               >
-                <PopoverTrigger className="w-full">
+                {/*
+                  IMPORTANT: render={<div />} tells Base UI to render the trigger
+                  as a <div> instead of its default <button>. This trigger wraps
+                  per-chip TooltipTriggers below, which are also buttons by default —
+                  a <button> can never contain another <button> in valid HTML, and
+                  browsers/React will throw a hydration error if it does. Base UI's
+                  `render` prop still forwards the necessary a11y/keyboard/click
+                  handlers onto whatever element you give it, so this stays fully
+                  interactive and accessible as a div-based trigger.
+                */}
+                <PopoverTrigger
+                  className="w-full"
+                  render={<div />}
+                  nativeButton={false}
+                >
                   {/*
                     Trigger styling is matched 1:1 to FormInput's <Input /> classes:
                     border-[#D2D2D2], bg-[#D2D2D2], text-gray-500, font-poppins font-normal
@@ -350,6 +364,7 @@ const FormMultiSelectInput = ({
                   <div
                     ref={triggerRef}
                     role="button"
+                    tabIndex={0}
                     aria-expanded={open}
                     aria-haspopup="listbox"
                     onClick={(e) => {
@@ -379,7 +394,17 @@ const FormMultiSelectInput = ({
 
                           return (
                             <Tooltip key={selectedValue}>
-                              <TooltipTrigger>
+                              {/*
+                                render={<span />}: same button-in-button issue as
+                                above — TooltipTrigger defaults to a <button>, and
+                                it now lives inside the div-based PopoverTrigger
+                                alongside a real <button> (the X remove control),
+                                so it must not be a button itself.
+                              */}
+                              <TooltipTrigger
+                                render={<span />}
+                                // nativeButton={false}
+                              >
                                 <div
                                   className={`flex items-center rounded-[6px] px-2 py-[3px] text-xs max-w-[200px] cursor-help ${
                                     isLight

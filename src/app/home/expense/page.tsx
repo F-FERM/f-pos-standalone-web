@@ -289,7 +289,7 @@ export default function ExpensePage() {
               color: "#939393",
             }}
           >
-            © 2026 Techon Innovations. All rights reserved.
+            © 2026 FFERM Digital Labs. All rights reserved.
           </span>
         </div>
       </div>
@@ -302,3 +302,4 @@ export default function ExpensePage() {
     </main>
   );
 }
+

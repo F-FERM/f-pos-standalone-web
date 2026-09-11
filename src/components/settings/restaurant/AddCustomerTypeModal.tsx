@@ -1,22 +1,22 @@
 "use client";
 
-import FormMultiSelectInput, {
+import FormCombobox, {
   selectType,
-} from "@/src/components/form/FormMultiSelectInput";
+} from "@/src/components/form/FormCombobox";
 import { X } from "lucide-react";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { Button } from "../../ui/button";
 
 export type CustomerTypeFormValues = {
-  types: string[];
+  type: string;
 };
 
 export type NewCustomerTypeInput = {
   types: string[];
 };
 
-const emptyForm: CustomerTypeFormValues = { types: [] };
+const emptyForm: CustomerTypeFormValues = { type: "" };
 
 type AddCustomerTypeModalProps = {
   isOpen: boolean;
@@ -39,7 +39,7 @@ export default function AddCustomerTypeModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    methods.reset({ types: initialType ? [initialType] : [] });
+    methods.reset({ type: initialType ?? "" });
   }, [initialType, isOpen, methods]);
 
   if (!isOpen) return null;
@@ -51,10 +51,10 @@ export default function AddCustomerTypeModal({
 
   const handleSubmit = () => {
     const values = methods.getValues();
-    const types = (values.types || []).map((t) => t.trim()).filter(Boolean);
-    if (types.length === 0) return;
+    const type = (values.type || "").trim();
+    if (!type) return;
 
-    onAdd({ types });
+    onAdd({ types: [type] });
     methods.reset(emptyForm);
   };
 
@@ -77,14 +77,12 @@ export default function AddCustomerTypeModal({
             </h3>
 
             <div className="flex w-full flex-col gap-[10px] rounded-[10px] border border-[#B5B5B5] bg-[#E9E9E9] p-2.5 sm:max-w-[742px]">
-              <label className="block">
-                <FormMultiSelectInput
-                  name="types"
-                  label="Type"
-                  placeholder="Select or add customer type"
-                  options={existingTypeOptions}
-                />
-              </label>
+              <FormCombobox
+                name="type"
+                label="Type"
+                placeholder="Select customer type"
+                options={existingTypeOptions}
+              />
             </div>
 
             <div className="mt-auto flex justify-end">

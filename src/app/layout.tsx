@@ -29,7 +29,7 @@ export default function RootLayout({
         <Providers>
           <div className="fixed inset-0 flex items-center justify-center overflow-hidden">
             <div
-              className="relative shrink-0 origin-center w-[1424px] h-[780px] bg-black"
+              className="relative shrink-0 origin-center w-[1300px] h-[780px] bg-black"
               style={{
                 transform: `scale(min(1, min(calc(100vw / ${STAGE_WIDTH}px), calc(100dvh / ${STAGE_HEIGHT}px))))`,
               }}
@@ -43,3 +43,4 @@ export default function RootLayout({
     </html>
   );
 }
+

@@ -32,8 +32,12 @@ function ProductGrid({
   return (
     <div className="min-w-0 flex-1 overflow-y-auto py-3 pr-0 xs:py-4 sm:py-[29px] ">
       <div
-        className="mx-auto flex flex-wrap content-start justify-between "
-        style={{ width: 476, rowGap: 10, height: 104 }}
+        className="grid content-start justify-start"
+        style={{
+          gridTemplateColumns: "repeat(auto-fill, 150px)",
+          columnGap: 10,
+          rowGap: 10,
+        }}
       >
         {products.map((product) => {
           const selected = selectedProduct.id === product.id;

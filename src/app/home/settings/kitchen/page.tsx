@@ -212,7 +212,7 @@ export default function KitchenPage() {
           </div>
         </section>
         <p className="mt-3 text-center font-poppins text-[12px] font-medium text-[#939393]">
-          © 2026 Techon Innovations. All rights reserved.
+          © 2026 FFERM Digital Labs. All rights reserved.
         </p>
       </div>
       <AddKitchenModal
@@ -228,3 +228,4 @@ export default function KitchenPage() {
     </main>
   );
 }
+

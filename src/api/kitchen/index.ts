@@ -43,3 +43,4 @@ export const deleteKitchen = async (id: string) => {
   const response = await axiosInstance.delete<KitchenResponse>(`kitchen/${id}`);
   return response.data;
 };
+

@@ -15,3 +15,4 @@ export const DeleteCustomer = async (payload: { id: string }) => {
     throw error;
   }
 };
+

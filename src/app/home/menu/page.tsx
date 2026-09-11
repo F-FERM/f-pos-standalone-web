@@ -41,6 +41,7 @@ import { listCustomerTypes } from "@/src/api/customer-type";
 import {
   createFood,
   deleteFood,
+  updateFood,
   listFoods,
   type FoodPayload,
   type FoodRecord,
@@ -141,6 +142,16 @@ function formatDate(date: Date) {
   return `${day}/${month}/${year}`;
 }
 
+// "HOME_DELIVERY" -> "Home Delivery" — used as the card label in the
+// dynamic Pricing section of AddFoodModal.
+function formatCustomerTypeLabel(type: string) {
+  return type
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 function formatApiDate(date: string) {
   const parsedDate = new Date(date);
   return Number.isNaN(parsedDate.getTime())
@@ -181,6 +192,55 @@ function mapFood(food: FoodRecord): Food {
   };
 }
 
+// Converts a raw FoodRecord (from GET /foods/:id) back into the shape
+// AddFoodModal's form expects, so the modal can be pre-filled when editing.
+// Matches the actual getById response shape: menuTypeId/categoryId/kitchenId
+// are populated objects, and customerTypes[].customerTypeId is itself a
+// populated object carrying `type` (DINE_IN / TAKE_AWAY / ONLINE / HOME_DELIVERY).
+function mapFoodToFormValues(food: FoodRecord): NewFoodInput {
+  const record = food as any;
+
+  const menuTypeId = record.menuTypeId?._id || "";
+
+  // Keyed by the master customer-type id (customerTypeId._id), matching
+  // the keys AddFoodModal's dynamic Pricing cards use.
+  const customerPrices: Record<string, number> = {};
+  (record.customerTypes || []).forEach((c: any) => {
+    const id = c.customerTypeId?._id;
+    if (id) customerPrices[id] = c.price ?? 0;
+  });
+
+  // API returns ISO datetimes ("2026-09-11T00:00:00.000Z") but the form's
+  // <input type="date"> only accepts "YYYY-MM-DD" — without this it silently
+  // fails to populate.
+  const toDateInputValue = (value?: string) => {
+    if (!value) return "";
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString().slice(0, 10);
+  };
+
+  return {
+    foodName: record.name,
+    foodImage: record.foodImage,
+    foodType: record.foodType === "VEG" ? "Veg" : "Non-Veg",
+    menuTypes: menuTypeId ? [menuTypeId] : [],
+    category: record.categoryId?._id || "",
+    kitchen: record.kitchenId?._id || "",
+    hasPortions: Boolean(record.isPortionEnabled),
+    portions:
+      record.portions?.map((p: any) => ({ name: p.name, price: p.basePrice })) ||
+      [],
+    basePrice: record.basePrice || 0,
+    customerPrices,
+    hasOffer: Boolean(record.isOfferEnabled),
+    startDate: toDateInputValue(record.offer?.startDate),
+    endDate: toDateInputValue(record.offer?.endDate),
+    discountPercent: record.offer?.discount || 0,
+    choices: record.choices || [],
+    preparationTime: record.preparationTime || 0,
+  };
+}
+
 const TAB_META: Record<
   MenuTab,
   { columns: readonly string[]; grid: string; addLabel: string }
@@ -216,6 +276,7 @@ export default function MenuPage() {
   const [combos, setCombos] = useState<Combo[]>([]);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editingMenuType, setEditingMenuType] = useState<MenuType | null>(null);
+  const [editingFood, setEditingFood] = useState<FoodRecord | null>(null);
   const queryClient = useQueryClient();
 
   const categoriesQuery = useQuery({
@@ -351,7 +412,7 @@ export default function MenuPage() {
       if (editingMenuType) {
         const response = await updateMenuType(
           editingMenuType.id,
-          data.menuType,
+          data.name,
         );
         setMenuTypes((current) =>
           current.map((menuType) =>
@@ -363,7 +424,7 @@ export default function MenuPage() {
         queryClient.invalidateQueries({ queryKey: ["menu-types"] });
         toast.success("Menu type updated successfully");
       } else {
-        const response = await createMenuType(data.menuType);
+        const response = await createMenuType(data.name);
         setMenuTypes((current) => [mapMenuType(response.data), ...current]);
         queryClient.invalidateQueries({ queryKey: ["menu-types"] });
         toast.success("Menu type created successfully");
@@ -395,64 +456,69 @@ export default function MenuPage() {
     }
   };
 
-  const handleAddFood = (data: NewFoodInput) => {
-    const customerPrices: Record<string, number> = {
-      DINE_IN: Number(data.dineInPrice) || 0,
-      TAKE_AWAY: Number(data.takeAwayPrice) || 0,
-      ONLINE: Number(data.onlinePrice) || 0,
-      HOME_DELIVERY: Number(data.homeDeliveryPrice) || 0,
-    };
-    const payload: FoodPayload = {
-      name: data.foodName.trim(),
-      foodImage: data.foodImage,
-      foodType: data.foodType === "Veg" ? "VEG" : "NON_VEG",
-      menuTypeId: data.menuTypes[0] || "",
-      categoryId: data.category,
-      kitchenId: data.kitchen,
-      isPortionEnabled: data.hasPortions,
-      portions: data.hasPortions
-        ? data.portions.map((portion) => ({
-            name: portion.name.trim(),
-            basePrice: Number(portion.price) || 0,
-          }))
-        : [],
-      basePrice: Number(data.basePrice) || 0,
-      customerTypes: (customerTypesQuery.data?.data || [])
-        .map((customerType) => ({
-          customerTypeId: customerType._id,
-          price: customerPrices[customerType.type] || 0,
+  const handleSaveFood = async (data: NewFoodInput, imageFile?: File) => {
+  const payload: FoodPayload = {
+    name: data.foodName.trim(),
+    foodType: data.foodType === "Veg" ? "VEG" : "NON_VEG",
+    menuTypeId: data.menuTypes[0] || "",
+    categoryId: data.category,
+    kitchenId: data.kitchen,
+    isPortionEnabled: data.hasPortions,
+    portions: data.hasPortions
+      ? data.portions.map((portion) => ({
+          name: portion.name.trim(),
+          basePrice: Number(portion.price) || 0,
         }))
-        .filter((customerType) => customerType.price > 0),
-      isOfferEnabled: data.hasOffer,
-      offer: data.hasOffer
-        ? {
-            startDate: data.startDate || "",
-            endDate: data.endDate || "",
-            discount: Number(data.discountPercent) || 0,
-          }
-        : undefined,
-      choices: Array.isArray(data.choices)
-        ? data.choices.filter(Boolean)
-        : String(data.choices || "")
-            .split(",")
-            .map((choice) => choice.trim())
-            .filter(Boolean),
-      preparationTime: Number(data.preparationTime) || 0,
-    };
-
-    createFood(payload)
-      .then((response) => {
-        setFoods((current) => [mapFood(response.data), ...current]);
-        queryClient.invalidateQueries({ queryKey: ["foods"] });
-        setIsFoodModalOpen(false);
-        toast.success("Food created successfully");
-      })
-      .catch((error: unknown) => {
-        toast.error(
-          error instanceof Error ? error.message : "Unable to create food",
-        );
-      });
+      : [],
+    basePrice: Number(data.basePrice) || 0,
+    customerTypes: (customerTypesQuery.data?.data || [])
+      .map((customerType) => ({
+        customerTypeId: customerType._id,
+        price: Number(data.customerPrices?.[customerType._id]) || 0,
+      }))
+      .filter((customerType) => customerType.price > 0),
+    isOfferEnabled: data.hasOffer,
+    offer: data.hasOffer
+      ? {
+          startDate: data.startDate || "",
+          endDate: data.endDate || "",
+          discount: Number(data.discountPercent) || 0,
+        }
+      : undefined,
+    choices: Array.isArray(data.choices)
+      ? data.choices.filter(Boolean)
+      : String(data.choices || "")
+          .split(",")
+          .map((choice) => choice.trim())
+          .filter(Boolean),
+    preparationTime: Number(data.preparationTime) || 0,
   };
+
+  try {
+    if (editingFood) {
+      const response = await updateFood(editingFood._id, payload, imageFile);
+      setFoods((current) =>
+        current.map((food) =>
+          food.id === editingFood._id ? mapFood(response.data) : food,
+        ),
+      );
+      queryClient.invalidateQueries({ queryKey: ["foods"] });
+      toast.success("Food updated successfully");
+    } else {
+      const response = await createFood(payload, imageFile);
+      setFoods((current) => [mapFood(response.data), ...current]);
+      queryClient.invalidateQueries({ queryKey: ["foods"] });
+      toast.success("Food created successfully");
+    }
+
+    setEditingFood(null);
+    setIsFoodModalOpen(false);
+  } catch (error: unknown) {
+    toast.error(
+      error instanceof Error ? error.message : "Unable to save food",
+    );
+  }
+};
 
   const handleDeleteFood = async (food: Food) => {
     if (!window.confirm(`Delete ${food.name}?`)) return;
@@ -582,8 +648,6 @@ export default function MenuPage() {
           />
         </div>
 
-        {/* header row — exact spec: 964x40, radius10, bg #EFEFEF */}
-        {/* header row — exact spec: 964x40, radius10, bg #EFEFEF */}
         {/* header row — exact spec: 964x40, radius10, bg #EFEFEF */}
         <div
           className="absolute hidden items-center sm:flex"
@@ -750,6 +814,23 @@ export default function MenuPage() {
                 <span className="flex items-center justify-center gap-2">
                   <Button
                     type="button"
+                    variant="editicon"
+                    size="icon"
+                    aria-label={`Edit ${food.name}`}
+                    onClick={() => {
+                      const record = foodsQuery.data?.data.find(
+                        (f) => f._id === food.id,
+                      );
+                      if (record) {
+                        setEditingFood(record);
+                        setIsFoodModalOpen(true);
+                      }
+                    }}
+                  >
+                    <Pencil size={15} />
+                  </Button>
+                  <Button
+                    type="button"
                     variant="deleteicon"
                     size="icon"
                     aria-label={`Delete ${food.name}`}
@@ -821,7 +902,7 @@ export default function MenuPage() {
               color: "#939393",
             }}
           >
-            © 2026 Techon Innovations. All rights reserved.
+            © 2026 FFERM Digital Labs. All rights reserved.
           </span>
         </div>
       </div>
@@ -848,16 +929,17 @@ export default function MenuPage() {
         onAdd={handleSaveMenuType}
         mode={editingMenuType ? "edit" : "add"}
         initialMenuType={editingMenuType?.name ?? null}
-        existingOptions={menuTypes.map((menuType) => ({
-          label: menuType.name,
-          value: menuType.name,
-        }))}
       />
 
       <AddFoodModal
         isOpen={isFoodModalOpen}
-        onClose={() => setIsFoodModalOpen(false)}
-        onAdd={handleAddFood}
+        onClose={() => {
+          setIsFoodModalOpen(false);
+          setEditingFood(null);
+        }}
+        onAdd={handleSaveFood}
+        mode={editingFood ? "edit" : "add"}
+        initialFood={editingFood ? mapFoodToFormValues(editingFood) : null}
         categoryOptions={(categoriesQuery.data?.data || []).map((category) => ({
           label: category.name,
           value: category._id,
@@ -870,6 +952,12 @@ export default function MenuPage() {
           label: kitchen.name,
           value: kitchen._id,
         }))}
+        customerTypeOptions={(customerTypesQuery.data?.data || []).map(
+          (customerType) => ({
+            id: customerType._id,
+            label: formatCustomerTypeLabel(customerType.type),
+          }),
+        )}
       />
 
       <AddComboModal

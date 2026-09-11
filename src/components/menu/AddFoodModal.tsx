@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Plus, X } from "lucide-react";
 import {
   Controller,
@@ -13,6 +13,7 @@ import FormInput from "@/src/components/form/FormInput";
 import FormMultiSelectInput, {
   selectType,
 } from "@/src/components/form/FormMultiSelectInput";
+import FormCombobox from "@/src/components/form/FormCombobox";
 import { FormDatePicker } from "@/src/components/form/FormDatePicker";
 
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
@@ -33,10 +34,10 @@ export type FoodFormValues = {
   hasPortions: boolean;
   portions: PortionInput[];
   basePrice: number;
-  dineInPrice: number;
-  takeAwayPrice: number;
-  onlinePrice: number;
-  homeDeliveryPrice: number;
+  // Keyed by customer type id (from the customer-type API), not a fixed set
+  // of channel names — lets the Pricing section render one card per
+  // customer type returned by the API instead of four hardcoded fields.
+  customerPrices: Record<string, number>;
   hasOffer: boolean;
   startDate?: string;
   endDate?: string;
@@ -57,10 +58,7 @@ const emptyForm: FoodFormValues = {
   hasPortions: false,
   portions: [],
   basePrice: 0,
-  dineInPrice: 0,
-  takeAwayPrice: 0,
-  onlinePrice: 0,
-  homeDeliveryPrice: 0,
+  customerPrices: {},
   hasOffer: false,
   startDate: "",
   endDate: "",
@@ -69,15 +67,24 @@ const emptyForm: FoodFormValues = {
   preparationTime: 0,
 };
 
+// One entry per customer type coming back from the customer-type API
+// (e.g. { id: "6aa37e69...", label: "Take Away" }) — the Pricing section
+// renders one price card per entry instead of four hardcoded channels.
+export type CustomerTypeOption = {
+  id: string;
+  label: string;
+};
 type AddFoodModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (data: NewFoodInput) => void;
+  onAdd: (data: NewFoodInput, imageFile?: File) => void;
   categoryOptions: selectType[];
   menuTypeOptions: selectType[];
   kitchenOptions?: selectType[];
+  customerTypeOptions: CustomerTypeOption[];
+  mode?: "add" | "edit";
+  initialFood?: FoodFormValues | null;
 };
-
 const foodTypeLabelStyle: React.CSSProperties = {
   fontFamily: "Poppins",
   fontWeight: 400,
@@ -94,12 +101,17 @@ export default function AddFoodModal({
   categoryOptions,
   menuTypeOptions,
   kitchenOptions = [],
+  customerTypeOptions,
+  mode = "add",
+  initialFood = null,
 }: AddFoodModalProps) {
   const methods = useForm<FoodFormValues>({ defaultValues: emptyForm });
   const [imagePreview, setImagePreview] = useState<string | undefined>(
     undefined,
   );
+  const [imageFile, setImageFile] = useState<File | undefined>(undefined);
   const [createdChoices, setCreatedChoices] = useState<selectType[]>([]);
+  const [choiceInput, setChoiceInput] = useState("");
 
   const hasOffer = methods.watch("hasOffer");
   const hasPortions = methods.watch("hasPortions");
@@ -110,6 +122,36 @@ export default function AddFoodModal({
     remove: removePortion,
   } = useFieldArray({ control: methods.control, name: "portions" });
 
+  // Populate the form when opening in edit mode (or reset for add),
+  // same pattern as AddCategoryModal / AddMenuTypeModal. Also seeds
+  // customerPrices with a 0 entry per customer type so each price
+  // field starts as a controlled input instead of undefined.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const defaultCustomerPrices = customerTypeOptions.reduce<
+      Record<string, number>
+    >((acc, option) => {
+      acc[option.id] = 0;
+      return acc;
+    }, {});
+
+    const values =
+      mode === "edit" && initialFood
+        ? {
+            ...initialFood,
+            customerPrices: {
+              ...defaultCustomerPrices,
+              ...initialFood.customerPrices,
+            },
+          }
+        : { ...emptyForm, customerPrices: defaultCustomerPrices };
+
+    methods.reset(values);
+    setImagePreview(values.foodImage);
+    setChoiceInput("");
+  }, [isOpen, mode, initialFood, customerTypeOptions, methods]);
+
   const handlePortionsToggle = (checked: boolean) => {
     methods.setValue("hasPortions", checked);
     if (checked && portionFields.length === 0) {
@@ -117,30 +159,57 @@ export default function AddFoodModal({
     }
   };
 
-  const handleClose = () => {
-    methods.reset(emptyForm);
-    setImagePreview(undefined);
-    setCreatedChoices([]);
-    onClose();
+const handleClose = () => {
+  methods.reset(emptyForm);
+  setImagePreview(undefined);
+  setImageFile(undefined);
+  setCreatedChoices([]);
+  onClose();
+};
+
+ const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  setImageFile(file);                     // keep the real file
+  const url = URL.createObjectURL(file);
+  setImagePreview(url);                   // only for on-screen preview
+  // don't setValue("foodImage", url) anymore — it's not a durable value
+};
+  const handleAddChoice = () => {
+    const value = choiceInput.trim();
+    if (!value) return;
+
+    const current = methods.getValues("choices") || [];
+    if (current.includes(value)) {
+      setChoiceInput("");
+      return;
+    }
+
+    methods.setValue("choices", [...current, value]);
+    setChoiceInput("");
   };
 
-  const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setImagePreview(url);
-    methods.setValue("foodImage", url);
+  const handleRemoveChoice = (value: string) => {
+    const current = methods.getValues("choices") || [];
+    methods.setValue(
+      "choices",
+      current.filter((choice) => choice !== value),
+    );
   };
 
-  const handleSubmit = () => {
-    const values = methods.getValues();
-    if (!values.foodName || !values.foodName.trim()) return;
 
-    onAdd(values);
-    methods.reset(emptyForm);
-    setImagePreview(undefined);
-    setCreatedChoices([]);
-  };
+const handleSubmit = () => {
+  const values = methods.getValues();
+  if (!values.foodName || !values.foodName.trim()) return;
+
+  onAdd(values, imageFile);
+  methods.reset(emptyForm);
+  setImagePreview(undefined);
+  setImageFile(undefined);
+  setCreatedChoices([]);
+};
+
 
   return (
     <Dialog
@@ -172,7 +241,7 @@ export default function AddFoodModal({
         </button>
 
         <DialogTitle className="text-[22px] font-semibold text-black">
-          Add Food
+          {mode === "edit" ? "Edit Food" : "Add Food"}
         </DialogTitle>
 
         <FormProvider {...methods}>
@@ -274,16 +343,18 @@ export default function AddFoodModal({
               allowCreate
             />
 
-            {/* Category + Kitchen */}
+            {/* Category + Kitchen — single selections, so these use FormCombobox
+                (value: string) rather than FormMultiSelectInput (value: string[]),
+                matching FoodFormValues.category / .kitchen being plain strings. */}
             <div className="grid grid-cols-2 gap-4">
-              <FormMultiSelectInput
+              <FormCombobox
                 name="category"
                 label="Category"
                 options={categoryOptions}
                 placeholder="Select Or search"
               />
 
-              <FormMultiSelectInput
+              <FormCombobox
                 name="kitchen"
                 label="Kitchen"
                 options={kitchenOptions}
@@ -390,57 +461,36 @@ export default function AddFoodModal({
               type="number"
             />
 
-            {/* Pricing */}
+            {/* Pricing — one card per customer type returned by the API,
+                instead of four hardcoded channels */}
             <div>
               <label className="mb-3 block text-base font-medium text-black">
                 Pricing
               </label>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="rounded-lg border border-gray-400 p-3">
-                  <p className="mb-3 text-base font-medium text-black">
-                    Dine-In
-                  </p>
-                  <FormInput
-                    name="dineInPrice"
-                    label="Price"
-                    type="number"
-                    labelClassName="mb-0 text-gray-500 text-sm font-medium "
-                  />
+              {customerTypeOptions.length === 0 ? (
+                <p className="text-sm text-[#A1A1A1]">
+                  No customer types available.
+                </p>
+              ) : (
+                <div className="grid grid-cols-3 gap-4">
+                  {customerTypeOptions.map((option) => (
+                    <div
+                      key={option.id}
+                      className="rounded-lg border border-gray-400 p-4"
+                    >
+                      <p className="mb-3 text-base font-medium text-black">
+                        {option.label}
+                      </p>
+                      <FormInput
+                        name={`customerPrices.${option.id}`}
+                        label="Price"
+                        type="number"
+                        labelClassName="mb-0 text-gray-500 text-sm font-medium "
+                      />
+                    </div>
+                  ))}
                 </div>
-                <div className="rounded-lg border border-gray-400 p-4">
-                  <p className="mb-3 text-base font-medium text-black">
-                    Take Away
-                  </p>
-                  <FormInput
-                    name="takeAwayPrice"
-                    label="Price"
-                    type="number"
-                    labelClassName="mb-0 text-gray-500 text-sm font-medium "
-                  />
-                </div>
-                <div className="rounded-lg border border-gray-400 p-4">
-                  <p className="mb-3 text-base font-medium text-black">
-                    Online
-                  </p>
-                  <FormInput
-                    name="onlinePrice"
-                    label="Swiggy Price"
-                    type="number"
-                    labelClassName="mb-0 text-gray-500 text-sm font-medium "
-                  />
-                </div>
-                <div className="rounded-lg border border-gray-400 p-4">
-                  <p className="mb-3 text-base font-medium text-black">
-                    Home Delivery
-                  </p>
-                  <FormInput
-                    name="homeDeliveryPrice"
-                    label="Price"
-                    type="number"
-                    labelClassName="mb-0 text-gray-500 text-sm font-medium "
-                  />
-                </div>
-              </div>
+              )}
             </div>
 
             <label className="flex items-center gap-2 text-base text-[#A1A1A1]">
@@ -494,11 +544,59 @@ export default function AddFoodModal({
               </p>
 
               <div className="grid grid-cols-2 gap-4">
-                <FormInput
-                  name="choices"
-                  label="Choices"
-                  placeholder="Enter Choices..."
-                />
+                {/* choices: string[] on FoodFormValues, but there's no fixed
+                    options list to pick from — so instead of a select-style
+                    multi-select, this is a free-text "type + click add" tag
+                    input: each entry the user types becomes a badge below,
+                    and they keep typing the next one. */}
+                <div>
+                  <label className="block text-base font-medium mb-3 text-black">
+                    Choices
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={choiceInput}
+                      onChange={(e) => setChoiceInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddChoice();
+                        }
+                      }}
+                      placeholder="Enter Choices..."
+                      className="w-full rounded-[8px] border border-[#E9E9E9] bg-[#D2D2D2] px-3 py-2 text-sm text-black placeholder:text-[#8A8A8A] outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddChoice}
+                      aria-label="Add choice"
+                      className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] bg-[#D2D2D2] text-black"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+
+                  {(methods.watch("choices") || []).length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {(methods.watch("choices") || []).map((choice) => (
+                        <span
+                          key={choice}
+                          className="flex items-center gap-1 rounded-[6px] bg-[#9A379633] px-2 py-[3px] text-xs text-[#450042]"
+                        >
+                          <span className="truncate max-w-[160px]">
+                            {choice}
+                          </span>
+                          <X
+                            size={12}
+                            className="cursor-pointer hover:text-red-500"
+                            onClick={() => handleRemoveChoice(choice)}
+                          />
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <FormInput
                   name="preparationTime"
@@ -517,7 +615,7 @@ export default function AddFoodModal({
               size="none"
               onClick={handleSubmit}
             >
-              ADD
+              {mode === "edit" ? "SAVE" : "ADD"}
             </Button>
           </div>
         </FormProvider>
