@@ -3,11 +3,14 @@ import axiosInstance from "@/src/service/axios";
 export interface CategoryRecord {
   _id: string;
   name: string;
-  createdBy?: string;
+  createdBy: CreatedBy;
   createdAt: string;
   updatedAt: string;
 }
-
+interface CreatedBy {
+  _id: string;
+  username: string;
+}
 interface CategoryResponse {
   success: boolean;
   data: CategoryRecord;

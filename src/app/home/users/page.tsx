@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import userPlus from "../../../../public/images/icons/usergroup.png";
 
 import { Pagination } from "@/src/components/common/Pagination";
@@ -8,14 +11,21 @@ import { SearchInput } from "@/src/components/common/SearchInput";
 import { POSHeader } from "@/src/components/sales/PosHeader";
 import { Button } from "@/src/components/ui/button";
 import AddUserModal, { NewUserInput } from "@/src/components/user/AddUserModal";
+import {
+  UserRecord,
+  UserPayload,
+  UserUpdatePayload,
+  createUser,
+  updateUser,
+  deleteUser,
+  listUsers,
+} from "@/src/api/user";
 
 type User = {
-  id: number;
+  id: string;
   userName: string;
-  accessName: string;
-  phone: string;
-  countryCode: string;
-  permission: string;
+  email: string;
+  role: string;
   createdDate: string;
   updatedDate: string;
 };
@@ -29,44 +39,104 @@ const TABLE_COLUMNS = [
 ] as const;
 const TABLE_GRID = "grid-cols-[48px_1.6fr_1fr_1fr_70px]";
 
-function formatDate(date: Date) {
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
+function formatApiDate(date: string) {
+  const parsedDate = new Date(date);
+  return Number.isNaN(parsedDate.getTime())
+    ? date
+    : parsedDate.toLocaleDateString("en-GB");
 }
 
-export default function UsersPage() {
+function mapUser(user: UserRecord): User {
+  return {
+    id: user._id,
+    userName: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username,
+    email: user.email,
+    role: user.role,
+    createdDate: formatApiDate(user.createdAt),
+    updatedDate: formatApiDate(user.updatedAt),
+  };
+}
+
+export default function UsersPage({
+  // TODO: replace with your actual session/auth hook, e.g.
+  // const { companyId } = useAuth();
+  companyId,
+}: {
+  companyId: string;
+}) {
   const [search, setSearch] = useState("");
-  const [pageSize, setPageSize] = useState<number>(10);
+  const [pageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
+  const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
+
+  const queryClient = useQueryClient();
+
+  const usersQuery = useQuery({
+    queryKey: ["users"],
+    queryFn: listUsers,
+  });
+
+  const userRows = usersQuery.data?.data.map(mapUser) || [];
 
   const filteredUsers = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return users;
-    return users.filter((user) =>
-      [user.userName, user.accessName].join(" ").toLowerCase().includes(query),
+    if (!query) return userRows;
+    return userRows.filter((user) =>
+      [user.userName, user.email, user.role].join(" ").toLowerCase().includes(query),
     );
-  }, [users, search]);
+  }, [userRows, search]);
 
-  const handleAddUser = (data: NewUserInput) => {
-    const today = formatDate(new Date());
-    setUsers((current) => [
-      ...current,
-      {
-        id: current.length + 1,
-        userName: data.userName,
-        accessName: data.accessName,
-        phone: data.phone,
-        countryCode: data.countryCode,
-        permission: data.permission,
-        createdDate: today,
-        updatedDate: today,
-      },
-    ]);
-    setIsAddOpen(false);
+  const handleSaveUser = async (data: NewUserInput) => {
+    try {
+      if (editingUser) {
+        const payload: UserUpdatePayload = {
+          username: data.username,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: `${data.countryCode}${data.phone}`,
+          companyId,
+          role: data.role,
+          isActive: data.isActive,
+          ...(data.password ? { password: data.password } : {}),
+        };
+        await updateUser(editingUser._id, payload);
+        toast.success("User updated successfully");
+      } else {
+        const payload: UserPayload = {
+          username: data.username,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: `${data.countryCode}${data.phone}`,
+          companyId,
+          password: data.password,
+          role: data.role,
+          isActive: data.isActive,
+        };
+        await createUser(payload);
+        toast.success("User created successfully");
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setEditingUser(null);
+      setIsAddOpen(false);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Unable to save user");
+    }
+  };
+
+  const handleDeleteUser = async (user: User) => {
+    if (!window.confirm(`Delete ${user.userName}?`)) return;
+
+    try {
+      await deleteUser(user.id);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success(`${user.userName} deleted successfully`);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Unable to delete user");
+    }
   };
 
   const handlePageChange = (page: number) => {
@@ -118,7 +188,10 @@ export default function UsersPage() {
             size="none"
             iconSrc={userPlus}
             iconAlt="Add users"
-            onClick={() => setIsAddOpen(true)}
+            onClick={() => {
+              setEditingUser(null);
+              setIsAddOpen(true);
+            }}
           >
             Add Users
           </Button>
@@ -196,13 +269,38 @@ export default function UsersPage() {
             filteredUsers.slice(0, pageSize).map((user, index) => (
               <div
                 key={user.id}
-                className={`grid border-b border-black/5 px-[16px] py-[10px] text-[12px] text-black ${TABLE_GRID}`}
+                className={`grid items-center border-b border-black/5 px-[16px] py-[10px] text-[12px] text-black ${TABLE_GRID}`}
               >
                 <span>{index + 1}</span>
                 <span className="truncate">{user.userName}</span>
                 <span>{user.createdDate}</span>
                 <span>{user.updatedDate}</span>
-                <span />
+                <span className="flex items-center justify-center gap-2">
+                  <Button
+                    type="button"
+                    variant="editicon"
+                    size="icon"
+                    aria-label={`Edit ${user.userName}`}
+                    onClick={() => {
+                      const record = usersQuery.data?.data.find((u) => u._id === user.id);
+                      if (record) {
+                        setEditingUser(record);
+                        setIsAddOpen(true);
+                      }
+                    }}
+                  >
+                    <Pencil size={15} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="deleteicon"
+                    size="icon"
+                    aria-label={`Delete ${user.userName}`}
+                    onClick={() => handleDeleteUser(user)}
+                  >
+                    <Trash2 size={15} />
+                  </Button>
+                </span>
               </div>
             ))
           )}
@@ -243,10 +341,27 @@ export default function UsersPage() {
 
       <AddUserModal
         isOpen={isAddOpen}
-        onClose={() => setIsAddOpen(false)}
-        onAdd={handleAddUser}
+        onClose={() => {
+          setIsAddOpen(false);
+          setEditingUser(null);
+        }}
+        onAdd={handleSaveUser}
+        mode={editingUser ? "edit" : "add"}
+        initialUser={
+          editingUser
+            ? {
+                username: editingUser.username,
+                firstName: editingUser.firstName,
+                lastName: editingUser.lastName,
+                email: editingUser.email,
+                phone: editingUser.phone,
+                countryCode: "+91",
+                role: editingUser.role,
+                isActive: editingUser.isActive,
+              }
+            : null
+        }
       />
     </main>
   );
 }
-

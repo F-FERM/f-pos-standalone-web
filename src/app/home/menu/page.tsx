@@ -163,7 +163,7 @@ function mapCategory(category: CategoryRecord): Category {
   return {
     id: category._id,
     name: category.name,
-    createdBy: category.createdBy || "Admin",
+    createdBy: category?.createdBy?.username || "Admin",
     createdDate: formatApiDate(category.createdAt),
     updatedDate: formatApiDate(category.updatedAt),
   };
@@ -173,7 +173,7 @@ function mapMenuType(menuType: MenuTypeRecord): MenuType {
   return {
     id: menuType._id,
     name: menuType.name,
-    createdBy: menuType.createdBy || "Admin",
+    createdBy: menuType.createdBy?.username || "Admin",
     createdDate: formatApiDate(menuType.createdAt),
     updatedDate: formatApiDate(menuType.updatedAt),
   };
@@ -187,7 +187,7 @@ function mapFood(food: FoodRecord): Food {
     category: food.categoryId.name || "-",
     kitchen: food.kitchenId.name || "-",
     foodType: food.foodType,
-    createdBy: food.createdBy || "Admin",
+    createdBy: food.createdBy?.username || "Admin",
     createdAt: formatApiDate(food.createdAt),
   };
 }

@@ -3,23 +3,37 @@
 import FormInput from "@/src/components/form/FormInput";
 import FormPhoneNumberInput from "@/src/components/form/FormPhoneNumberInput";
 import FormTextArea from "@/src/components/form/FormTextArea";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
 import { FormProvider, useForm } from "react-hook-form";
 import { useEffect } from "react";
+import { z } from "zod";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
+
+// ─── Zod schema ───────────────────────────────────────────────────────────────
+const customerSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Customer name is required")
+    .max(150, "Customer name must be 150 characters or less"),
+  credit: z
+    .string()
+    .refine((v) => v === "" || !isNaN(Number(v)), "Credit must be a number"),
+  phone: z.string().max(20, "Phone number looks too long").optional().or(z.literal("")),
+  countryCode: z.string().min(1, "Country code is required"),
+  address: z
+    .string()
+    .max(500, "Address must be 500 characters or less")
+    .optional()
+    .or(z.literal("")),
+});
+
+export type CustomerFormValues = z.infer<typeof customerSchema>;
 
 export type NewCustomerInput = {
   name: string;
   credit: number;
-  phone: string;
-  countryCode: string;
-  address: string;
-};
-
-export type CustomerFormValues = {
-  name: string;
-  credit: string;
   phone: string;
   countryCode: string;
   address: string;
@@ -48,7 +62,10 @@ export default function AddCustomerModal({
   initialCustomer = null,
   mode = "add",
 }: AddCustomerModalProps) {
-  const methods = useForm<CustomerFormValues>({ defaultValues: emptyForm });
+  const methods = useForm<CustomerFormValues>({
+    defaultValues: emptyForm,
+    resolver: zodResolver(customerSchema),
+  });
 
   useEffect(() => {
     if (!isOpen) return;
@@ -72,10 +89,7 @@ export default function AddCustomerModal({
     onClose();
   };
 
-  const handleSubmit = () => {
-    const values = methods.getValues();
-    if (!values.name || !values.name.trim()) return;
-
+  const handleSubmit = methods.handleSubmit((values) => {
     onAdd({
       name: values.name.trim(),
       credit: Number(values.credit) || 0,
@@ -85,7 +99,7 @@ export default function AddCustomerModal({
     });
 
     methods.reset(emptyForm);
-  };
+  });
 
   return (
     <Dialog
@@ -128,15 +142,13 @@ export default function AddCustomerModal({
                 name="name"
                 placeholder="Enter Customer Name"
                 label="Customer Name"
+                required
               />
             </label>
 
             <label className="block">
               <div className="relative">
                 <FormInput name="credit" type="number" label="Credit" />
-                {/* <span className="pointer-events-none absolute right-[14px] top-[38px] text-[13px] text-[#8A8A8A]">
-                  INR
-                </span> */}
               </div>
             </label>
 
@@ -176,4 +188,3 @@ export default function AddCustomerModal({
     </Dialog>
   );
 }
-

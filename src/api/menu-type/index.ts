@@ -3,11 +3,14 @@ import axiosInstance from "@/src/service/axios";
 export interface MenuTypeRecord {
   _id: string;
   name: string;
-  createdBy?: string;
+   createdBy: CreatedBy;
   createdAt: string;
   updatedAt: string;
 }
-
+interface CreatedBy {
+  _id: string;
+  username: string;
+}
 interface MenuTypeResponse {
   success: boolean;
   data: MenuTypeRecord;

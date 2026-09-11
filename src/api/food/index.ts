@@ -30,11 +30,14 @@ export interface FoodRecord {
   } | null;
   choices: string[];
   preparationTime: number;
-  createdBy?: string;
+ createdBy: CreatedBy;
   createdAt: string;
   updatedAt: string;
 }
-
+interface CreatedBy {
+  _id: string;
+  username: string;
+}
 // Kept for callers/types that still want a plain-object shape (e.g. building
 // up form state) even though createFood/updateFood now take FormData.
 export interface FoodPayload {

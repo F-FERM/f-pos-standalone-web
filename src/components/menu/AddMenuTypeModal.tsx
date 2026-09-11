@@ -1,19 +1,24 @@
 "use client";
 
 import FormInput from "@/src/components/form/FormInput";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { z } from "zod";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 
-export type MenuTypeFormValues = {
-  name: string;
-};
+// ─── Zod schema ───────────────────────────────────────────────────────────────
+const menuTypeSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Menu type name is required")
+    .max(100, "Menu type name must be 100 characters or less"),
+});
 
-export type NewMenuTypeInput = {
-  name: string;
-};
+export type MenuTypeFormValues = z.infer<typeof menuTypeSchema>;
+export type NewMenuTypeInput = MenuTypeFormValues;
 
 const emptyForm: MenuTypeFormValues = { name: "" };
 
@@ -32,7 +37,10 @@ export default function AddMenuTypeModal({
   initialMenuType = null,
   mode = "add",
 }: AddMenuTypeModalProps) {
-  const methods = useForm<MenuTypeFormValues>({ defaultValues: emptyForm });
+  const methods = useForm<MenuTypeFormValues>({
+    defaultValues: emptyForm,
+    resolver: zodResolver(menuTypeSchema),
+  });
 
   useEffect(() => {
     if (!isOpen) return;
@@ -44,14 +52,10 @@ export default function AddMenuTypeModal({
     onClose();
   };
 
-  const handleSubmit = () => {
-    const values = methods.getValues();
-    const name = values.name.trim();
-    if (!name) return;
-
-    onAdd({ name });
+  const handleSubmit = methods.handleSubmit((values) => {
+    onAdd({ name: values.name.trim() });
     methods.reset(emptyForm);
-  };
+  });
 
   return (
     <Dialog
@@ -97,6 +101,7 @@ export default function AddMenuTypeModal({
               name="name"
               label="Menu Type Name"
               placeholder="Enter Menu Type Name"
+              required
             />
           </label>
 

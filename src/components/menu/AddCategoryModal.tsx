@@ -1,19 +1,24 @@
 "use client";
 
 import FormInput from "@/src/components/form/FormInput";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { z } from "zod";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 
-export type CategoryFormValues = {
-  categoryName: string;
-};
+// ─── Zod schema ───────────────────────────────────────────────────────────────
+const categorySchema = z.object({
+  categoryName: z
+    .string()
+    .min(1, "Category name is required")
+    .max(100, "Category name must be 100 characters or less"),
+});
 
-export type NewCategoryInput = {
-  categoryName: string;
-};
+export type CategoryFormValues = z.infer<typeof categorySchema>;
+export type NewCategoryInput = CategoryFormValues;
 
 const emptyForm: CategoryFormValues = { categoryName: "" };
 
@@ -32,7 +37,10 @@ export default function AddCategoryModal({
   initialCategory = null,
   mode = "add",
 }: AddCategoryModalProps) {
-  const methods = useForm<CategoryFormValues>({ defaultValues: emptyForm });
+  const methods = useForm<CategoryFormValues>({
+    defaultValues: emptyForm,
+    resolver: zodResolver(categorySchema),
+  });
 
   useEffect(() => {
     if (!isOpen) return;
@@ -44,13 +52,10 @@ export default function AddCategoryModal({
     onClose();
   };
 
-  const handleSubmit = () => {
-    const values = methods.getValues();
-    if (!values.categoryName || !values.categoryName.trim()) return;
-
+  const handleSubmit = methods.handleSubmit((values) => {
     onAdd({ categoryName: values.categoryName.trim() });
     methods.reset(emptyForm);
-  };
+  });
 
   return (
     <Dialog
@@ -96,6 +101,7 @@ export default function AddCategoryModal({
               name="categoryName"
               label="Category Name"
               placeholder="Enter Category Name"
+              required
             />
           </label>
 
@@ -114,4 +120,3 @@ export default function AddCategoryModal({
     </Dialog>
   );
 }
-

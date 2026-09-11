@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import userPlus from "../../../../../public/images/icons/usergroup.png";
 
 import { Pagination } from "@/src/components/common/Pagination";
@@ -9,9 +12,12 @@ import { POSHeader } from "@/src/components/sales/PosHeader";
 import AddPrinterModal, { NewPrinterInput } from "@/src/components/settings/AddPrinterModal";
 import { Button } from "@/src/components/ui/button";
 import { SettingsToggleCard } from "@/src/components/settings/PosSettingsPanel";
+import { listKitchens } from "@/src/api/kitchen";
+import { listCustomerTypes } from "@/src/api/customer-type";
+import { createPrinter, deletePrinter, listPrinters, PrinterPayload, PrinterRecord, updatePrinter } from "@/src/api/printer/printer";
 
 type Printer = {
-  id: number;
+  id: string;
   printerName: string;
   printType: string;
   kitchenCustomerType: string;
@@ -42,14 +48,59 @@ type BillSettings = {
   vatExcludedAddVat: boolean;
 };
 
+function formatApiDate(date: string) {
+  const parsedDate = new Date(date);
+  return Number.isNaN(parsedDate.getTime())
+    ? date
+    : parsedDate.toLocaleDateString("en-GB");
+}
+
+function mapPrinter(printer: PrinterRecord): Printer {
+  const kitchenName =
+    typeof printer.kitchenId === "object" ? printer.kitchenId?.name : "-";
+  const customerType =
+    typeof printer.customerTypeId === "object"
+      ? printer.customerTypeId?.type
+      : "-";
+
+  return {
+    id: printer._id,
+    printerName: printer.printerName,
+    printType: printer.printerType,
+    kitchenCustomerType: [kitchenName, customerType].filter(Boolean).join(" / ") || "-",
+    printerIp: printer.printerIp,
+  };
+}
+
+// Converts a raw PrinterRecord (from GET /printers) back into the shape
+// AddPrinterModal's form expects, for pre-filling on edit — same idea as
+// mapFoodToFormValues in MenuPage.
+function mapPrinterToFormValues(printer: PrinterRecord): NewPrinterInput {
+  const kitchenId =
+    typeof printer.kitchenId === "object" ? printer.kitchenId._id : printer.kitchenId;
+  const customerTypeId =
+    typeof printer.customerTypeId === "object"
+      ? printer.customerTypeId._id
+      : printer.customerTypeId;
+
+  return {
+    printerName: printer.printerName,
+    printerType: printer.printerType,
+    customerTypeId: customerTypeId || "",
+    kitchenId: kitchenId || "",
+    printerIp: printer.printerIp,
+    isDefault: printer.isDefault,
+    paperWidth: printer.paperWidth,
+  };
+}
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("POS Settings");
   const [search, setSearch] = useState("");
   const [pageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [isPrinterModalOpen, setIsPrinterModalOpen] = useState(false);
-
-  const [printers, setPrinters] = useState<Printer[]>([]);
+  const [editingPrinter, setEditingPrinter] = useState<PrinterRecord | null>(null);
 
   const [kotSettings, setKotSettings] = useState<KotSettings>({
     kotSettings: false,
@@ -60,18 +111,34 @@ export default function SettingsPage() {
     vatExcludedAddVat: false,
   });
 
+  const queryClient = useQueryClient();
   const isPosSettings = activeTab === "POS Settings";
+
+  const printersQuery = useQuery({
+    queryKey: ["printers"],
+    queryFn: listPrinters,
+  });
+  const kitchensQuery = useQuery({
+    queryKey: ["kitchens"],
+    queryFn: listKitchens,
+  });
+  const customerTypesQuery = useQuery({
+    queryKey: ["customer-types"],
+    queryFn: listCustomerTypes,
+  });
+
+  const printerRows = printersQuery.data?.data.map(mapPrinter) || [];
 
   const filteredPrinters = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return printers;
-    return printers.filter((printer) =>
+    if (!query) return printerRows;
+    return printerRows.filter((printer) =>
       [printer.printerName, printer.printType, printer.kitchenCustomerType, printer.printerIp]
         .join(" ")
         .toLowerCase()
         .includes(query),
     );
-  }, [printers, search]);
+  }, [printerRows, search]);
 
   const toggleKot = (key: keyof KotSettings) => {
     setKotSettings((current) => ({ ...current, [key]: !current[key] }));
@@ -81,18 +148,48 @@ export default function SettingsPage() {
     setBillSettings((current) => ({ ...current, [key]: !current[key] }));
   };
 
-  const handleAddPrinter = (data: NewPrinterInput) => {
-    setPrinters((current) => [
-      ...current,
-      {
-        id: current.length + 1,
-        printerName: data.printerName,
-        printType: data.printerType,
-        kitchenCustomerType: "-",
-        printerIp: data.printerIp,
-      },
-    ]);
-    setIsPrinterModalOpen(false);
+  const handleSavePrinter = async (data: NewPrinterInput) => {
+    const payload: PrinterPayload = {
+      printerName: data.printerName,
+      printerType: data.printerType,
+      customerTypeId: data.customerTypeId,
+      kitchenId: data.kitchenId,
+      printerIp: data.printerIp,
+      isDefault: data.isDefault,
+      paperWidth: data.paperWidth,
+    };
+
+    try {
+      if (editingPrinter) {
+        await updatePrinter(editingPrinter._id, payload);
+        toast.success("Printer updated successfully");
+      } else {
+        await createPrinter(payload);
+        toast.success("Printer created successfully");
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["printers"] });
+      setEditingPrinter(null);
+      setIsPrinterModalOpen(false);
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save printer",
+      );
+    }
+  };
+
+  const handleDeletePrinter = async (printer: Printer) => {
+    if (!window.confirm(`Delete ${printer.printerName}?`)) return;
+
+    try {
+      await deletePrinter(printer.id);
+      queryClient.invalidateQueries({ queryKey: ["printers"] });
+      toast.success(`${printer.printerName} deleted successfully`);
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to delete printer",
+      );
+    }
   };
 
   const handlePageChange = (page: number) => {
@@ -100,12 +197,11 @@ export default function SettingsPage() {
   };
 
   return (
-    <main className="flex h-full flex-col overflow-y-auto bg-black text-black">
+    <main className="flex h-full  flex-col bg-black text-black">
       <POSHeader />
 
-      <div className="flex flex-1 flex-col items-center gap-4 bg-[#EFEFEF] ">
-        <div className="flex w-full max-w-[984px] flex-col gap-4 rounded-[15px] bg-[#D2D2D2] p-4 sm:gap-5 sm:p-6 md:p-7 lg:h-[661px]">
-          {/* Tabs stay mounted and switchable regardless of active tab */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#EFEFEF] px-5 py-5">
+        <div className="flex w-full flex-col gap-4 rounded-[15px] bg-[#D2D2D2] p-4 sm:gap-5 sm:p-6 md:p-7 lg:h-[661px]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-3">
               {TABS.map((tab) => {
@@ -136,7 +232,10 @@ export default function SettingsPage() {
                 size="none"
                 iconSrc={userPlus}
                 iconAlt="Add printer"
-                onClick={() => setIsPrinterModalOpen(true)}
+                onClick={() => {
+                  setEditingPrinter(null);
+                  setIsPrinterModalOpen(true);
+                }}
               >
                 Add Printer
               </Button>
@@ -205,17 +304,44 @@ export default function SettingsPage() {
                     No data Data Available
                   </p>
                 ) : (
-                  filteredPrinters.slice(0, pageSize).map((printer) => (
+                  filteredPrinters.slice(0, pageSize).map((printer, index) => (
                     <div
                       key={printer.id}
-                      className={`grid gap-2 border-b border-black/5 px-4 py-2.5 font-poppins text-[12px] text-black ${PRINTER_GRID}`}
+                      className={`grid items-center gap-2 border-b border-black/5 px-4 py-2.5 font-poppins text-[12px] text-black ${PRINTER_GRID}`}
                     >
-                      <span className="truncate">{printer.id}</span>
+                      <span className="truncate">{index + 1}</span>
                       <span className="truncate">{printer.printerName}</span>
                       <span className="truncate">{printer.printType}</span>
                       <span className="truncate">{printer.kitchenCustomerType}</span>
                       <span className="truncate">{printer.printerIp}</span>
-                      <span />
+                      <span className="flex items-center justify-center gap-2">
+                        <Button
+                          type="button"
+                          variant="editicon"
+                          size="icon"
+                          aria-label={`Edit ${printer.printerName}`}
+                          onClick={() => {
+                            const record = printersQuery.data?.data.find(
+                              (p) => p._id === printer.id,
+                            );
+                            if (record) {
+                              setEditingPrinter(record);
+                              setIsPrinterModalOpen(true);
+                            }
+                          }}
+                        >
+                          <Pencil size={15} />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="deleteicon"
+                          size="icon"
+                          aria-label={`Delete ${printer.printerName}`}
+                          onClick={() => handleDeletePrinter(printer)}
+                        >
+                          <Trash2 size={15} />
+                        </Button>
+                      </span>
                     </div>
                   ))
                 )}
@@ -231,15 +357,32 @@ export default function SettingsPage() {
           )}
         </div>
 
-        <span className="font-poppins text-[12px] font-medium text-[#939393]">
-          © 2026 FFERM Digital Labs. All rights reserved.
-        </span>
+        <div className="mt-auto flex w-full justify-center pt-4">
+          <span className="font-poppins text-[12px] font-medium text-[#939393]">
+            © 2026 FFERM Digital Labs. All rights reserved.
+          </span>
+        </div>
       </div>
 
       <AddPrinterModal
         isOpen={isPrinterModalOpen}
-        onClose={() => setIsPrinterModalOpen(false)}
-        onAdd={handleAddPrinter}
+        onClose={() => {
+          setIsPrinterModalOpen(false);
+          setEditingPrinter(null);
+        }}
+        onAdd={handleSavePrinter}
+        mode={editingPrinter ? "edit" : "add"}
+        initialPrinter={editingPrinter ? mapPrinterToFormValues(editingPrinter) : null}
+        kitchenOptions={(kitchensQuery.data?.data || []).map((kitchen) => ({
+          label: kitchen.name,
+          value: kitchen._id,
+        }))}
+        customerTypeOptions={(customerTypesQuery.data?.data || []).map(
+          (customerType) => ({
+            label: customerType.type,
+            value: customerType._id,
+          }),
+        )}
       />
     </main>
   );
