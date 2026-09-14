@@ -10,21 +10,25 @@ import {
   type Resolver,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 
 import FormInput from "@/src/components/form/FormInput";
-import FormMultiSelectInput, {
-  selectType,
-} from "@/src/components/form/FormMultiSelectInput";
+import FormMultiSelectInput from "@/src/components/form/FormMultiSelectInput";
 import FormCombobox from "@/src/components/form/FormCombobox";
-
-import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 
-// ─── Zod schema ───────────────────────────────────────────────────────────────
-// Required fields: foodName, foodType, menuTypes, category, kitchen, basePrice.
-// Everything else (portions, pricing, offer dates/discount, choices, prep time)
-// is optional, and 0 is a valid value wherever a number field isn't required.
+
+import { ListCategoryApi } from "@/src/api/category/api/GetAll";
+import { ListMenuTypeApi } from "@/src/api/menu-type/api/GetAll";
+import { ListCustomerTypeApi } from "@/src/api/customer-type/api/GetAll";
+import { ListKitchenApi } from "@/src/api/kitchen/api/GetAll";
+import { ListFoodByIdApi } from "@/src/api/food/api/GetById";
+import { useAddFood } from "@/src/api/food/hooks/create.hook";
+import { useUpdateFood } from "@/src/api/food/hooks/update.hook";
+
+
+// ─── Zod schema ─────────────────────────────────────────────────────────────
 const portionSchema = z.object({
   name: z.string().min(1, "Portion name is required"),
   price: z.coerce.number().min(0, "Price must be 0 or more"),
@@ -32,19 +36,14 @@ const portionSchema = z.object({
 
 const foodSchema = z
   .object({
-    foodName: z
-      .string()
-      .min(1, "Food name is required")
-      .max(150, "Food name must be 150 characters or less"),
-   foodImage: z.string().nullish(),
+    foodName: z.string().min(1, "Food name is required").max(150),
+    foodImage: z.string().nullish(),
     foodType: z.enum(["Veg", "Non-Veg"]),
     menuTypes: z.array(z.string()).min(1, "Select at least one menu type"),
     category: z.string().min(1, "Category is required"),
     kitchen: z.string().min(1, "Kitchen is required"),
     hasPortions: z.boolean(),
     portions: z.array(portionSchema),
-    // basePrice: unlike z.coerce.number() alone, this rejects a blank field
-    // instead of silently coercing "" -> 0. 0 typed explicitly is still valid.
     basePrice: z
       .union([z.string(), z.number()])
       .transform((val) => (typeof val === "string" ? val.trim() : val))
@@ -52,13 +51,8 @@ const foodSchema = z
         message: "Base price is required",
       })
       .transform((val) => Number(val))
-      .refine((val) => !Number.isNaN(val), {
-        message: "Base price must be a valid number",
-      })
-      .refine((val) => val >= 0, {
-        message: "Base price must be 0 or more",
-      }),
-    // Keyed by customer type id — optional pricing, 0 is fine per channel.
+      .refine((val) => !Number.isNaN(val), { message: "Base price must be a valid number" })
+      .refine((val) => val >= 0, { message: "Base price must be 0 or more" }),
     customerPrices: z.record(z.string(), z.coerce.number().min(0)),
     hasOffer: z.boolean(),
     startDate: z.string().optional().or(z.literal("")),
@@ -67,22 +61,16 @@ const foodSchema = z
     choices: z.array(z.string()),
     preparationTime: z.coerce.number().min(0, "Must be 0 or more"),
   })
-  // Only remaining cross-field rule: if both dates happen to be filled in,
-  // keep them in order. Neither portions, nor start/end date, are required.
   .refine(
     (data) =>
       !data.hasOffer ||
       !data.startDate ||
       !data.endDate ||
       new Date(data.endDate) >= new Date(data.startDate),
-    {
-      message: "End date must be on or after the start date",
-      path: ["endDate"],
-    },
+    { message: "End date must be on or after the start date", path: ["endDate"] },
   );
 
 export type FoodFormValues = z.infer<typeof foodSchema>;
-export type NewFoodInput = FoodFormValues;
 
 const emptyForm: FoodFormValues = {
   foodName: "",
@@ -103,60 +91,33 @@ const emptyForm: FoodFormValues = {
   preparationTime: 0,
 };
 
-// One entry per customer type coming back from the customer-type API
-// (e.g. { id: "6aa37e69...", label: "Take Away" }) — the Pricing section
-// renders one price card per entry instead of four hardcoded channels.
-export type CustomerTypeOption = {
-  id: string;
-  label: string;
-};
-type AddFoodModalProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  onAdd: (data: NewFoodInput, imageFile?: File) => void;
-  categoryOptions: selectType[];
-  menuTypeOptions: selectType[];
-  kitchenOptions?: selectType[];
-  customerTypeOptions: CustomerTypeOption[];
-  mode?: "add" | "edit";
-  initialFood?: FoodFormValues | null;
-};
-const foodTypeLabelStyle: React.CSSProperties = {
-  fontFamily: "Poppins",
-  fontWeight: 400,
-  fontSize: 16,
-  lineHeight: "100%",
-  letterSpacing: "0%",
-  color: "#808080",
-};
+function formatCustomerTypeLabel(type: string) {
+  return type
+    .toLowerCase()
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
-// Small helper so we never have to `as string` a FieldError/Merge union —
-// FieldError.message is already `string | undefined`, this just narrows
-// the wider RHF error-shape (arrays/objects) down safely for display.
-function getErrorMessage(
-  error: FieldError | { message?: string } | undefined,
-): string | undefined {
+function getErrorMessage(error: FieldError | { message?: string } | undefined): string | undefined {
   return error && typeof error.message === "string" ? error.message : undefined;
 }
 
-export default function AddFoodModal({
-  isOpen,
-  onClose,
-  onAdd,
-  categoryOptions,
-  menuTypeOptions,
-  kitchenOptions = [],
-  customerTypeOptions,
-  mode = "add",
-  initialFood = null,
-}: AddFoodModalProps) {
+type AddFoodDialogueProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  mode?: "add" | "edit";
+  foodId?: string;
+};
+
+export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFoodDialogueProps) {
+  const isEdit = mode === "edit";
+
   const methods = useForm<FoodFormValues>({
     defaultValues: emptyForm,
     resolver: zodResolver(foodSchema) as Resolver<FoodFormValues>,
   });
-  const [imagePreview, setImagePreview] = useState<string | undefined>(
-    undefined,
-  );
+  const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
   const [imageFile, setImageFile] = useState<File | undefined>(undefined);
   const [choiceInput, setChoiceInput] = useState("");
 
@@ -169,40 +130,101 @@ export default function AddFoodModal({
     remove: removePortion,
   } = useFieldArray({ control: methods.control, name: "portions" });
 
-  
+  const onOpenChange = (open: boolean) => {
+    if (!open) onClose();
+  };
+
+  // ─── Dropdown data ─────────────────────────────────────────────────────────
+  const { data: categoryData } = useQuery({
+    queryKey: ["getAllCategoriesForFood"],
+    queryFn: () => ListCategoryApi({ search: "", page: 1, limit: 100 }),
+    enabled: isOpen,
+  });
+  const { data: menuTypeData } = useQuery({
+    queryKey: ["getAllMenuTypesForFood"],
+    queryFn: () => ListMenuTypeApi({ search: "", page: 1, limit: 100 }),
+    enabled: isOpen,
+  });
+  const { data: kitchenData } = useQuery({
+    queryKey: ["getAllKitchensForFood"],
+    queryFn: () => ListKitchenApi({ search: "", page: 1, limit: 100 }),
+    enabled: isOpen,
+  });
+  const { data: customerTypeData } = useQuery({
+    queryKey: ["getAllCustomerTypesForFood"],
+    queryFn: () => ListCustomerTypeApi({ search: "", page: 1, limit: 100 }),
+    enabled: isOpen,
+  });
+
+  const categoryOptions = (categoryData?.data || []).map((c) => ({ label: c.name, value: c._id }));
+  const menuTypeOptions = (menuTypeData?.data || []).map((m) => ({ label: m.name, value: m._id }));
+  const kitchenOptions = (kitchenData?.data || []).map((k) => ({ label: k.name, value: k._id }));
+  const customerTypeOptions = (customerTypeData?.data || []).map((c) => ({
+    id: c._id,
+    label: formatCustomerTypeLabel(c.type),
+  }));
+
+  // ─── Edit-mode fetch ────────────────────────────────────────────────────────
+  const { data: foodData } = useQuery({
+    queryKey: ["getFoodById", foodId],
+    queryFn: () => ListFoodByIdApi(String(foodId)),
+    enabled: isEdit && !!foodId && isOpen,
+  });
+
+  const { mutate: addFood, isPending: isAdding } = useAddFood({ form: methods, onOpenChange });
+  const { mutate: updateFood, isPending: isUpdating } = useUpdateFood({ form: methods, onOpenChange });
+
   useEffect(() => {
     if (!isOpen) return;
 
-    const defaultCustomerPrices = customerTypeOptions.reduce<Record<string, number>>(
-      (acc, option) => {
-        acc[option.id] = 0;
-        return acc;
-      },
-      {},
-    );
+    const defaultCustomerPrices = customerTypeOptions.reduce<Record<string, number>>((acc, opt) => {
+      acc[opt.id] = 0;
+      return acc;
+    }, {});
 
-    const values: FoodFormValues =
-      mode === "edit" && initialFood
-        ? {
-            ...initialFood,
-            customerPrices: {
-              ...defaultCustomerPrices,
-              ...initialFood.customerPrices,
-            },
-          }
-        : { ...emptyForm, customerPrices: defaultCustomerPrices };
+    if (isEdit && foodData) {
+      const record = foodData.data as any;
+      const customerPrices: Record<string, number> = { ...defaultCustomerPrices };
+      (record.customerTypes || []).forEach((c: any) => {
+        const id = c.customerTypeId?._id;
+        if (id) customerPrices[id] = c.price ?? 0;
+      });
 
-    methods.reset(values);
-    setImagePreview(values.foodImage ?? undefined);
+      const toDateInputValue = (value?: string) => {
+        if (!value) return "";
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString().slice(0, 10);
+      };
+
+      methods.reset({
+        foodName: record.name,
+        foodImage: record.foodImage ?? undefined,
+        foodType: record.foodType === "VEG" ? "Veg" : "Non-Veg",
+        menuTypes: record.menuTypeId?._id ? [record.menuTypeId._id] : [],
+        category: record.categoryId?._id || "",
+        kitchen: record.kitchenId?._id || "",
+        hasPortions: Boolean(record.isPortionEnabled),
+        portions: record.portions?.map((p: any) => ({ name: p.name, price: p.basePrice })) || [],
+        basePrice: record.basePrice || 0,
+        customerPrices,
+        hasOffer: Boolean(record.isOfferEnabled),
+        startDate: toDateInputValue(record.offer?.startDate),
+        endDate: toDateInputValue(record.offer?.endDate),
+        discountPercent: record.offer?.discount || 0,
+        choices: record.choices || [],
+        preparationTime: record.preparationTime || 0,
+      });
+      setImagePreview(record.foodImage ?? undefined);
+    } else if (!isEdit) {
+      methods.reset({ ...emptyForm, customerPrices: defaultCustomerPrices });
+      setImagePreview(undefined);
+    }
     setChoiceInput("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, mode, initialFood, customerTypeOptions]);
+  }, [isOpen, isEdit, foodData, customerTypeData]);
 
   const handlePortionsToggle = (checked: boolean) => {
     methods.setValue("hasPortions", checked);
-    if (checked && portionFields.length === 0) {
-      appendPortion({ name: "", price: 0 });
-    }
+    if (checked && portionFields.length === 0) appendPortion({ name: "", price: 0 });
   };
 
   const handleClose = () => {
@@ -215,107 +237,97 @@ export default function AddFoodModal({
   const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    setImageFile(file); // keep the real file
-    const url = URL.createObjectURL(file);
-    setImagePreview(url); // only for on-screen preview
-    // don't setValue("foodImage", url) — it's not a durable value
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
   };
 
   const handleAddChoice = () => {
     const value = choiceInput.trim();
     if (!value) return;
-
     const current = methods.getValues("choices") || [];
     if (current.includes(value)) {
       setChoiceInput("");
       return;
     }
-
     methods.setValue("choices", [...current, value]);
     setChoiceInput("");
   };
 
   const handleRemoveChoice = (value: string) => {
     const current = methods.getValues("choices") || [];
-    methods.setValue(
-      "choices",
-      current.filter((choice) => choice !== value),
-    );
+    methods.setValue("choices", current.filter((c) => c !== value));
   };
 
- const handleSubmit = methods.handleSubmit(
-  (values) => {
-    // ✅ validation passed
-    onAdd(values, imageFile);
-    methods.reset(emptyForm);
-    setImagePreview(undefined);
-    setImageFile(undefined);
-  },
-  (errors) => {
-    // ❌ validation failed — this is where you "get" the errors
-    console.log("Form validation errors:", errors);
-  },
-);
+  const handleSubmit = methods.handleSubmit(
+    (values) => {
+      const payload = {
+        name: values.foodName.trim(),
+        foodType: (values.foodType === "Veg" ? "VEG" : "NON_VEG") as "VEG" | "NON_VEG",
+        menuTypeId: values.menuTypes[0] || "",
+        categoryId: values.category,
+        kitchenId: values.kitchen,
+        isPortionEnabled: values.hasPortions,
+        portions: values.hasPortions
+          ? values.portions.map((p) => ({ name: p.name.trim(), basePrice: Number(p.price) || 0 }))
+          : [],
+        basePrice: values.basePrice,
+        customerTypes: customerTypeOptions
+          .map((opt) => ({ customerTypeId: opt.id, price: Number(values.customerPrices?.[opt.id]) || 0 }))
+          .filter((c) => c.price > 0),
+        isOfferEnabled: values.hasOffer,
+        offer: values.hasOffer
+          ? {
+              startDate: values.startDate || "",
+              endDate: values.endDate || "",
+              discount: Number(values.discountPercent) || 0,
+            }
+          : undefined,
+        choices: values.choices,
+        preparationTime: Number(values.preparationTime) || 0,
+      };
+
+      if (isEdit && foodId) {
+        updateFood({ id: foodId, value: payload, imageFile });
+      } else {
+        addFood({ value: payload, imageFile });
+      }
+    },
+    (errors) => {
+      console.log("Form validation errors:", errors);
+    },
+  );
+
+  if (!isOpen) return null;
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(next) => {
-        if (!next) handleClose();
-      }}
-    >
-      <DialogContent
-        showCloseButton={false}
-        className="
-          w-[812px] max-w-[calc(100vw-2rem)]
-          h-[588px] max-h-[calc(100vh-2rem)]
-          flex flex-col gap-[10px]
-          rounded-[20px] border-[1px]
-          bg-[#E9E9E9] text-black
-          pt-[26px]  pb-[26px] pl-[34px]
-          opacity-100 shadow-[0_0_30px_rgba(0,0,0,0.35)]
-          backdrop-blur-[4px]
-        "
-      >
-        <button
-          type="button"
-          onClick={handleClose}
-          className="absolute right-[-18px] top-[-18px] z-10 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B] shadow-lg"
-          aria-label="Close food modal"
-        >
-          <X size={20} strokeWidth={2.5} />
-        </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 py-6 backdrop-blur-[2px]">
+      <FormProvider {...methods}>
+        <div className="relative my-auto w-full max-w-[812px]">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="absolute right-2 top-2 z-10 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B] shadow-lg sm:right-[-18px] sm:top-[-18px]"
+            aria-label="Close food modal"
+          >
+            <X size={20} strokeWidth={2.5} />
+          </button>
 
-        <DialogTitle className="text-[22px] font-semibold text-black">
-          {mode === "edit" ? "Edit Food" : "Add Food"}
-        </DialogTitle>
+          <div className="flex max-h-[85vh] w-full flex-col gap-[16px] overflow-y-auto rounded-[20px] border border-[#A6A6A6] bg-[#E9E9E9] px-4 py-6 shadow-[0_0_30px_rgba(0,0,0,0.35)] sm:px-[34px]">
+            <h3 className="text-[22px] font-semibold leading-none text-black">
+              {isEdit ? "Edit Food" : "Add Food"}
+            </h3>
 
-        <FormProvider {...methods}>
-          <div className="flex flex-1 min-h-0 flex-col gap-[10px] overflow-y-auto pr-1">
             {/* Food Name + Food Image */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <FormInput
-                  name="foodName"
-                  label="Food Name"
-                  placeholder="Enter Food Name"
-                  required
-                />
+                <FormInput name="foodName" label="Food Name" placeholder="Enter Food Name" required />
 
-                {/* Food Type */}
-                <div className="mt-4" style={{ width: 366, height: 70 }}>
-                  <label className="block text-base font-medium mb-3 text-black">
+                <div className="mt-4 w-full max-w-[366px]">
+                  <label className="mb-3 block text-sm font-medium text-black sm:text-base">
                     Food Type <span className="text-[#FF3B3B]">*</span>
                   </label>
-
-                  <div
-                    className="flex items-center justify-around gap-3"
-                    style={foodTypeLabelStyle}
-                  >
-                    <label htmlFor="food-type-veg" className="cursor-pointer">
-                      Veg
-                    </label>
+                  <div className="flex flex-wrap items-center justify-start gap-3 font-['Poppins',sans-serif] text-sm text-[#808080] sm:justify-around sm:text-base">
+                    <label htmlFor="food-type-veg" className="cursor-pointer">Veg</label>
                     <input
                       id="food-type-veg"
                       type="radio"
@@ -323,13 +335,7 @@ export default function AddFoodModal({
                       {...methods.register("foodType")}
                       className="h-[18px] w-[18px] appearance-none rounded-full border-2 border-[#9C9C9C] checked:border-[4px] checked:border-[#450042]"
                     />
-
-                    <label
-                      htmlFor="food-type-nonveg"
-                      className="cursor-pointer"
-                    >
-                      Non-Veg
-                    </label>
+                    <label htmlFor="food-type-nonveg" className="cursor-pointer">Non-Veg</label>
                     <input
                       id="food-type-nonveg"
                       type="radio"
@@ -342,46 +348,22 @@ export default function AddFoodModal({
               </div>
 
               <div>
-                <label className=" block text-base font-medium mb-3 text-black">
-                  Food Image
-                </label>
+                <label className="mb-3 block text-sm font-medium text-black sm:text-base">Food Image</label>
                 <label
                   htmlFor="food-image-upload"
-                  className="flex cursor-pointer items-center justify-center"
-                  style={{
-                    width: 118,
-                    height: 118,
-                    borderRadius: 7,
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    borderColor: "#E9E9E9",
-                    background: "#D2D2D2",
-                    padding: 40,
-                    gap: 9,
-                  }}
+                  className="flex h-[100px] w-[100px] cursor-pointer items-center justify-center gap-[9px] rounded-[7px] border border-[#E9E9E9] bg-[#D2D2D2] p-8 sm:h-[118px] sm:w-[118px] sm:p-10"
                 >
                   {imagePreview ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={imagePreview}
-                      alt="Food preview"
-                      className="h-full w-full rounded-[4px] object-cover"
-                    />
+                    <img src={imagePreview} alt="Food preview" className="h-full w-full rounded-[4px] object-cover" />
                   ) : (
                     <span className="text-xl text-[#8A8A8A]">+</span>
                   )}
                 </label>
-                <input
-                  id="food-image-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImagePick}
-                />
+                <input id="food-image-upload" type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
               </div>
             </div>
 
-            {/* Menu Type */}
             <FormMultiSelectInput
               name="menuTypes"
               label="Menu Type"
@@ -391,49 +373,29 @@ export default function AddFoodModal({
               required
             />
 
-            {/* Category + Kitchen */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormCombobox
-                name="category"
-                label="Category"
-                options={categoryOptions}
-                placeholder="Select Or search"
-                required
-              />
-
-              <FormCombobox
-                name="kitchen"
-                label="Kitchen"
-                options={kitchenOptions}
-                placeholder="Select Or search"
-                required
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormCombobox name="category" label="Category" options={categoryOptions} placeholder="Select Or search" required />
+              <FormCombobox name="kitchen" label="Kitchen" options={kitchenOptions} placeholder="Select Or search" required />
             </div>
 
-            {/* Portions — fully optional, 0 price allowed */}
+            {/* Portions */}
             <div>
-              <label className="mb-3 block text-base font-medium text-black">
-                Portions
-              </label>
-              <label className="flex items-center gap-2 text-base text-[#A1A1A1]">
+              <label className="mb-3 block text-sm font-medium text-black sm:text-base">Portions</label>
+              <label className="flex items-center gap-2 text-sm text-[#A1A1A1] sm:text-base">
                 <span
                   onClick={() => handlePortionsToggle(!hasPortions)}
-                  className={`flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm border border-black ${
-                    hasPortions
-                      ? "border-[#450042] bg-[#450042]"
-                      : "border-black bg-[#E9E9E9]"
+                  className={`flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-black ${
+                    hasPortions ? "border-[#450042] bg-[#450042]" : "border-black bg-[#E9E9E9]"
                   }`}
                 >
-                  {hasPortions && (
-                    <Check size={12} strokeWidth={3} className="text-white" />
-                  )}
+                  {hasPortions && <Check size={12} strokeWidth={3} className="text-white" />}
                 </span>
                 Portions
               </label>
 
               {hasPortions && (
                 <div className="mt-3">
-                  <p className="mb-3 text-base text-[#A1A1A1]">
+                  <p className="mb-3 text-sm text-[#A1A1A1] sm:text-base">
                     The First potion added serves as the base for the recipe
                   </p>
 
@@ -443,59 +405,41 @@ export default function AddFoodModal({
                     const priceErrorMessage = getErrorMessage(rowErrors?.price);
 
                     return (
-                      <div key={field.id} className="mb-3 grid grid-cols-2 gap-4">
+                      <div key={field.id} className="mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                          <label className="block text-base font-medium mb-3 text-black">
-                            Potion name
-                          </label>
+                          <label className="mb-3 block text-sm font-medium text-black sm:text-base">Potion name</label>
                           <div className="relative">
                             <input
-                              {...methods.register(
-                                `portions.${index}.name` as const,
-                              )}
+                              {...methods.register(`portions.${index}.name` as const)}
                               placeholder="Enter position name"
                               className="w-full rounded-[8px] border border-[#E9E9E9] bg-[#D2D2D2] px-3 py-2 text-sm text-black placeholder:text-[#8A8A8A] outline-none"
                             />
                             {index === 0 && (
-                              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-base text-[#8A8A8A]">
+                              <span className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 text-sm text-[#8A8A8A] sm:block sm:text-base">
                                 (Base potion)
                               </span>
                             )}
                           </div>
-                          {nameErrorMessage && (
-                            <p className="mt-1 text-sm text-[#FF3B3B]">
-                              {nameErrorMessage}
-                            </p>
-                          )}
+                          {nameErrorMessage && <p className="mt-1 text-sm text-[#FF3B3B]">{nameErrorMessage}</p>}
                         </div>
 
                         <div className="flex items-end gap-2">
                           <div className="flex-1">
-                            <label className="block text-base font-medium mb-3 text-black">
-                              Base Price
-                            </label>
+                            <label className="mb-3 block text-sm font-medium text-black sm:text-base">Base Price</label>
                             <input
                               type="number"
                               step="0.01"
-                              {...methods.register(
-                                `portions.${index}.price` as const,
-                              )}
+                              {...methods.register(`portions.${index}.price` as const)}
                               className="w-full rounded-[8px] border border-[#E9E9E9] bg-[#D2D2D2] px-3 py-2 text-sm text-black outline-none"
                             />
-                            {priceErrorMessage && (
-                              <p className="mt-1 text-sm text-[#FF3B3B]">
-                                {priceErrorMessage}
-                              </p>
-                            )}
+                            {priceErrorMessage && <p className="mt-1 text-sm text-[#FF3B3B]">{priceErrorMessage}</p>}
                           </div>
 
                           {index === portionFields.length - 1 ? (
                             <button
                               type="button"
-                              onClick={() =>
-                                appendPortion({ name: "", price: 0 })
-                              }
-                              className="flex h-[38px] w-[38px] items-center justify-center rounded-[8px] bg-[#D2D2D2] text-black"
+                              onClick={() => appendPortion({ name: "", price: 0 })}
+                              className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] bg-[#D2D2D2] text-black"
                               aria-label="Add potion"
                             >
                               <Plus size={16} />
@@ -504,7 +448,7 @@ export default function AddFoodModal({
                             <button
                               type="button"
                               onClick={() => removePortion(index)}
-                              className="flex h-[38px] w-[38px] items-center justify-center rounded-[8px] border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B]"
+                              className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[8px] border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B]"
                               aria-label="Remove potion"
                             >
                               <X size={16} />
@@ -518,35 +462,17 @@ export default function AddFoodModal({
               )}
             </div>
 
-            {/* Base Price — required, 0 allowed (but blank is rejected) */}
-            <FormInput
-              name="basePrice"
-              label="Base Price"
-              placeholder="Enter Base Price"
-              type="number"
-              required
-            />
+            <FormInput name="basePrice" label="Base Price" placeholder="Enter Base Price" type="number" required />
 
-            {/* Pricing — optional, one card per customer type returned by the API */}
             <div>
-              <label className="mb-3 block text-base font-medium text-black">
-                Pricing
-              </label>
-
+              <label className="mb-3 block text-sm font-medium text-black sm:text-base">Pricing</label>
               {customerTypeOptions.length === 0 ? (
-                <p className="text-sm text-[#A1A1A1]">
-                  No customer types available.
-                </p>
+                <p className="text-sm text-[#A1A1A1]">No customer types available.</p>
               ) : (
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {customerTypeOptions.map((option) => (
-                    <div
-                      key={option.id}
-                      className="rounded-lg border border-gray-400 p-4"
-                    >
-                      <p className="mb-3 text-base font-medium text-black">
-                        {option.label}
-                      </p>
+                    <div key={option.id} className="rounded-lg border border-gray-400 p-4">
+                      <p className="mb-3 text-sm font-medium text-black sm:text-base">{option.label}</p>
                       <FormInput
                         name={`customerPrices.${option.id}`}
                         label="Price"
@@ -559,61 +485,36 @@ export default function AddFoodModal({
               )}
             </div>
 
-            <label className="flex items-center gap-2 text-base text-[#A1A1A1]">
+            <label className="flex items-center gap-2 text-sm text-[#A1A1A1] sm:text-base">
               <span
-                onClick={() =>
-                  methods.setValue("hasOffer", !methods.getValues("hasOffer"))
-                }
-                className={`flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm border border-black ${
-                  hasOffer
-                    ? "border-[#450042] bg-[#450042]"
-                    : "border-black bg-[#E9E9E9]"
+                onClick={() => methods.setValue("hasOffer", !methods.getValues("hasOffer"))}
+                className={`flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-black ${
+                  hasOffer ? "border-[#450042] bg-[#450042]" : "border-black bg-[#E9E9E9]"
                 }`}
               >
-                {hasOffer && (
-                  <Check size={12} strokeWidth={3} className="text-white" />
-                )}
+                {hasOffer && <Check size={12} strokeWidth={3} className="text-white" />}
               </span>
               Offer
             </label>
 
             {hasOffer && (
               <>
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <FormInput
-                      name="startDate"
-                      label="Start Date"
-                      type="date"
-                    />
-                  </div>
-                  <div>
-                    <FormInput name="endDate" label="End Date" type="date" />
-                  </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <FormInput name="startDate" label="Start Date" type="date" />
+                  <FormInput name="endDate" label="End Date" type="date" />
                 </div>
-
-                <FormInput
-                  name="discountPercent"
-                  label="Discount (%)"
-                  type="number"
-                />
+                <FormInput name="discountPercent" label="Discount (%)" type="number" />
               </>
             )}
 
             {/* Choices */}
             <div>
-              <label className="mb-1 block text-[22px] font-medium text-black">
-                Choices
-              </label>
-              <p className="mb-3 text-sm text-[#A1A1A1]">
-                Choose from different food variants or preferences.
-              </p>
+              <label className="mb-1 block text-lg font-medium text-black sm:text-[22px]">Choices</label>
+              <p className="mb-3 text-sm text-[#A1A1A1]">Choose from different food variants or preferences.</p>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-base font-medium mb-3 text-black">
-                    Choices
-                  </label>
+                  <label className="mb-3 block text-sm font-medium text-black sm:text-base">Choices</label>
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
@@ -645,42 +546,33 @@ export default function AddFoodModal({
                           key={choice}
                           className="flex items-center gap-1 rounded-[6px] bg-[#9A379633] px-2 py-[3px] text-xs text-[#450042]"
                         >
-                          <span className="truncate max-w-[160px]">
-                            {choice}
-                          </span>
-                          <X
-                            size={12}
-                            className="cursor-pointer hover:text-red-500"
-                            onClick={() => handleRemoveChoice(choice)}
-                          />
+                          <span className="max-w-[160px] truncate">{choice}</span>
+                          <X size={12} className="cursor-pointer hover:text-red-500" onClick={() => handleRemoveChoice(choice)} />
                         </span>
                       ))}
                     </div>
                   )}
                 </div>
 
-                <FormInput
-                  name="preparationTime"
-                  label="Preparation Time (Minutes)"
-                  type="number"
-                  placeholder="Enter Preparation Time"
-                />
+                <FormInput name="preparationTime" label="Preparation Time (Minutes)" type="number" placeholder="Enter Preparation Time" />
               </div>
             </div>
-          </div>
 
-          <div className="flex shrink-0 justify-end pt-2">
-            <Button
-              type="button"
-              variant="add"
-              size="none"
-              onClick={handleSubmit}
-            >
-              {mode === "edit" ? "SAVE" : "ADD"}
-            </Button>
+            <div className="mt-auto flex justify-end">
+              <Button
+                type="button"
+                variant="add"
+                size="none"
+                onClick={handleSubmit}
+                disabled={isEdit ? isUpdating : isAdding}
+                className="w-full sm:w-auto"
+              >
+                {isEdit ? "SAVE" : "ADD"}
+              </Button>
+            </div>
           </div>
-        </FormProvider>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </FormProvider>
+    </div>
   );
 }
