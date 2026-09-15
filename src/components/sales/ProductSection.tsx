@@ -21,7 +21,7 @@ function mapFoodToProduct(food: Food): Product {
     id: food._id,
     name: food.name,
     price: food.basePrice,
-    image: food.foodImage || "/images/icons/butterscotch.jpg",
+    image: food.foodImage || "no image ",
   };
 }
 

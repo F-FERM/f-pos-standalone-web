@@ -328,14 +328,14 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
 
   const getFoodImageUrl = (foodImage?: string) => {
   if (!foodImage) {
-    return "/images/icons/butterscotch.jpg";
+    return "no image";
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
   if (!baseUrl) {
-    console.error("NEXT_PUBLIC_API_BASE_URL is not defined");
-    return "/images/icons/butterscotch.jpg";
+    console.error("NEXT_PUBLIC_BASE_URL is not defined");
+    return "no image";
   }
 
   return `${baseUrl.replace(/\/$/, "")}/${foodImage.replace(/^\//, "")}`;
