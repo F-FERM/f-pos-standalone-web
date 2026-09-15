@@ -10,7 +10,7 @@ import {
   RefreshCw,
   Smartphone,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
@@ -22,10 +22,6 @@ import { formatDisplayDate } from "@/src/components/settings/restaurant/TableHel
 
 import { ListCustomerTypeApi } from "@/src/api/customer-type/api/GetAll";
 import { ListFloorApi } from "@/src/api/floor/api/GetAll";
-// ASSUMPTION: an update endpoint named `updateRestaurant(id, payload)` exists
-// alongside `listRestaurants` in "@/src/api/restaurant". Rename this import
-// to match your actual export if it's different (e.g. `editRestaurant`,
-// `updateRestaurantById`).
 import { listRestaurants, updateRestaurant, type RestaurantPayload } from "@/src/api/restaurant";
 import { ListTableApi } from "@/src/api/table/api/GetAll";
 import { CustomerTypeFormAction } from "@/src/components/settings/restaurant/AddCustomerType";
@@ -44,7 +40,8 @@ function isRestaurantTab(value: string | null): value is RestaurantTab {
   return (TABS as readonly string[]).includes(value ?? "");
 }
 
-export default function RestaurantSettingsPage() {
+// Renamed: holds the useSearchParams() call and all the page logic
+function RestaurantSettingsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -130,9 +127,6 @@ export default function RestaurantSettingsPage() {
     router.replace(query ? `?${query}` : "?", { scroll: false });
   };
 
-  // ASSUMPTION: updateRestaurant takes the restaurant's _id as the first
-  // arg. If restaurant records use a different id field, adjust `restaurant._id`
-  // below to match.
   const handleSaveRestaurant = async (payload: RestaurantPayload, logoFile?: File) => {
     if (!restaurant) return;
     try {
@@ -272,5 +266,14 @@ export default function RestaurantSettingsPage() {
         initialRecord={restaurant}
       />
     </main>
+  );
+}
+
+// Default export: wraps content in Suspense
+export default function RestaurantSettingsPage() {
+  return (
+    <Suspense fallback={null}>
+      <RestaurantSettingsPageContent />
+    </Suspense>
   );
 }

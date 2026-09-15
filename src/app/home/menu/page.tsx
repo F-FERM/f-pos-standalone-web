@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SearchInput } from "@/src/components/common/SearchInput";
@@ -27,7 +27,8 @@ function isMenuTab(value: string | null): value is MenuTab {
   return (TABS as readonly string[]).includes(value ?? "");
 }
 
-export default function MenuPage() {
+// Renamed: this is the part that actually calls useSearchParams()
+function MenuPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -66,16 +67,9 @@ export default function MenuPage() {
     enabled: activeTab === "Food",
   });
 
-  //   const { data: comboData, isLoading: isComboLoading } = useQuery({
-  //     queryKey: ["getAllCombos", search],
-  //     queryFn: () => ListComboApi({ search, page: 1, limit: 100 }),
-  //     enabled: activeTab === "Combo",
-  //   });
-
   const categories = categoryData?.data ?? [];
   const menuTypes = menuTypeData?.data ?? [];
   const foods = foodData?.data ?? [];
-  //   const combos = comboData?.data ?? [];
 
   return (
     <main className="flex h-screen flex-col overflow-x-hidden bg-black text-black">
@@ -107,7 +101,6 @@ export default function MenuPage() {
             {activeTab === "Category" && <CategoryFormAction isEdit={false} />}
             {activeTab === "Menu Type" && <MenuTypeFormAction isEdit={false} />}
             {activeTab === "Food" && <FoodFormAction isEdit={false} />}
-            {/* {activeTab === "Combo" && <ComboFormAction isEdit={false} />} */}
           </div>
 
           <div className="flex flex-1 flex-col gap-4">
@@ -118,7 +111,6 @@ export default function MenuPage() {
             {activeTab === "Category" && <CategoryTable data={categories} isLoading={isCategoryLoading} />}
             {activeTab === "Menu Type" && <MenuTypeTable data={menuTypes} isLoading={isMenuTypeLoading} />}
             {activeTab === "Food" && <FoodTable data={foods} isLoading={isFoodLoading} />}
-            {/* {activeTab === "Combo" && <ComboTable data={combos} isLoading={isComboLoading} />} */}
           </div>
         </div>
 
@@ -127,5 +119,14 @@ export default function MenuPage() {
         </span>
       </div>
     </main>
+  );
+}
+
+// Default export: wraps the content in a Suspense boundary
+export default function MenuPage() {
+  return (
+    <Suspense fallback={null}>
+      <MenuPageContent />
+    </Suspense>
   );
 }
