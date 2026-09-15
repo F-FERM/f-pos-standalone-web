@@ -26,6 +26,7 @@ import { CustomerTypeValue, CUSTOMER_TYPE_OPTIONS } from "@/src/interfaces/custo
 import { Food } from "@/src/interfaces/food/ListFoodResponse";
 import { HomeDeliveryModal, type HomeDeliveryFormValues } from "./HomDeleiveryModal";
 import { OnlinePlatformModal } from "./onlinePlatformModal";
+import { listRestaurants } from "@/src/api/restaurant";
 
 const CUSTOMER_TYPE_LABELS: Record<CustomerTypeValue, string> = {
   DINE_IN: "Dine",
@@ -76,6 +77,10 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
     queryKey: ["getAllFoods"],
     queryFn: () => ListFoodApi({ page: 1, limit: 100 }),
   });
+  const restaurantQuery = useQuery({
+    queryKey: ["getAllRestaurants"],
+    queryFn: () => listRestaurants(),
+  });
   const customersQuery = useQuery({
     queryKey: ["getAllCustomers"],
     queryFn: () => ListCustomerApi({ limit: 100, page: 1 }),
@@ -83,6 +88,16 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
   });
 
   const customerTypes = customerTypesQuery.data?.data || [];
+  const restaurants = restaurantQuery.data?.data?.map((restaurant) => {
+    return {
+      value: restaurant._id,
+      label: restaurant.name,
+      vat: restaurant.vatPercentage,
+    };
+  }) || [];
+  // VAT percentage pulled from the restaurant record (assumes a single-location setup;
+  // adjust the selection logic here if the app supports multiple restaurants).
+  const vatPercentage = restaurants[0]?.vat ?? 0;
   const foods = foodsQuery.data?.data || [];
   const customers = customersQuery.data?.data || [];
 
@@ -191,7 +206,7 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
     (sum, food) => sum + getItemPrice(food) * getQty(food._id),
     0,
   );
-  const vat = 0;
+  const vat = (subtotal * vatPercentage) / 100;
   const total = subtotal + vat;
 
 
@@ -325,6 +340,7 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
 
   return `${baseUrl.replace(/\/$/, "")}/${foodImage.replace(/^\//, "")}`;
 };
+
 
   return (
     <>
@@ -472,7 +488,7 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
             </div>
 
             <div className="flex justify-between text-[11px] font-medium text-black sm:text-xs md:text-sm">
-              <span>VAT(0%)</span>
+              <span>VAT({vatPercentage}%)</span>
               <span className="text-[9px] font-normal sm:text-[10px] md:text-xs">
                 {vat.toFixed(2)}
               </span>
