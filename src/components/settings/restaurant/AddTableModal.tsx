@@ -1,86 +1,118 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FormProvider, useForm } from "react-hook-form";
+import { X } from "lucide-react";
+
 import FormCombobox, { selectType } from "@/src/components/form/FormCombobox";
 import FormInput from "@/src/components/form/FormInput";
-import { X } from "lucide-react";
-import { FormProvider, useForm } from "react-hook-form";
-import { useEffect } from "react";
 import { Button } from "../../ui/button";
+import { useAddTable } from "@/src/api/table/hooks/create.hook";
+import { useUpdateTable } from "@/src/api/table/hooks/update.hook";
+import { useQuery } from "@tanstack/react-query";
+import { ListFloorApi } from "@/src/api/floor/api/GetAll";
+import { ListTableByIdApi } from "@/src/api/table/api/GetById";
 
-export type TableFormValues = {
-  floor: string;
-  tableName: string;
-  capacity: string;
-};
+const schema = z.object({
+  floor: z.string().min(1, "Please select a floor"),
+  tableName: z.string().min(1, "Table name is required").max(100),
+  capacity: z
+    .number({ error: "Capacity must be a number" })
+    ,
+  
+});
 
-export type NewTableInput = {
-  floor: string;
-  tableName: string;
-  capacity: number;
-};
+export type TableFormValues = z.infer<typeof schema>;
 
-const emptyForm: TableFormValues = { floor: "", tableName: "", capacity: "" };
+const emptyForm: TableFormValues = { floor: "", tableName: "", capacity: 0 };
+
+export type EditableTable = { floor: string; tableName: string; capacity: number };
 
 type AddTableModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (table: NewTableInput) => void;
-  floorOptions?: selectType[];
-  initialTable?: NewTableInput | null;
   mode?: "add" | "edit";
+  id?: string;
+  initialTable?: EditableTable | null;
 };
 
 export default function AddTableModal({
   isOpen,
   onClose,
-  onAdd,
-  floorOptions = [],
-  initialTable = null,
   mode = "add",
+  id,
+  initialTable = null,
 }: AddTableModalProps) {
-  const methods = useForm<TableFormValues>({ defaultValues: emptyForm });
+  const isEdit = mode === "edit";
+  const form = useForm<TableFormValues>({ defaultValues: emptyForm, resolver: zodResolver(schema) });
+  const onOpenChange = (open: boolean) => { if (!open) onClose(); };
+const [search,setSearch]=useState("")
+ 
+  const { mutate: addTable, isPending: isAdding } = useAddTable({ form,onOpenChange });
+  const { mutate: updateTable, isPending: isUpdating } = useUpdateTable({ form,onOpenChange });
+  const { data: floorListData, isLoading: isFloorListLoading } = useQuery({
+    queryKey: ["getAllFloors", search],
+    queryFn: () =>
+      ListFloorApi({
+        search,
+        page: 1,
+        limit: 100,
+      }),
+  });
+  const { data: tableListData, isLoading: isTableListLoading } = useQuery({
+    queryKey: ["getTableById", id],
+    queryFn: () =>
+      ListTableByIdApi(String(id)),
+  });
+  const floorOptions: selectType[] = (floorListData?.data ?? []).map((floor) => ({
+    label: floor.name,
+    value: floor._id,
+  }));
 
   useEffect(() => {
     if (!isOpen) return;
-    methods.reset(
+    form.reset(
       initialTable
         ? {
             floor: initialTable.floor,
             tableName: initialTable.tableName,
-            capacity: String(initialTable.capacity),
+            capacity: (initialTable.capacity),
           }
         : emptyForm,
     );
-  }, [initialTable, isOpen, methods]);
+  }, [initialTable, isOpen, form]);
 
   if (!isOpen) return null;
 
   const handleClose = () => {
-    methods.reset(emptyForm);
+    form.reset(emptyForm);
     onClose();
   };
 
-  const handleSubmit = () => {
-    const values = methods.getValues();
-    if (!values.floor || !values.tableName || !values.tableName.trim()) return;
-
-    onAdd({
-      floor: values.floor,
-      tableName: values.tableName.trim(),
+  const handleSubmit = form.handleSubmit((values) => {
+    const payload = {
+      floorId: values.floor,
+      name: values.tableName.trim(),
       capacity: Number(values.capacity) || 0,
-    });
+    };
 
-    methods.reset(emptyForm); 
-  };
+    if (isEdit && id) {
+      updateTable({ id, value:payload });
+    } else {
+      addTable(payload);
+    }
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 py-6 backdrop-blur-[2px]">
-      <FormProvider {...methods}>
+      <FormProvider {...form}>
         <div className="relative my-auto w-full max-w-[812px]">
           <button
             type="button"
             onClick={handleClose}
-            className="absolute right-[-18px] top-[-18px] z-10 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B] shadow-lg"
+            className="absolute right-2 top-2 z-10 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B] shadow-lg sm:right-[-18px] sm:top-[-18px]"
             aria-label="Close table modal"
           >
             <X size={20} strokeWidth={2.5} />
@@ -88,34 +120,27 @@ export default function AddTableModal({
 
           <div className="flex min-h-[420px] w-full flex-col gap-[16px] rounded-[20px] border border-[#A6A6A6] bg-[#E9E9E9] px-4 py-6 shadow-[0_0_30px_rgba(0,0,0,0.35)] sm:px-[34px]">
             <h3 className="font-poppins text-[22px] font-semibold leading-none text-black">
-              {mode === "edit" ? "Edit Table" : "Add Table"}
+              {isEdit ? "Edit Table" : "Add Table"}
             </h3>
 
             <div className="flex w-full flex-col gap-[10px] rounded-[10px] border border-[#B5B5B5] bg-[#E9E9E9] p-2.5 sm:max-w-[742px]">
               <label className="block">
                 <FormCombobox
                   name="floor"
-                  placeholder="Select Or Search"
+                  placeholder={isFloorListLoading ? "Loading floors..." : "Select Or Search"}
                   options={floorOptions}
                   label="Floor"
+                  required
+                  valueLabel={tableListData?.data?.floorId?.name}
                 />
               </label>
 
               <label className="block">
-                <FormInput
-                  name="tableName"
-                  placeholder="Enter Table"
-                  label="Table"
-                />
+                <FormInput name="tableName" placeholder="Enter Table" label="Table" required/>
               </label>
 
               <label className="block">
-                <FormInput
-                  name="capacity"
-                  type="number"
-                  placeholder="Enter Capacity"
-                  label="Capacity"
-                />
+                <FormInput name="capacity" type="number" placeholder="Enter Capacity" label="Capacity" required />
               </label>
             </div>
 
@@ -125,8 +150,9 @@ export default function AddTableModal({
                 variant="add"
                 size="none"
                 onClick={handleSubmit}
+                disabled={isEdit ? isUpdating : isAdding}
               >
-                {mode === "edit" ? "SAVE" : "ADD"}
+                {isEdit ? "SAVE" : "ADD"}
               </Button>
             </div>
           </div>
@@ -135,4 +161,3 @@ export default function AddTableModal({
     </div>
   );
 }
-

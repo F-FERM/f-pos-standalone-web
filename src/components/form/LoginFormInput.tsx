@@ -29,11 +29,14 @@ interface FormInputProps {
 }
 
 
-const INPUT_CLASSES = `w-[365px] h-[50px] rounded-[10px] border border-white/30
+const INPUT_CLASSES = `w-full max-w-[365px] h-[42px] sm:h-[46px] md:h-[50px] rounded-[10px] border border-white/30
   bg-[#ACACAC99] text-white placeholder:text-white/70
-  font-poppins font-medium text-[20px] leading-none tracking-normal placeholder:text-[16px]
+  font-poppins font-medium text-[16px] sm:text-[18px] md:text-[20px] leading-none tracking-normal
+  placeholder:text-[14px] sm:placeholder:text-[15px] md:placeholder:text-[16px]
   gap-[10px]
-  pt-[12px] pr-[22px] pb-[11px] pl-[22px]
+  pt-[9px] pr-[16px] pb-[8px] pl-[16px]
+  sm:pt-[10px] sm:pr-[18px] sm:pb-[9px] sm:pl-[18px]
+  md:pt-[12px] md:pr-[22px] md:pb-[11px] md:pl-[22px]
   flex items-center transition-all duration-200
   focus-visible:ring-1 focus-visible:ring-white/50 focus-visible:ring-offset-0
   disabled:border-white/10 disabled:bg-white/10 disabled:text-white/40`;

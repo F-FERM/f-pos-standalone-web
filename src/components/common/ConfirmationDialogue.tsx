@@ -1,7 +1,8 @@
 "use client";
 
-import { X } from "lucide-react";
 import { useState } from "react";
+import { X } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 
 interface ConfirmationDialogProps {
@@ -21,8 +22,6 @@ export function ConfirmationDialog({
 }: ConfirmationDialogProps) {
   const [remark, setRemark] = useState("");
 
-  if (!open) return null;
-
   const handleClose = () => {
     setRemark("");
     onOpenChange(false);
@@ -33,52 +32,72 @@ export function ConfirmationDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2C192BE5] p-4 backdrop-blur-[2px]">
-      <div className="relative w-full max-w-[440px]">
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) handleClose();
+      }}
+    >
+      <DialogContent
+        showCloseButton={false}
+        className="
+          w-full sm:w-[680px] max-w-[calc(100vw-2rem)]
+          h-auto
+          flex flex-col gap-[10px]
+          rounded-[16px] sm:rounded-[20px] border-[1px]
+          bg-[#E9E9E9] text-white
+          pt-[20px] pr-[20px] pb-[20px] pl-[20px]
+          sm:pt-[26px] sm:pr-[34px] sm:pb-[26px] sm:pl-[34px]
+          opacity-100 shadow-[0_0_30px_rgba(0,0,0,0.35)]
+        "
+      >
         <button
           type="button"
           onClick={handleClose}
-          className="absolute z-10 right-2 top-2 flex h-[36px] w-[36px] items-center justify-center rounded-full border border-white bg-[#2B102B]/60 text-[#FF3B3B] shadow-lg sm:right-[-18px] sm:top-[-18px] sm:h-[42px] sm:w-[42px]"
+          className="
+            absolute z-10 flex items-center justify-center
+            rounded-full border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B] shadow-lg
+            right-2 top-2 h-[34px] w-[34px]
+            sm:right-[-18px] sm:top-[-18px] sm:h-[42px] sm:w-[42px]
+          "
           aria-label="Close confirmation"
         >
-          <X size={20} strokeWidth={2.5} />
+          <X size={18} strokeWidth={2.5} className="sm:hidden" />
+          <X size={20} strokeWidth={2.5} className="hidden sm:block" />
         </button>
 
-        <div className="w-full rounded-[20px] border border-gray-600 bg-[#2C192BE5] px-4 py-6 shadow-[0_0_30px_rgba(0,0,0,0.35)] sm:px-[34px] sm:py-[26px]">
-          <h3 className="mb-[14px] text-[18px] font-semibold text-white sm:text-[22px]">
+        <div className="pr-[36px] sm:pr-0">
+          <DialogTitle className="text-[18px] sm:text-[22px] font-semibold text-black">
             Confirm
-          </h3>
-          <p className="text-[14px] text-white/80">{message}</p>
-
-          <label className="mt-[14px] block">
-            <span className="mb-1 block text-[13px] text-[#C9C9C9]">
-              Remark
-            </span>
-            <textarea
-              value={remark}
-              onChange={(e) => setRemark(e.target.value)}
-              rows={3}
-              className="w-full rounded-[10px] border border-gray-600 bg-transparent px-3 py-2 text-[14px] text-white outline-none"
-              placeholder="Optional remark"
-            />
-          </label>
-
-          <div className="mt-[22px] flex justify-end gap-3">
-            <Button type="button" variant="cancel" size="none" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="add"
-              size="none"
-              onClick={handleConfirm}
-              disabled={isPending}
-            >
-              {isPending ? "DELETING..." : "DELETE"}
-            </Button>
-          </div>
+          </DialogTitle>
         </div>
-      </div>
-    </div>
+
+        <p className="text-[14px] sm:text-[18px] text-black/70 break-words">
+          {message}
+        </p>
+
+        <div className="mt-[8px] flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button
+            type="button"
+            variant="add"
+            className="w-full bg-white text-black sm:w-auto"
+            size="none"
+            onClick={handleClose}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="add"
+            className="w-full sm:w-auto"
+            size="none"
+            onClick={handleConfirm}
+            disabled={isPending}
+          >
+            {isPending ? "DELETING..." : "DELETE"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

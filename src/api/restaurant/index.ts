@@ -1,4 +1,5 @@
 import axiosInstance from "@/src/service/axios";
+import { AxiosError } from "axios";
 
 export interface RestaurantRecord {
   _id: string;
@@ -65,10 +66,38 @@ export const listRestaurants = async () => {
 export const updateRestaurant = async (
   id: string,
   payload: RestaurantPayload,
+  logoFile?: File
 ) => {
-  const response = await axiosInstance.patch<RestaurantResponse>(
-    `restaurant/${id}`,
-    payload,
-  );
-  return response.data;
+  try {
+    const formData = new FormData();
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (typeof value === "object") {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, String(value));
+        }
+      }
+    });
+
+    if (logoFile) {
+      formData.append("logo", logoFile);
+    }
+
+    const response = await axiosInstance.patch<RestaurantResponse>(
+      `restaurant/${id}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      throw error.response?.data || error;
+    }
+    throw error;
+  }
 };
