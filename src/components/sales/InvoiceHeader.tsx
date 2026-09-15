@@ -1,18 +1,26 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+import { ListInvoiceApi } from "@/src/api/invoice/api/GetAll";
+
 type InvoiceHeaderProps = {
-  invoiceNumber?: string;
   total?: number;
 };
 
 export function InvoiceHeader({
-  invoiceNumber = "#INV0001",
-  total = 200,
+  total = 2000,
 }: InvoiceHeaderProps) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["getNextInvoice"],
+    queryFn: () => ListInvoiceApi({}),
+  });
+
+  const invoiceNumber = data?.nextNumber;
+
   return (
     <div className="flex h-full w-full items-center justify-between">
       <span className="text-sm font-semibold leading-none text-black">
-        {invoiceNumber}
+        {isLoading ? "Loading..." : invoiceNumber}
       </span>
       <span className="text-base font-medium leading-none text-black">
         ₹{total}

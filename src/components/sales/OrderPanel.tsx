@@ -26,6 +26,7 @@ import { CustomerTypeValue, CUSTOMER_TYPE_OPTIONS } from "@/src/interfaces/custo
 import { Food } from "@/src/interfaces/food/ListFoodResponse";
 import { HomeDeliveryModal, type HomeDeliveryFormValues } from "./HomDeleiveryModal";
 import { OnlinePlatformModal } from "./onlinePlatformModal";
+import { listRestaurants } from "@/src/api/restaurant";
 
 const CUSTOMER_TYPE_LABELS: Record<CustomerTypeValue, string> = {
   DINE_IN: "Dine",
@@ -48,15 +49,18 @@ interface DeliveryDetailsState {
   deliveryTime: string;
 }
 
-export function OrderPanel() {
+type OrderPanelProps = {
+  quantities: Record<string, number>;
+  setQuantities: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+};
+
+export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
   const router = useRouter();
 
   const [selectedType, setSelectedType] = useState<CustomerTypeValue | null>(null);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [removedItemIds, setRemovedItemIds] = useState<Set<string>>(new Set());
 
   // --- Home delivery / online platform state ---
   const [isHomeDeliveryModalOpen, setIsHomeDeliveryModalOpen] = useState(false);
@@ -73,6 +77,10 @@ export function OrderPanel() {
     queryKey: ["getAllFoods"],
     queryFn: () => ListFoodApi({ page: 1, limit: 100 }),
   });
+  const restaurantQuery = useQuery({
+    queryKey: ["getAllRestaurants"],
+    queryFn: () => listRestaurants(),
+  });
   const customersQuery = useQuery({
     queryKey: ["getAllCustomers"],
     queryFn: () => ListCustomerApi({ limit: 100, page: 1 }),
@@ -80,6 +88,16 @@ export function OrderPanel() {
   });
 
   const customerTypes = customerTypesQuery.data?.data || [];
+  const restaurants = restaurantQuery.data?.data?.map((restaurant) => {
+    return {
+      value: restaurant._id,
+      label: restaurant.name,
+      vat: restaurant.vatPercentage,
+    };
+  }) || [];
+  // VAT percentage pulled from the restaurant record (assumes a single-location setup;
+  // adjust the selection logic here if the app supports multiple restaurants).
+  const vatPercentage = restaurants[0]?.vat ?? 0;
   const foods = foodsQuery.data?.data || [];
   const customers = customersQuery.data?.data || [];
 
@@ -135,7 +153,7 @@ export function OrderPanel() {
     setIsOnlinePlatformModalOpen(false);
   };
 
-  const cartItems = foods.filter((food) => !removedItemIds.has(food._id));
+  const cartItems = foods.filter((food) => (quantities[food._id] || 0) > 0);
 
   const getQty = (foodId: string) => quantities[foodId] ?? 1;
   const getSelectedPortion = (food: Food) =>
@@ -177,11 +195,6 @@ export function OrderPanel() {
   };
 
   const handleRemoveItem = (foodId: string) => {
-    setRemovedItemIds((prev) => {
-      const next = new Set(prev);
-      next.add(foodId);
-      return next;
-    });
     setQuantities((prev) => {
       const next = { ...prev };
       delete next[foodId];
@@ -193,7 +206,7 @@ export function OrderPanel() {
     (sum, food) => sum + getItemPrice(food) * getQty(food._id),
     0,
   );
-  const vat = 0;
+  const vat = (subtotal * vatPercentage) / 100;
   const total = subtotal + vat;
 
 
@@ -216,7 +229,6 @@ export function OrderPanel() {
 
   const resetOrderState = () => {
     setQuantities({});
-    setRemovedItemIds(new Set());
     setSelectedCustomerId(null);
     setDeliveryDetails(null);
     setOnlinePlatform(null);
@@ -314,6 +326,22 @@ export function OrderPanel() {
     };
   }, [cartItems.length]);
 
+  const getFoodImageUrl = (foodImage?: string) => {
+  if (!foodImage) {
+    return "no image";
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+
+  if (!baseUrl) {
+    console.error("NEXT_PUBLIC_BASE_URL is not defined");
+    return "no image";
+  }
+
+  return `${baseUrl.replace(/\/$/, "")}/${foodImage.replace(/^\//, "")}`;
+};
+
+
   return (
     <>
       <div className="flex h-full w-full flex-col">
@@ -388,7 +416,7 @@ export function OrderPanel() {
                   >
                     <div className="relative h-9 w-24 shrink-0 overflow-hidden rounded-[5px] xs:h-10 xs:w-28 sm:h-[41px] sm:w-[115px] md:h-[46px] md:w-[130px] lg:h-[52px] lg:w-[150px]">
                       <Image
-                        src={product.foodImage || "/images/icons/butterscotch.jpg"}
+                        src={getFoodImageUrl(product.foodImage ?? undefined)}
                         alt={product.name}
                         fill
                         sizes="(min-width: 1024px) 150px, (min-width: 768px) 130px, (min-width: 640px) 115px, 96px"
@@ -460,7 +488,7 @@ export function OrderPanel() {
             </div>
 
             <div className="flex justify-between text-[11px] font-medium text-black sm:text-xs md:text-sm">
-              <span>VAT(0%)</span>
+              <span>VAT({vatPercentage}%)</span>
               <span className="text-[9px] font-normal sm:text-[10px] md:text-xs">
                 {vat.toFixed(2)}
               </span>
