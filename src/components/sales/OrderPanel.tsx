@@ -314,6 +314,21 @@ export function OrderPanel() {
     };
   }, [cartItems.length]);
 
+  const getFoodImageUrl = (foodImage?: string) => {
+  if (!foodImage) {
+    return "/images/icons/butterscotch.jpg";
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  if (!baseUrl) {
+    console.error("NEXT_PUBLIC_API_BASE_URL is not defined");
+    return "/images/icons/butterscotch.jpg";
+  }
+
+  return `${baseUrl.replace(/\/$/, "")}/${foodImage.replace(/^\//, "")}`;
+};
+
   return (
     <>
       <div className="flex h-full w-full flex-col">
@@ -388,7 +403,7 @@ export function OrderPanel() {
                   >
                     <div className="relative h-9 w-24 shrink-0 overflow-hidden rounded-[5px] xs:h-10 xs:w-28 sm:h-[41px] sm:w-[115px] md:h-[46px] md:w-[130px] lg:h-[52px] lg:w-[150px]">
                       <Image
-                        src={product.foodImage || "/images/icons/butterscotch.jpg"}
+                        src={getFoodImageUrl(product.foodImage ?? undefined)}
                         alt={product.name}
                         fill
                         sizes="(min-width: 1024px) 150px, (min-width: 768px) 130px, (min-width: 640px) 115px, 96px"
