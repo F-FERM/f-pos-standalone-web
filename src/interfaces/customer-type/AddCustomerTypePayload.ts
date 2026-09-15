@@ -10,5 +10,6 @@ export type CustomerTypeValue = (typeof CUSTOMER_TYPE_OPTIONS)[number]["value"];
 
 export interface AddCustomerTypePayload {
   type: CustomerTypeValue;
+   onlinePlatforms?: string[];
 
 }

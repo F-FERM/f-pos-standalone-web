@@ -27,6 +27,7 @@ import { ListFoodByIdApi } from "@/src/api/food/api/GetById";
 import { useAddFood } from "@/src/api/food/hooks/create.hook";
 import { useUpdateFood } from "@/src/api/food/hooks/update.hook";
 
+const MAX_IMAGE_SIZE_BYTES = 4 * 1024 * 1024; // 4MB
 
 // ─── Zod schema ─────────────────────────────────────────────────────────────
 const portionSchema = z.object({
@@ -119,6 +120,7 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
   });
   const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
   const [imageFile, setImageFile] = useState<File | undefined>(undefined);
+  const [imageError, setImageError] = useState<string | undefined>(undefined);
   const [choiceInput, setChoiceInput] = useState("");
 
   const hasOffer = methods.watch("hasOffer");
@@ -219,6 +221,7 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
       methods.reset({ ...emptyForm, customerPrices: defaultCustomerPrices });
       setImagePreview(undefined);
     }
+    setImageError(undefined);
     setChoiceInput("");
   }, [isOpen, isEdit, foodData, customerTypeData]);
 
@@ -231,14 +234,30 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
     methods.reset(emptyForm);
     setImagePreview(undefined);
     setImageFile(undefined);
+    setImageError(undefined);
     onClose();
   };
 
   const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      setImageError("Image must be 4MB or smaller");
+      e.target.value = "";
+      return;
+    }
+
+    setImageError(undefined);
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(undefined);
+    setImagePreview(undefined);
+    setImageError(undefined);
+    methods.setValue("foodImage", undefined);
   };
 
   const handleAddChoice = () => {
@@ -258,44 +277,52 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
     methods.setValue("choices", current.filter((c) => c !== value));
   };
 
-  const handleSubmit = methods.handleSubmit(
-    (values) => {
-      const payload = {
-        name: values.foodName.trim(),
-        foodType: (values.foodType === "Veg" ? "VEG" : "NON_VEG") as "VEG" | "NON_VEG",
-        menuTypeId: values.menuTypes[0] || "",
-        categoryId: values.category,
-        kitchenId: values.kitchen,
-        isPortionEnabled: values.hasPortions,
-        portions: values.hasPortions
-          ? values.portions.map((p) => ({ name: p.name.trim(), basePrice: Number(p.price) || 0 }))
-          : [],
-        basePrice: values.basePrice,
-        customerTypes: customerTypeOptions
-          .map((opt) => ({ customerTypeId: opt.id, price: Number(values.customerPrices?.[opt.id]) || 0 }))
-          .filter((c) => c.price > 0),
-        isOfferEnabled: values.hasOffer,
-        offer: values.hasOffer
-          ? {
-              startDate: values.startDate || "",
-              endDate: values.endDate || "",
-              discount: Number(values.discountPercent) || 0,
-            }
-          : undefined,
-        choices: values.choices,
-        preparationTime: Number(values.preparationTime) || 0,
-      };
+ const handleSubmit = methods.handleSubmit(
+  (values) => {
+    const pendingChoice = choiceInput.trim();
+    const mergedChoices =
+      pendingChoice && !values.choices.includes(pendingChoice)
+        ? [...values.choices, pendingChoice]
+        : values.choices;
 
-      if (isEdit && foodId) {
-        updateFood({ id: foodId, value: payload, imageFile });
-      } else {
-        addFood({ value: payload, imageFile });
-      }
-    },
-    (errors) => {
-      console.log("Form validation errors:", errors);
-    },
-  );
+    const payload = {
+      name: values.foodName.trim(),
+      foodType: (values.foodType === "Veg" ? "VEG" : "NON_VEG") as "VEG" | "NON_VEG",
+      menuTypeId: values.menuTypes[0] || "",
+      categoryId: values.category,
+      kitchenId: values.kitchen,
+      isPortionEnabled: values.hasPortions,
+      portions: values.hasPortions
+        ? values.portions.map((p) => ({ name: p.name.trim(), basePrice: Number(p.price) || 0 }))
+        : [],
+      basePrice: values.basePrice,
+      customerTypes: customerTypeOptions
+        .map((opt) => ({ customerTypeId: opt.id, price: Number(values.customerPrices?.[opt.id]) || 0 }))
+        .filter((c) => c.price > 0),
+      isOfferEnabled: values.hasOffer,
+      offer: values.hasOffer
+        ? {
+            startDate: values.startDate || "",
+            endDate: values.endDate || "",
+            discount: Number(values.discountPercent) || 0,
+          }
+        : undefined,
+      choices: mergedChoices,
+      preparationTime: Number(values.preparationTime) || 0,
+    };
+
+    setChoiceInput("");
+
+    if (isEdit && foodId) {
+      updateFood({ id: foodId, value: payload, imageFile });
+    } else {
+      addFood({ value: payload, imageFile });
+    }
+  },
+  (errors) => {
+    console.log("Form validation errors:", errors);
+  },
+);
 
   if (!isOpen) return null;
 
@@ -349,18 +376,45 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
 
               <div>
                 <label className="mb-3 block text-sm font-medium text-black sm:text-base">Food Image</label>
-                <label
-                  htmlFor="food-image-upload"
-                  className="flex h-[100px] w-[100px] cursor-pointer items-center justify-center gap-[9px] rounded-[7px] border border-[#E9E9E9] bg-[#D2D2D2] p-8 sm:h-[118px] sm:w-[118px] sm:p-10"
-                >
-                  {imagePreview ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={imagePreview} alt="Food preview" className="h-full w-full rounded-[4px] object-cover" />
-                  ) : (
-                    <span className="text-xl text-[#8A8A8A]">+</span>
+
+                <div className="relative h-[100px] w-[100px] sm:h-[118px] sm:w-[118px]">
+                  <label
+                    htmlFor="food-image-upload"
+                    className={`flex h-full w-full items-center justify-center rounded-[7px] border border-[#E9E9E9] bg-[#D2D2D2] ${
+                      imagePreview ? "" : "cursor-pointer"
+                    }`}
+                  >
+                    {imagePreview ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={imagePreview} alt="Food preview" className="h-full w-full rounded-[7px] object-cover" />
+                    ) : (
+                      <span className="text-xl text-[#8A8A8A]">+</span>
+                    )}
+                  </label>
+
+                  {imagePreview && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      aria-label="Remove food image"
+                      className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B] shadow-md"
+                    >
+                      <X size={13} strokeWidth={2.5} />
+                    </button>
                   )}
-                </label>
-                <input id="food-image-upload" type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
+                </div>
+
+                <input
+                  id="food-image-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImagePick}
+                  disabled={Boolean(imagePreview)}
+                />
+
+                {imageError && <p className="mt-2 text-sm text-[#FF3B3B]">{imageError}</p>}
+                <p className="mt-1 text-xs text-[#A1A1A1]">Max file size: 4MB</p>
               </div>
             </div>
 

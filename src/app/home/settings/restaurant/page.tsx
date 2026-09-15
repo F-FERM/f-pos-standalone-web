@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Building2,
   Calendar,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 
 import { SearchInput } from "@/src/components/common/SearchInput";
 import { POSHeader } from "@/src/components/sales/PosHeader";
@@ -21,12 +22,17 @@ import { formatDisplayDate } from "@/src/components/settings/restaurant/TableHel
 
 import { ListCustomerTypeApi } from "@/src/api/customer-type/api/GetAll";
 import { ListFloorApi } from "@/src/api/floor/api/GetAll";
-import { listRestaurants } from "@/src/api/restaurant";
+// ASSUMPTION: an update endpoint named `updateRestaurant(id, payload)` exists
+// alongside `listRestaurants` in "@/src/api/restaurant". Rename this import
+// to match your actual export if it's different (e.g. `editRestaurant`,
+// `updateRestaurantById`).
+import { listRestaurants, updateRestaurant, type RestaurantPayload } from "@/src/api/restaurant";
 import { ListTableApi } from "@/src/api/table/api/GetAll";
 import { CustomerTypeFormAction } from "@/src/components/settings/restaurant/AddCustomerType";
 import { FloorFormAction } from "@/src/components/settings/restaurant/AddFloor";
 import { TableFormAction } from "@/src/components/settings/restaurant/AddTable";
 import { RestaurantTableList } from "@/src/components/settings/restaurant/Table";
+import EditRestaurantModal from "@/src/components/settings/restaurant/EditRestaurantModal";
 
 
 const TABS = ["My Restaurant", "Customer Types", "Floor", "Table"] as const;
@@ -41,6 +47,7 @@ function isRestaurantTab(value: string | null): value is RestaurantTab {
 export default function RestaurantSettingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
 
   const tabFromUrl = searchParams.get("tab");
   const activeTab: RestaurantTab = isRestaurantTab(tabFromUrl) ? tabFromUrl : DEFAULT_TAB;
@@ -123,6 +130,24 @@ export default function RestaurantSettingsPage() {
     router.replace(query ? `?${query}` : "?", { scroll: false });
   };
 
+  // ASSUMPTION: updateRestaurant takes the restaurant's _id as the first
+  // arg. If restaurant records use a different id field, adjust `restaurant._id`
+  // below to match.
+  const handleSaveRestaurant = async (payload: RestaurantPayload, logoFile?: File) => {
+    if (!restaurant) return;
+    try {
+      await updateRestaurant(restaurant._id, payload, logoFile);
+      toast.success("Restaurant details updated!");
+      await queryClient.invalidateQueries({ queryKey: ["getRestaurant"] });
+      setIsEditRestaurantOpen(false);
+    } catch (error: any) {
+      console.error("Unable to update restaurant", error?.response?.data ?? error);
+      toast.error(
+        error?.response?.data?.message ?? error?.message ?? "Unable to update restaurant",
+      );
+    }
+  };
+
  return (
     <main className="flex h-screen flex-col overflow-x-hidden bg-black text-black">
       <POSHeader />
@@ -159,24 +184,14 @@ export default function RestaurantSettingsPage() {
             <div className="flex flex-1 flex-col gap-6 mt-8 lg:mt-12 lg:flex-row lg:justify-start">
               {/* Profile section */}
               <div className="flex w-full flex-col items-center lg:w-[267px] lg:shrink-0 lg:items-start">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="mb-3 flex h-[153px] w-[158px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#9C9C9C] bg-[#EFEFEF] p-[10px] text-[#A1A1A1]"
-                >
+                <div className="mb-3 flex h-[153px] w-[158px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#9C9C9C] bg-[#EFEFEF] p-[10px] text-[#A1A1A1]">
                   {restaurant?.logo ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={restaurant.logo} alt="Restaurant" className="h-full w-full rounded-full object-cover" />
                   ) : (
                     <ImagePlus size={22} />
                   )}
-                </button>
+                </div>
 
                 <div className="mb-2 flex items-center gap-2 font-poppins text-[18px] font-semibold leading-none text-black">
                   <Building2 size={18} />
@@ -227,7 +242,7 @@ export default function RestaurantSettingsPage() {
               </div>
             </div>
           ) : (
-            <div className="flex flex-1 flex-col gap-4">
+            <div className="flex flex-1  flex-col gap-4">
               <div className="flex justify-end">
                 <SearchInput variant="panel" value={search} onChange={setSearch} className="w-full sm:w-auto" />
               </div>
@@ -249,6 +264,13 @@ export default function RestaurantSettingsPage() {
           © 2026 F-FERM Digital Labs. All rights reserved.
         </span>
       </div>
+
+      <EditRestaurantModal
+        isOpen={isEditRestaurantOpen}
+        onClose={() => setIsEditRestaurantOpen(false)}
+        onSave={handleSaveRestaurant}
+        initialRecord={restaurant}
+      />
     </main>
   );
 }
