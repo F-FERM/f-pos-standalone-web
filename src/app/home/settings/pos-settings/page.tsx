@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -34,8 +34,6 @@ type BillSettings = {
   vatExcludedAddVat: boolean;
 };
 
-// Flattened row shape the table/edit-form actually use — distinct from the
-// raw `Printer` API interface, which has nested kitchenId/customerTypeId objects.
 type PrinterRow = {
   id: string;
   printerName: string;
@@ -67,7 +65,8 @@ function mapPrinter(printer: Printer): PrinterRow {
   };
 }
 
-export default function SettingsPage() {
+// Renamed: holds the useSearchParams() call and all the page logic
+function SettingsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -259,5 +258,14 @@ export default function SettingsPage() {
         </span>
       </div>
     </main>
+  );
+}
+
+// Default export: wraps content in Suspense
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={null}>
+      <SettingsPageContent />
+    </Suspense>
   );
 }
