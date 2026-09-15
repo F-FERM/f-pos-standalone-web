@@ -6,10 +6,19 @@ import { OrderPanel } from "@/src/components/sales/OrderPanel";
 import { POSHeader } from "@/src/components/sales/PosHeader";
 import { ProductSection } from "@/src/components/sales/ProductSection";
 import { useState } from "react";
+import type { Product } from "@/src/components/sales/Types";
 
 export default function POSScreen() {
   const [selectedMenuType, setSelectedMenuType] = useState("All");
   const [search, setSearch] = useState("");
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+
+  const handleAddProduct = (product: Product) => {
+    setQuantities((prev) => ({
+      ...prev,
+      [product.id]: (prev[product.id] || 0) + 1,
+    }));
+  };
 
   return (
     <main className="flex h-[100dvh] w-full flex-col overflow-hidden bg-[#EFEFEF]">
@@ -33,6 +42,7 @@ export default function POSScreen() {
               <ProductSection
                 selectedMenuType={selectedMenuType}
                 search={search}
+                onAddProduct={handleAddProduct}
               />
             </div>
           </div>
@@ -44,7 +54,7 @@ export default function POSScreen() {
             </div>
 
             <div className="min-h-0 flex-1">
-              <OrderPanel />
+              <OrderPanel quantities={quantities} setQuantities={setQuantities} />
             </div>
           </div>
         </div>

@@ -48,15 +48,18 @@ interface DeliveryDetailsState {
   deliveryTime: string;
 }
 
-export function OrderPanel() {
+type OrderPanelProps = {
+  quantities: Record<string, number>;
+  setQuantities: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+};
+
+export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
   const router = useRouter();
 
   const [selectedType, setSelectedType] = useState<CustomerTypeValue | null>(null);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [removedItemIds, setRemovedItemIds] = useState<Set<string>>(new Set());
 
   // --- Home delivery / online platform state ---
   const [isHomeDeliveryModalOpen, setIsHomeDeliveryModalOpen] = useState(false);
@@ -135,7 +138,7 @@ export function OrderPanel() {
     setIsOnlinePlatformModalOpen(false);
   };
 
-  const cartItems = foods.filter((food) => !removedItemIds.has(food._id));
+  const cartItems = foods.filter((food) => (quantities[food._id] || 0) > 0);
 
   const getQty = (foodId: string) => quantities[foodId] ?? 1;
   const getSelectedPortion = (food: Food) =>
@@ -177,11 +180,6 @@ export function OrderPanel() {
   };
 
   const handleRemoveItem = (foodId: string) => {
-    setRemovedItemIds((prev) => {
-      const next = new Set(prev);
-      next.add(foodId);
-      return next;
-    });
     setQuantities((prev) => {
       const next = { ...prev };
       delete next[foodId];
@@ -216,7 +214,6 @@ export function OrderPanel() {
 
   const resetOrderState = () => {
     setQuantities({});
-    setRemovedItemIds(new Set());
     setSelectedCustomerId(null);
     setDeliveryDetails(null);
     setOnlinePlatform(null);

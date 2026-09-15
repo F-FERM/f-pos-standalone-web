@@ -16,30 +16,18 @@ type FilterButtonProps = {
   label: string;
   active: boolean;
   onClick: () => void;
-  width?: number;
 };
 
-function FilterButton({ label, active, onClick, width }: FilterButtonProps) {
+function FilterButton({ label, active, onClick }: FilterButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex shrink-0 items-center justify-center whitespace-nowrap"
+      className="flex shrink-0 items-center justify-center gap-[9px] whitespace-nowrap rounded-[7px] px-3.5 py-[6px] font-['Poppins',sans-serif] text-sm font-semibold sm:text-base"
       style={{
-        width,
-        height: 38,
-        borderRadius: 7,
         border: active ? "1px solid #BFBFBF" : "1px solid #9C9C9C",
         background: active ? "#450042" : "#EFEFEF",
         boxShadow: active ? "0px 0px 14px 0px #BD29B740" : "none",
-        paddingTop: 6,
-        paddingRight: 14,
-        paddingBottom: 6,
-        paddingLeft: 14,
-        gap: 9,
-        fontFamily: "Poppins, sans-serif",
-        fontWeight: 600,
-        fontSize: 16,
         color: active ? "#FFFFFF" : "#000000",
       }}
     >
@@ -55,95 +43,40 @@ export function OrderModal({ open, onClose }: OrderModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-[2px]">
-      {/* outer positioned wrapper — no overflow clipping, so the close button can sit outside the card */}
-      <div
-        className="relative"
-        style={{
-          position: "absolute",
-          top: 111,
-          left: 106,
-          width: 812,
-          height: 558,
-        }}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/65 p-4 backdrop-blur-[2px]">
+      {/* outer positioned wrapper — fluid width capped at 812px, height follows content */}
+      <div className="relative w-full max-w-[812px]">
         {/* close button — sits on the outer wrapper, never clipped */}
         <button
           type="button"
           onClick={onClose}
-          className="flex items-center justify-center"
-          style={{
-            position: "absolute",
-            top: -14,
-            right: -14,
-            width: 36,
-            height: 36,
-            borderRadius: "50%",
-            background: "#FFFFFF",
-            border: "1px solid #E0E0E0",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-            color: "#FF3B3B",
-            zIndex: 10,
-          }}
+          className="absolute -top-3 -right-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#E0E0E0] bg-white text-[#FF3B3B] shadow-[0_2px_8px_rgba(0,0,0,0.15)]"
           aria-label="Close orders modal"
         >
           <X size={20} strokeWidth={2.5} />
         </button>
 
-        {/* card — 812x558, radius20, bg #EFEFEF, padding 26/34, gap16, clips its own content only */}
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            background: "#EFEFEF",
-            border: "1px solid #EFEFEF",
-            borderRadius: 20,
-            backdropFilter: "blur(4px)",
-            paddingTop: 26,
-            paddingRight: 34,
-            paddingBottom: 26,
-            paddingLeft: 34,
-            display: "flex",
-            flexDirection: "column",
-            gap: 16,
-            overflow: "hidden",
-          }}
-        >
+        {/* card — fluid, scrolls internally if content exceeds viewport height */}
+        <div className="flex max-h-[85vh] w-full flex-col gap-4 overflow-y-auto rounded-[20px] border border-[#EFEFEF] bg-[#EFEFEF] p-5 backdrop-blur-[4px] sm:px-[34px] sm:py-[26px]">
           {/* title */}
-          <h3
-            style={{
-              fontFamily: "Poppins, sans-serif",
-              fontWeight: 600,
-              fontSize: 22,
-              lineHeight: "100%",
-              letterSpacing: 0,
-              color: "#000000",
-            }}
-          >
+          <h3 className="font-['Poppins',sans-serif] text-lg font-semibold leading-none text-black sm:text-[22px]">
             Orders
           </h3>
 
           {/* order status tabs */}
-          <div className="flex flex-wrap items-center" style={{ gap: 9 }}>
+          <div className="flex flex-wrap items-center gap-[9px]">
             {orderTabs.map((tab) => (
               <FilterButton
                 key={tab}
                 label={tab}
                 active={activeTab === tab}
                 onClick={() => setActiveTab(tab)}
-                width={164}
               />
             ))}
           </div>
 
-          {/* order type filters + search — grid: buttons auto-sized, search fixed width at the end */}
-          <div
-            className="grid items-center"
-            style={{
-              gridTemplateColumns: "repeat(4, auto) 1fr",
-              gap: 9,
-            }}
-          >
+          {/* order type filters + search — wrap freely, search takes its own row on mobile */}
+          <div className="flex flex-wrap items-center gap-[9px]">
             {orderTypes.map((type) => (
               <FilterButton
                 key={type}
@@ -153,21 +86,14 @@ export function OrderModal({ open, onClose }: OrderModalProps) {
               />
             ))}
 
-            <SearchInput variant="panel" className="justify-self-end" />
+            <div className="ml-auto w-full sm:w-auto">
+              <SearchInput variant="panel" />
+            </div>
           </div>
 
-          {/* orders list / empty state — small gap, blends with bg */}
-          <div className="flex items-center justify-center mt-4">
-            <span
-              style={{
-                fontFamily: "Poppins, sans-serif",
-                fontWeight: 400,
-                fontSize: 14,
-                lineHeight: "100%",
-                letterSpacing: 0,
-                color: "#848484",
-              }}
-            >
+          {/* orders list / empty state */}
+          <div className="mt-4 flex min-h-[120px] items-center justify-center">
+            <span className="font-['Poppins',sans-serif] text-sm font-normal leading-none text-[#848484]">
               No orders for {activeType}
             </span>
           </div>

@@ -72,11 +72,13 @@ function ProductGrid({ selectedProduct, onSelect, products }: ProductGridProps) 
 type ProductSectionProps = {
   selectedMenuType?: string;
   search?: string;
+  onAddProduct?: (product: Product) => void;
 };
 
 export function ProductSection({
   selectedMenuType = "All",
   search = "",
+  onAddProduct,
 }: ProductSectionProps) {
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -142,7 +144,10 @@ export function ProductSection({
           <ProductGrid
             products={products}
             selectedProduct={selectedProduct}
-            onSelect={(product) => setSelectedProductId(product.id)}
+            onSelect={(product) => {
+              setSelectedProductId(product.id);
+              if (onAddProduct) onAddProduct(product);
+            }}
           />
         ) : (
           <div className="flex min-w-0 flex-1 items-center justify-center text-sm text-[#5D5D5D]">
