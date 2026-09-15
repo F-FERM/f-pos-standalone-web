@@ -11,27 +11,10 @@ export function InvoiceHeader({
 }: InvoiceHeaderProps) {
   return (
     <div className="flex h-full w-full items-center justify-between">
-      <span
-        style={{
-          fontWeight: 600,
-          fontSize: 14,
-          lineHeight: "100%",
-          letterSpacing: "0%",
-          color: "#000000",
-        }}
-      >
+      <span className="text-sm font-semibold leading-none text-black">
         {invoiceNumber}
       </span>
-
-      <span
-        style={{
-          fontWeight: 500,
-          fontSize: 16,
-          lineHeight: "100%",
-          letterSpacing: "0%",
-          color: "#000000",
-        }}
-      >
+      <span className="text-base font-medium leading-none text-black">
         ₹{total}
       </span>
     </div>

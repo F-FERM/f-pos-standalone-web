@@ -1,13 +1,16 @@
 
-import { UserFormValues } from "@/src/components/user/AddUserModal";
 import { CustomError } from "@/src/interfaces/error/CustomError";
 import { AddUserPayload } from "@/src/interfaces/user/AddUserPayload";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import { AddUser } from "../api/Create";
-
-export const useAddUser = (form: UseFormReturn<UserFormValues>) => {
+import { UserFormValues } from "@/src/components/user/AddUserDialogue";
+interface UseAddUserProps {
+  form: UseFormReturn<UserFormValues>;
+  onOpenChange: (open: boolean) => void;
+}
+export const useAddUser = ({form,onOpenChange}: UseAddUserProps) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -18,6 +21,7 @@ export const useAddUser = (form: UseFormReturn<UserFormValues>) => {
       form.reset();
       toast.success("User created successfully");
       queryClient.invalidateQueries({ queryKey: ["getAllUser"] });
+       onOpenChange(false);
     },
     onError: (error: unknown) => {
       const errorData = error as CustomError;

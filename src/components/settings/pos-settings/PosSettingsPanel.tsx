@@ -17,22 +17,22 @@ type SettingsToggleCardProps = {
 
 export function SettingsToggleCard({ title, description, items }: SettingsToggleCardProps) {
   return (
-    <div className="flex w-full flex-col gap-4 rounded-[10px] bg-[#B8B8B8] px-4 py-4 sm:px-5">
+    <div className="flex w-full flex-col gap-4 rounded-[10px] bg-[#B8B8B8] px-4 py-4 sm:px-5 sm:py-5">
       <div>
         <h4 className="font-poppins text-[16px] font-semibold leading-none text-black sm:text-[18px]">
           {title}
         </h4>
-        <p className="mt-1.5 font-poppins text-[13px] font-normal leading-normal text-[#5B5B5B] sm:text-[14px]">
+        <p className="mt-1.5 max-w-prose font-poppins text-[13px] font-normal leading-normal text-[#5B5B5B] sm:text-[14px]">
           {description}
         </p>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3 sm:gap-4">
         {items.map((item) => (
           <label key={item.label} className="flex cursor-pointer items-start gap-2.5">
             <span
               onClick={item.onChange}
-              className={`mt-[2px] flex h-4 w-4 shrink-0 cursor-pointer appearance-none bg-[#B8B8B8] items-center justify-center rounded-sm border border-black ${
+              className={`mt-[2px] flex h-4 w-4 shrink-0 cursor-pointer appearance-none items-center justify-center rounded-sm border border-black sm:h-[18px] sm:w-[18px] ${
                 item.checked
                   ? "border-[#450042] bg-[#450042]"
                   : "border-black bg-[#B8B8B8]"
@@ -40,7 +40,7 @@ export function SettingsToggleCard({ title, description, items }: SettingsToggle
             >
               {item.checked && <Check size={12} strokeWidth={3} className="text-white" />}
             </span>
-            <span>
+            <span className="max-w-prose">
               <span className="block font-poppins text-[13px] font-semibold text-black sm:text-[14px]">
                 {item.label}
               </span>

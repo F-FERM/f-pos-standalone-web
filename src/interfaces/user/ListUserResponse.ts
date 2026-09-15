@@ -1,6 +1,6 @@
 export interface ListUserResponse {
   success: boolean;
-  data: Datum[];
+  data: User[];
   pagination: Pagination;
 }
 
@@ -10,7 +10,7 @@ interface Pagination {
   limit: number;
 }
 
-interface Datum {
+export interface User {
   _id: string;
   username: string;
   firstName: string;

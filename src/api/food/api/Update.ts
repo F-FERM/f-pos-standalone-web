@@ -9,7 +9,26 @@ export const UpdateFood = async (
   imageFile?: File
 ) => {
   try {
-    const response = await axiosInstance.patch(`food/${id}`, Payload);
+    const formData = new FormData();
+    Object.entries(Payload).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (typeof value === "object") {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, String(value));
+        }
+      }
+    });
+
+    if (imageFile) {
+      formData.append("foodImage", imageFile);
+    }
+
+    const response = await axiosInstance.patch(`food/${id}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response.data;
   } catch (error) {
     if (error instanceof AxiosError) {

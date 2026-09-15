@@ -7,10 +7,13 @@ import { X } from "lucide-react";
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
-import { Button } from "../ui/button";
 
-// ─── Zod schema ───────────────────────────────────────────────────────────────
+
+import { useAddPrinter } from "@/src/api/printer/hooks/create.hook";
+import { useUpdatePrinter } from "@/src/api/printer/hooks/update.hook";
+import { Dialog, DialogContent, DialogTitle } from "../../ui/dialog";
+import { Button } from "../../ui/button";
+
 const printerSchema = z.object({
   printerName: z
     .string()
@@ -53,8 +56,8 @@ const PAPER_WIDTH_OPTIONS: selectType[] = [
 type AddPrinterModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (printer: NewPrinterInput) => void;
   mode?: "add" | "edit";
+  id?: string;
   initialPrinter?: NewPrinterInput | null;
   kitchenOptions: selectType[];
   customerTypeOptions: selectType[];
@@ -63,34 +66,48 @@ type AddPrinterModalProps = {
 export default function AddPrinterModal({
   isOpen,
   onClose,
-  onAdd,
   mode = "add",
+  id,
   initialPrinter = null,
   kitchenOptions,
   customerTypeOptions,
 }: AddPrinterModalProps) {
-  const methods = useForm<PrinterFormValues>({
+  const isEdit = mode === "edit";
+
+  const form = useForm<PrinterFormValues>({
     defaultValues: emptyForm,
     resolver: zodResolver(printerSchema),
   });
 
+  const onOpenChange = (open: boolean) => {
+    if (!open) onClose();
+  };
+
+  const { mutate: addPrinter, isPending: isAdding } = useAddPrinter({ form, onOpenChange });
+  const { mutate: updatePrinter, isPending: isUpdating } = useUpdatePrinter({ form, onOpenChange });
+
   useEffect(() => {
     if (!isOpen) return;
-    methods.reset(initialPrinter ?? emptyForm);
-  }, [initialPrinter, isOpen, methods]);
+    form.reset(initialPrinter ?? emptyForm);
+  }, [initialPrinter, isOpen, form]);
 
   const handleClose = () => {
-    methods.reset(emptyForm);
+    form.reset(emptyForm);
     onClose();
   };
 
-  const handleSubmit = methods.handleSubmit((values) => {
-    onAdd({
+  const handleSubmit = form.handleSubmit((values) => {
+    const payload = {
       ...values,
       printerName: values.printerName.trim(),
       printerIp: values.printerIp.trim(),
-    });
-    methods.reset(emptyForm);
+    };
+
+    if (isEdit && id) {
+      updatePrinter({ id, value: payload });
+    } else {
+      addPrinter(payload);
+    }
   });
 
   return (
@@ -121,17 +138,17 @@ export default function AddPrinterModal({
         </button>
 
         <DialogTitle className="mb-2 text-[22px] font-semibold text-black">
-          {mode === "edit" ? "Edit Printer" : "Add Printer"}
+          {isEdit ? "Edit Printer" : "Add Printer"}
         </DialogTitle>
 
-        <FormProvider {...methods}>
+        <FormProvider {...form}>
           <div
             className="
               w-full rounded-[10px] border-[1px] border-[#B5B5B5]
               bg-[#E9E9E9] p-[10px]
             "
           >
-            <div className="grid grid-cols-2 gap-x-[12px] gap-y-[10px]">
+            <div className="grid grid-cols-1 gap-x-[12px] gap-y-[10px] sm:grid-cols-2">
               <label className="block">
                 <FormInput
                   name="printerName"
@@ -190,11 +207,11 @@ export default function AddPrinterModal({
                 />
               </label>
 
-              <label className="col-span-2 flex items-center gap-2 pt-1">
+              <label className="col-span-1 flex items-center gap-2 pt-1 sm:col-span-2">
                 <input
                   type="checkbox"
                   className="h-4 w-4 rounded border-[#B5B5B5]"
-                  {...methods.register("isDefault")}
+                  {...form.register("isDefault")}
                 />
                 <span className="font-poppins text-[13px] font-medium text-black">
                   Set as Default Printer
@@ -209,8 +226,9 @@ export default function AddPrinterModal({
               variant="add"
               size="none"
               onClick={handleSubmit}
+              disabled={isEdit ? isUpdating : isAdding}
             >
-              {mode === "edit" ? "SAVE" : "ADD"}
+              {isEdit ? "SAVE" : "ADD"}
             </Button>
           </div>
         </FormProvider>

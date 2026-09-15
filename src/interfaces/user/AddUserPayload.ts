@@ -1,11 +1,10 @@
 export interface AddUserPayload {
   username: string;
-  firstName: string;
-  lastName: string;
+firstName :string;
+password:string;
   email: string;
   phone: string;
-  companyId: string;
-  password: string;
-  role: string;
-  isActive: boolean;
+  
+ 
+ 
 }

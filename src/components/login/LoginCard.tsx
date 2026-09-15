@@ -11,7 +11,7 @@ import LoginFormInput from "@/src/components/form/LoginFormInput";
 import { Button } from "@/src/components/ui/button";
 import { Form } from "@/src/components/ui/form";
 import { useLogin } from "@/src/api/login/hooks/hook";
-import { ListUserApi } from "@/src/api/user/api/GetAll";
+import { ListPublicUserApi, ListUserApi } from "@/src/api/user/api/GetAll";
 import { ListUserByIdApi } from "@/src/api/user/api/GetById";
 import LoginPinKeypad from "./LoginPinKeyPad";
 import { useState } from "react";
@@ -40,9 +40,9 @@ export default function LoginCard() {
   const selectedUserId = form.watch("role");
 
   const { data: userListData, isLoading: isUserListLoading } = useQuery({
-    queryKey: ["getAllUsers", search],
+    queryKey: ["getAllPublicUsers", search],
     queryFn: () =>
-      ListUserApi({
+      ListPublicUserApi({
         search,
         page: 1,
         limit: 100,
@@ -56,8 +56,8 @@ export default function LoginCard() {
   });
 
   const userOptions =
-    userListData?.data?.map((user: { _id: string; username: string }) => ({
-      value: user._id,
+    userListData?.data?.map((user) => ({
+      value: user.userId,
       label: user.username,
     })) ?? [];
 
