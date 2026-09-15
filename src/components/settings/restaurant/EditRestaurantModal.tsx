@@ -2,10 +2,10 @@
 
 import FormInput from "@/src/components/form/FormInput";
 import { X } from "lucide-react";
-import { useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { Button } from "../../ui/button";
-import type { RestaurantRecord, RestaurantPayload } from "@/src/api/restaurant";
+import type { RestaurantPayload, RestaurantRecord } from "@/src/api/restaurant";
 
 export type RestaurantFormValues = {
   name: string;
@@ -66,7 +66,7 @@ function recordToFormValues(record: RestaurantRecord): RestaurantFormValues {
 type EditRestaurantModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (payload: RestaurantPayload) => Promise<void>;
+  onSave: (payload: RestaurantPayload, logoFile?: File) => Promise<void>;
   initialRecord: RestaurantRecord | null;
 };
 
@@ -77,6 +77,9 @@ export default function EditRestaurantModal({
   initialRecord,
 }: EditRestaurantModalProps) {
   const methods = useForm<RestaurantFormValues>({ defaultValues: emptyForm });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Seed the form whenever the modal opens or the record changes
   useEffect(() => {
@@ -84,12 +87,16 @@ export default function EditRestaurantModal({
     methods.reset(
       initialRecord ? recordToFormValues(initialRecord) : emptyForm,
     );
+    setLogoPreview(initialRecord?.logo ?? null);
+    setLogoFile(null);
   }, [isOpen, initialRecord, methods]);
 
   if (!isOpen) return null;
 
   const handleClose = () => {
     methods.reset(emptyForm);
+    setLogoFile(null);
+    setLogoPreview(null);
     onClose();
   };
 
@@ -111,8 +118,11 @@ export default function EditRestaurantModal({
       currency: values.currency.trim(),
       currencySymbol: values.currencySymbol.trim(),
     };
-    await onSave(payload);
+
+    await onSave(payload, logoFile || undefined);
     methods.reset(emptyForm);
+    setLogoFile(null);
+    setLogoPreview(null);
   });
 
   return (
@@ -130,9 +140,39 @@ export default function EditRestaurantModal({
           </button>
 
           <div className="flex w-full flex-col gap-[16px] rounded-[20px] border border-[#A6A6A6] bg-[#E9E9E9] px-4 py-6 shadow-[0_0_30px_rgba(0,0,0,0.35)] sm:px-[34px]">
-            <h3 className="font-poppins text-[22px] font-semibold leading-none text-black">
-              Edit Restaurant
-            </h3>
+            <div className="flex items-start justify-between">
+              <h3 className="font-poppins text-[22px] font-semibold leading-none text-black">
+                Edit Restaurant
+              </h3>
+              
+              <div className="flex flex-col items-center sm:items-start mr-8">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setLogoFile(file);
+                      setLogoPreview(URL.createObjectURL(file));
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-[#9C9C9C] bg-white text-[#A1A1A1] sm:h-20 sm:w-20"
+                >
+                  {logoPreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={logoPreview} alt="Logo" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-[10px]">Upload Logo</span>
+                  )}
+                </button>
+              </div>
+            </div>
 
             {/* Row 1 */}
             <div className="grid grid-cols-1 gap-[10px] sm:grid-cols-2 lg:grid-cols-3">

@@ -1,3 +1,6 @@
+import type { NextConfig } from "next";
+
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
@@ -10,6 +13,7 @@ const nextConfig = {
   trailingSlash: false,
   images: {
     remotePatterns: [],
+    unoptimized: true,
   },
 };
 

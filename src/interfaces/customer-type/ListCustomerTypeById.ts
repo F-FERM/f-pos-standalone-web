@@ -9,10 +9,11 @@ interface Data {
   isDeleted: boolean;
   createdBy: string;
   type: string;
-  onlinePlatforms: any[];
+  onlinePlatforms: string[];
   companyId: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
   __v: number;
 }
+
