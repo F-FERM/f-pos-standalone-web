@@ -8,121 +8,54 @@ import { ProductSection } from "@/src/components/sales/ProductSection";
 import { useState } from "react";
 
 export default function POSScreen() {
-  const CARD_TOP = 77;
-  const CARD_LEFT = 20;
-  const CARD_HEIGHT = 661;
   const [selectedMenuType, setSelectedMenuType] = useState("All");
+  const [search, setSearch] = useState("");
 
   return (
-    <main
-      className="relative mx-auto overflow-hidden w-full h-full"
-      style={{
-        backgroundColor: "#EFEFEF",
-      }}
-    >
-      {/* Navbar — 1024x77, bg #000000 */}
+    <main className="flex h-[100dvh] w-full flex-col overflow-hidden bg-[#EFEFEF]">
+      {/* Navbar */}
       <POSHeader />
 
-      {/* Backdrop — 984x661, top:77 left:20, radius 15, bg #D2D2D2 */}
-      <div
-        className="absolute"
-        style={{
-          top: CARD_TOP,
-          left: CARD_LEFT,
-          right: CARD_LEFT,
-          height: CARD_HEIGHT,
-          borderRadius: 15,
-          backgroundColor: "#D2D2D2",
-        }}
-      />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-2 xs:p-3 sm:p-3">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 rounded-[15px] bg-[#D2D2D2] p-3 lg:flex-row lg:gap-4 lg:p-4">
+          {/* Left column: category/search bar + product panel */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 lg:basis-[63.6%]">
+            <div className="flex h-auto min-h-[56px] shrink-0 items-center gap-2.5 rounded-xl bg-[#EFEFEF] px-4 py-3 sm:gap-3">
+              <CategoryHeader
+                selectedFilter={selectedMenuType}
+                onSelectFilter={setSelectedMenuType}
+                search={search}
+                onSearchChange={setSearch}
+              />
+            </div>
 
-      {/* Section 1 — Categories/search bar — 613x56 */}
-      <div
-        className="absolute flex items-center"
-        style={{
-          top: 90,
-          left: 30,
-          width: "calc(63.6% - 38px)",
-          height: 56,
-          gap: 10,
-          borderRadius: 12,
-          paddingTop: 12,
-          paddingRight: 17,
-          paddingBottom: 11,
-          paddingLeft: 18,
-          backgroundColor: "#EFEFEF",
-        }}
-      >
-        <CategoryHeader
-          selectedFilter={selectedMenuType}
-          onSelectFilter={setSelectedMenuType}
-        />
+            <div className="min-h-0 flex-1 rounded-xl bg-[#EFEFEF]">
+              <ProductSection
+                selectedMenuType={selectedMenuType}
+                search={search}
+              />
+            </div>
+          </div>
+
+          {/* Right column: invoice bar + order panel */}
+          <div className="flex min-h-0 min-w-0 flex-col gap-3 lg:basis-[calc(36.4%-16px)]">
+            <div className="flex h-auto min-h-[56px] shrink-0 items-center justify-between gap-2.5 rounded-xl bg-[#EFEFEF] px-4 py-3.5">
+              <InvoiceHeader />
+            </div>
+
+            <div className="min-h-0 flex-1">
+              <OrderPanel />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Section 2 — Order/invoice info bar — 341x56 */}
-      <div
-        className="absolute flex items-center"
-        style={{
-          top: 90,
-          left: "calc(63.6% + 2px)",
-          right: 30,
-          height: 56,
-          gap: 10,
-          borderRadius: 12,
-          paddingTop: 15,
-          paddingRight: 17,
-          paddingBottom: 14,
-          paddingLeft: 18,
-          backgroundColor: "#EFEFEF",
-        }}
-      >
-        <InvoiceHeader />
-      </div>
-
-      {/* Section 3 — Category + product panel — 613x564 */}
-      <div
-        className="absolute bg-[#EFEFEF] rounded-xl"
-        style={{
-          top: 159,
-          left: 30,
-          width: "calc(63.6% - 38px)",
-          height: 564,
-        }}
-      >
-        <ProductSection selectedMenuType={selectedMenuType} />
-      </div>
-
-      {/* Section 4 — Order panel — anchored at top:153 left:653 */}
-      <div
-        className="absolute"
-        style={{ top: 153, left: "calc(63.6% + 2px)", right: 30 }}
-      >
-        <OrderPanel />
-      </div>
-
-      {/* Footer copyright — sits BELOW the backdrop card, not overlapping it */}
-      <div
-        className="absolute flex items-center justify-center"
-        style={{
-          top: CARD_TOP + CARD_HEIGHT + 14,
-          left: CARD_LEFT,
-          right: CARD_LEFT,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "Poppins, sans-serif",
-            fontWeight: 500,
-            fontSize: 12,
-            lineHeight: "100%",
-            letterSpacing: 0,
-            color: "#939393",
-          }}
-        >
-          © 2026 FFERM Digital Labs. All rights reserved.
+      {/* Footer */}
+      <div className="flex shrink-0 items-center justify-center py-2 text-center">
+        <span className="text-xs font-medium leading-none text-[#939393]">
+          © 2026 F-FERM Digital Labs. All rights reserved.
         </span>
       </div>
     </main>
   );
 }
-

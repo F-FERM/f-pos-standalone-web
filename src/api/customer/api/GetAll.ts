@@ -7,10 +7,9 @@ export const ListCustomerApi = async (data: {
   search?: string;
   page?: number;
   limit?: number;
-  status?: string;
-  branchId?: string;
+
 }) => {
-  const { search, page, limit, status, branchId } = data;
+  const { search, page, limit } = data;
   try {
     const params = new URLSearchParams();
     if (search) {

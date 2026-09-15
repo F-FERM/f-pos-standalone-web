@@ -42,7 +42,7 @@ interface FormComboboxProps {
 const TRIGGER_CLASSES = `h-[42px]! sm:h-[46px]! md:h-[50px]!
   w-full max-w-[365px] rounded-[10px] border border-[#C0C0C0]
   bg-[#ACACAC99] text-white hover:bg-[#ACACAC99] hover:text-white
-  font-inter font-medium text-[14px] sm:text-[15px] md:text-[16px] leading-normal tracking-normal
+  font-inter font-medium text-[16px] sm:text-[18px] md:text-[20px] leading-normal tracking-normal
   pt-[9px]! pr-[16px]! pb-[8px]! pl-[16px]!
   sm:pt-[10px]! sm:pr-[18px]! sm:pb-[9px]! sm:pl-[18px]!
   md:pt-[12px]! md:pr-[22px]! md:pb-[11px]! md:pl-[22px]!

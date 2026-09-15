@@ -1,86 +1,137 @@
 "use client";
 
-import FormInput from "@/src/components/form/FormInput";
-import { X } from "lucide-react";
 import { useEffect } from "react";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
-import { Button } from "../../ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { X } from "lucide-react";
 
-type KitchenFormValues = { name: string };
-export type NewKitchenInput = { name: string };
+import FormInput from "@/src/components/form/FormInput";
+import { Dialog, DialogContent, DialogTitle } from "@/src/components/ui/dialog";
+import { Button } from "@/src/components/ui/button";
+
+import { useAddKitchen } from "@/src/api/kitchen/hooks/create.hook";
+import { useUpdateKitchen } from "@/src/api/kitchen/hooks/update.hook";
+import { ListKitchenApi } from "@/src/api/kitchen/api/GetAll";
+import { ListKitchenByIdApi } from "@/src/api/kitchen/api/GetById";
+
+const kitchenSchema = z.object({
+  name: z.string().min(1, "Kitchen name is required").max(100),
+});
+
+export type KitchenFormValues = z.infer<typeof kitchenSchema>;
+
+const emptyForm: KitchenFormValues = { name: "" };
 
 type AddKitchenModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (kitchen: NewKitchenInput) => void;
-  initialName?: string | null;
   mode?: "add" | "edit";
+  kitchenId?: string;
 };
-
-const emptyForm: KitchenFormValues = { name: "" };
 
 export default function AddKitchenModal({
   isOpen,
   onClose,
-  onAdd,
-  initialName = null,
   mode = "add",
+  kitchenId,
 }: AddKitchenModalProps) {
-  const methods = useForm<KitchenFormValues>({ defaultValues: emptyForm });
+  const isEdit = mode === "edit";
+
+  const form = useForm<KitchenFormValues>({
+    defaultValues: emptyForm,
+    resolver: zodResolver(kitchenSchema),
+  });
+
+  const onOpenChange = (open: boolean) => {
+    if (!open) onClose();
+  };
+
+  const { data: kitchenData } = useQuery({
+    queryKey: ["getKitchenById", kitchenId],
+    queryFn: () => ListKitchenByIdApi(String(kitchenId)),
+    enabled: isEdit && !!kitchenId,
+  });
+
+  const { mutate: addKitchen, isPending: isAdding } = useAddKitchen({ form, onOpenChange });
+  const { mutate: updateKitchen, isPending: isUpdating } = useUpdateKitchen({ form, onOpenChange });
 
   useEffect(() => {
-    if (isOpen) methods.reset({ name: initialName || "" });
-  }, [initialName, isOpen, methods]);
+    if (!isOpen) return;
 
-  if (!isOpen) return null;
+    if (isEdit && kitchenData) {
+      form.reset({ name: kitchenData.data.name });
+      return;
+    }
 
-  const handleClose = () => {
-    methods.reset(emptyForm);
+    if (!isEdit) form.reset(emptyForm);
+  }, [isEdit, kitchenData, isOpen, form]);
+
+  function handleClose() {
+    form.reset(emptyForm);
     onClose();
-  };
+  }
 
-  const handleSubmit = () => {
-    const name = methods.getValues("name").trim();
-    if (!name) return;
-    onAdd({ name });
-    methods.reset(emptyForm);
-  };
+  const handleSubmit = form.handleSubmit((values) => {
+    const payload = { name: values.name.trim() };
+
+    if (isEdit && kitchenId) {
+      updateKitchen({ id: kitchenId, value: payload });
+    } else {
+      addKitchen(payload);
+    }
+  });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4 backdrop-blur-[2px]">
-      <FormProvider {...methods}>
-        <div className="relative w-full max-w-[812px] rounded-[20px] border border-[#A6A6A6] bg-[#E9E9E9] p-6 shadow-[0_0_30px_rgba(0,0,0,0.35)] sm:px-[34px]">
-          <button
-            type="button"
-            onClick={handleClose}
-            aria-label="Close kitchen modal"
-            className="absolute right-[-18px] top-[-18px] flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B] shadow-lg"
-          >
-            <X size={20} strokeWidth={2.5} />
-          </button>
-          <h3 className="font-poppins text-[22px] font-semibold text-black">
-            {mode === "edit" ? "Edit Kitchen" : "Add Kitchen"}
-          </h3>
-          <div className="mt-4 rounded-[10px] border border-[#B5B5B5] bg-[#E9E9E9] p-2.5">
-            <FormInput
-              name="name"
-              label="Kitchen Name"
-              placeholder="Enter Kitchen Name"
-            />
+    <Dialog open={isOpen} onOpenChange={(next) => !next && handleClose()}>
+      <DialogContent
+        showCloseButton={false}
+        className="
+          w-[812px] max-w-[calc(100vw-2rem)]
+          h-auto min-h-[249px]
+          flex flex-col gap-[16px]
+          rounded-[20px] border-[1px]
+          bg-[#E9E9E9] text-white
+          pt-[26px] pr-[34px] pb-[26px] pl-[34px]
+          opacity-100 shadow-[0_0_30px_rgba(0,0,0,0.35)]
+        "
+      >
+        <button
+          type="button"
+          onClick={handleClose}
+          className="absolute right-[-18px] top-[-18px] z-10 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B] shadow-lg"
+          aria-label="Close kitchen modal"
+        >
+          <X size={20} strokeWidth={2.5} />
+        </button>
+
+        <div>
+          <DialogTitle className="text-[22px] font-semibold text-black">
+            {isEdit ? "Edit Kitchen" : "Add Kitchen"}
+          </DialogTitle>
+        </div>
+
+        <FormProvider {...form}>
+          <div className="rounded-[10px] border border-[#B5B5B5] bg-[#E9E9E9] p-2.5">
+            <label className="block">
+              <FormInput name="name" placeholder="Enter Kitchen Name" label="Kitchen Name" required />
+            </label>
           </div>
-          <div className="mt-5 flex justify-end">
+
+          <div className="mt-auto flex justify-end">
             <Button
               type="button"
               variant="add"
               size="none"
               onClick={handleSubmit}
+              disabled={isEdit ? isUpdating : isAdding}
             >
-              {mode === "edit" ? "SAVE" : "ADD"}
+              {isEdit ? "SAVE" : "ADD"}
             </Button>
           </div>
-        </div>
-      </FormProvider>
-    </div>
+        </FormProvider>
+      </DialogContent>
+    </Dialog>
   );
 }
-

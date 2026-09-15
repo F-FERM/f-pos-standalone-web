@@ -52,7 +52,7 @@ export function SearchInput({
                 paddingTop: 6,
                 paddingRight: 20,
                 paddingBottom: 6,
-                paddingLeft: 53, // 20 (left padding) + 24 (icon) + 9 (gap)
+                paddingLeft: 53, 
                 fontFamily: "Poppins, sans-serif",
                 fontWeight: 400,
                 fontSize: 16,

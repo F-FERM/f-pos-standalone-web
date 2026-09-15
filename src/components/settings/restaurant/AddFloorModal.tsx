@@ -1,67 +1,72 @@
 "use client";
 
-import FormInput from "@/src/components/form/FormInput";
-import { X } from "lucide-react";
 import { useEffect } from "react";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
+import { X } from "lucide-react";
+
+import FormInput from "@/src/components/form/FormInput";
 import { Button } from "../../ui/button";
+import { useAddFloor } from "@/src/api/floor/hooks/create.hook";
+import { useUpdateFloor } from "@/src/api/floor/hooks/update.hook";
 
-export type FloorFormValues = {
-  name: string;
-};
-
-export type NewFloorInput = {
-  name: string;
-};
-
+const schema = z.object({ name: z.string().min(1, "Floor name is required").max(100) });
+export type FloorFormValues = z.infer<typeof schema>;
 const emptyForm: FloorFormValues = { name: "" };
 
 type AddFloorModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (floor: NewFloorInput) => void;
-  initialFloor?: string | null;
   mode?: "add" | "edit";
+  id?: string;
+  initialFloor?: string | null;
 };
 
 export default function AddFloorModal({
   isOpen,
   onClose,
-  onAdd,
-  initialFloor = null,
   mode = "add",
+  id,
+  initialFloor = null,
 }: AddFloorModalProps) {
-  const methods = useForm<FloorFormValues>({ defaultValues: emptyForm });
+  const isEdit = mode === "edit";
+  const form = useForm<FloorFormValues>({ defaultValues: emptyForm, resolver: zodResolver(schema) });
+  const onOpenChange = (open: boolean) => { if (!open) onClose(); };
+
+  const { mutate: addFloor, isPending: isAdding } = useAddFloor({ form, onOpenChange });
+  const { mutate: updateFloor, isPending: isUpdating } = useUpdateFloor({ form, onOpenChange });
 
   useEffect(() => {
     if (!isOpen) return;
-    methods.reset({ name: initialFloor ?? "" });
-  }, [initialFloor, isOpen, methods]);
+    form.reset({ name: initialFloor ?? "" });
+  }, [initialFloor, isOpen, form]);
 
   if (!isOpen) return null;
 
   const handleClose = () => {
-    methods.reset(emptyForm);
+    form.reset(emptyForm);
     onClose();
   };
 
-  const handleSubmit = () => {
-    const values = methods.getValues();
+  const handleSubmit = form.handleSubmit((values) => {
     const name = values.name.trim();
-    if (!name) return;
-
-    onAdd({ name });
-    methods.reset(emptyForm);
-  };
+    const payload = {name}
+    if (isEdit && id) {
+      updateFloor({id, value: payload});
+    } else {
+      addFloor(payload);
+    }
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 py-6 backdrop-blur-[2px]">
-      <FormProvider {...methods}>
+      <FormProvider {...form}>
         <div className="relative my-auto w-full max-w-[812px]">
           <button
             type="button"
             onClick={handleClose}
-            className="absolute right-[-18px] top-[-18px] z-10 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B] shadow-lg"
+            className="absolute right-2 top-2 z-10 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#E0E0E0] bg-[#EFEFEF] text-[#FF3B3B] shadow-lg sm:right-[-18px] sm:top-[-18px]"
             aria-label="Close floor modal"
           >
             <X size={20} strokeWidth={2.5} />
@@ -69,16 +74,12 @@ export default function AddFloorModal({
 
           <div className="flex min-h-[249px] w-full flex-col gap-[16px] rounded-[20px] border border-[#A6A6A6] bg-[#E9E9E9] px-4 py-6 shadow-[0_0_30px_rgba(0,0,0,0.35)] sm:px-[34px]">
             <h3 className="font-poppins text-[22px] font-semibold leading-none text-black">
-              {mode === "edit" ? "Edit Floor" : "Add Floor"}
+              {isEdit ? "Edit Floor" : "Add Floor"}
             </h3>
 
             <div className="flex w-full flex-col gap-[10px] rounded-[10px] border border-[#B5B5B5] bg-[#E9E9E9] p-2.5 sm:max-w-[742px]">
               <label className="block">
-                <FormInput
-                  name="name"
-                  label="Floor Name"
-                  placeholder="Enter Floor Name"
-                />
+                <FormInput name="name" label="Floor Name" placeholder="Enter Floor Name" required/>
               </label>
             </div>
 
@@ -88,8 +89,9 @@ export default function AddFloorModal({
                 variant="add"
                 size="none"
                 onClick={handleSubmit}
+                disabled={isEdit ? isUpdating : isAdding}
               >
-                {mode === "edit" ? "SAVE" : "ADD"}
+                {isEdit ? "SAVE" : "ADD"}
               </Button>
             </div>
           </div>
