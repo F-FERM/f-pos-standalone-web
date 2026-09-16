@@ -44,7 +44,7 @@ function ProductGrid({ selectedProduct, onSelect, products }: ProductGridProps) 
               <Image
                 width={150}
                 height={104}
-                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${product.image}`}
+                src={`${'http://127.0.0.1:3010'}${product.image}`}
                 alt={product.name}
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
               />

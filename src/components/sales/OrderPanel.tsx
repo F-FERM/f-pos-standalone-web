@@ -331,7 +331,7 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
     return "no image";
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  const baseUrl = 'http://127.0.0.1:3010/api/';
 
   if (!baseUrl) {
     console.error("NEXT_PUBLIC_BASE_URL is not defined");
