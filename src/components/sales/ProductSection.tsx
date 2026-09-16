@@ -145,6 +145,8 @@ export function ProductSection({
             products={products}
             selectedProduct={selectedProduct}
             onSelect={(product) => {
+              const audio = new Audio('/voices/beep.mp3');
+              audio.play().catch((err) => console.error("Audio play failed", err));
               setSelectedProductId(product.id);
               if (onAddProduct) onAddProduct(product);
             }}
