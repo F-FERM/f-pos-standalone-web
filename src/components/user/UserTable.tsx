@@ -155,24 +155,26 @@ export function UserTable({ data, isLoading }: UserTableProps) {
                       <div className="flex items-center justify-center gap-2">
                         <UserFormAction isEdit id={user._id} />
 
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={
-                              <Button
-                                type="button"
-                                variant="deleteicon"
-                                size="icon"
-                                aria-label={`Delete ${user.username}`}
-                                onClick={() => openDeleteDialog(user._id, `${user.username}`)}
-                              >
-                                <Trash2 size={15} />
-                              </Button>
-                            }
-                          />
-                          <TooltipContent>
-                            <p>Delete</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        {user.role?.toLowerCase() !== "admin" && (
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="deleteicon"
+                                  size="icon"
+                                  aria-label={`Delete ${user.username}`}
+                                  onClick={() => openDeleteDialog(user._id, `${user.username}`)}
+                                >
+                                  <Trash2 size={15} />
+                                </Button>
+                              }
+                            />
+                            <TooltipContent>
+                              <p>Delete</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

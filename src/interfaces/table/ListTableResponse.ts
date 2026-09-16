@@ -12,6 +12,10 @@ export interface TableData {
   capacity: number;
   floorId: FloorId;
   companyId: string;
+   currentStatus: string;
+   currentOrderId: string;
+   totalAmount: number;
+   runningSince: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -22,3 +26,5 @@ interface FloorId {
   _id: string;
   name: string;
 }
+
+

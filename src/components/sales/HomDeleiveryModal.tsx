@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { FormProvider, useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -11,6 +11,7 @@ import FormInput from "@/src/components/form/FormInput";
 import FormCombobox from "@/src/components/form/FormCombobox";
 import { Button } from "../ui/button";
 import { ListCustomerApi } from "@/src/api/customer/api/GetAll";
+import AddCustomerModal from "../customer/AddCustomerDialogue";
 
 
 
@@ -55,6 +56,7 @@ export function HomeDeliveryModal({ open, onClose, onSubmit }: HomeDeliveryModal
   });
 
   const [search, setSearch] = useState("");
+  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
 
   const { data: customerData } = useQuery({
     queryKey: ["getAllCustomer", search],
@@ -98,7 +100,7 @@ export function HomeDeliveryModal({ open, onClose, onSubmit }: HomeDeliveryModal
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 py-6 backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-[40] flex items-center justify-center overflow-y-auto p-4 py-6 backdrop-blur-[2px] bg-black/50">
       <FormProvider {...methods}>
         <div className="relative my-auto w-[812px] max-w-[calc(100vw-2rem)]">
           <button
@@ -115,13 +117,25 @@ export function HomeDeliveryModal({ open, onClose, onSubmit }: HomeDeliveryModal
               Home Delivery Details
             </h3>
 
-            <FormCombobox
-              name="customerId"
-              label="Customer"
-              options={customerOptions}
-              placeholder="Select Or search"
-              setSearch={setSearch}
-            />
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <FormCombobox
+                  name="customerId"
+                  label="Customer"
+                  options={customerOptions}
+                  placeholder="Select Or search"
+                  setSearch={setSearch}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddCustomerOpen(true)}
+                className="mb-[2px] flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] bg-[#670063] text-white hover:bg-[#85007f] transition-colors"
+                aria-label="Add Customer"
+              >
+                <Plus size={20} strokeWidth={2.5} />
+              </button>
+            </div>
 
             <FormInput
               name="location"
@@ -130,7 +144,6 @@ export function HomeDeliveryModal({ open, onClose, onSubmit }: HomeDeliveryModal
             />
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-           
               <FormInput name="deliveryDate" label="Delivery Date" type="date" />
               <FormInput name="deliveryTime" label="Delivery Time" type="time" />
             </div>
@@ -149,6 +162,15 @@ export function HomeDeliveryModal({ open, onClose, onSubmit }: HomeDeliveryModal
           </div>
         </div>
       </FormProvider>
+      
+      {isAddCustomerOpen && (
+        <div className="absolute inset-0 z-[70]">
+           <AddCustomerModal 
+             isOpen={isAddCustomerOpen} 
+             onClose={() => setIsAddCustomerOpen(false)} 
+           />
+        </div>
+      )}
     </div>
   );
 }
