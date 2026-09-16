@@ -21,6 +21,7 @@ import saleIcon from "../../../public/images/icons/sale.png";
 import settingsIcon from "../../../public/images/icons/settings.png";
 import userIcon from "../../../public/images/icons/user.png";
 import logo from "../../../public/images/login/fposlogo.png";
+import { closeApp } from "@/src/lib/electron";
 
 interface MenuItem {
   label: string;
@@ -93,7 +94,13 @@ export default function RestaurantDashboard() {
             <a href="#" className="hover:opacity-80">ABOUT</a>
             <a href="#" className="hover:opacity-80">SUPPORT</a>
           </nav>
-          <button aria-label="Close" className="text-black hover:opacity-80">
+
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={closeApp}
+            className="text-black hover:opacity-80"
+          >
             <X className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
         </div>
