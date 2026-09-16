@@ -36,12 +36,14 @@ const emptyForm: CustomerFormValues = {
   address: "",
 };
 
+import { Country } from "country-state-city";
+
 function getPhoneParts(phone: string) {
-  const COUNTRY_CODES = [
-    "+971", "+966", "+91", "+44", "+86", "+81", "+49", "+33", "+39",
-    "+7", "+55", "+61", "+82", "+34", "+31", "+46", "+41", "+65", "+60", "+1",
-  ];
-  const countryCode = COUNTRY_CODES.find((c) => phone.startsWith(c)) || "+91";
+  const allCountries = Country.getAllCountries();
+  // Sort by length of phonecode descending so we match +971 before +9
+  const sortedCodes = Array.from(new Set(allCountries.map((c) => `+${c.phonecode}`))).sort((a, b) => b.length - a.length);
+  
+  const countryCode = sortedCodes.find((c) => phone.startsWith(c)) || "+91";
   return {
     countryCode,
     phone: phone.startsWith(countryCode)
@@ -116,7 +118,7 @@ export default function AddCustomerModal({
     const payload = {
       name: values.name.trim(),
       credit: values.credit ?? 0,
-      phone: `${values.countryCode ?? ""}${values.phone?.trim() ?? ""}`,
+      phone: values.phone?.trim() ? `${values.countryCode ?? ""}${values.phone.trim()}` : "",
       address: String(values.address || "").trim(),
     };
 

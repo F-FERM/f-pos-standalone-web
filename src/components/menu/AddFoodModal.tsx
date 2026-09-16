@@ -353,7 +353,7 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
                   <label className="mb-3 block text-sm font-medium text-black sm:text-base">
                     Food Type <span className="text-[#FF3B3B]">*</span>
                   </label>
-                  <div className="flex flex-wrap items-center justify-start gap-3 font-['Poppins',sans-serif] text-sm text-[#808080] sm:justify-around sm:text-base">
+                  <div className="flex flex-wrap items-center justify-start gap-3  text-sm text-[#808080] sm:justify-around sm:text-base">
                     <label htmlFor="food-type-veg" className="cursor-pointer">Veg</label>
                     <input
                       id="food-type-veg"

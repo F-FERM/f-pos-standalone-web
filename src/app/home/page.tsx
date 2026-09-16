@@ -4,6 +4,8 @@ import { User, X } from "lucide-react";
 import Image, { StaticImageData } from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ConfirmationDialog } from "@/src/components/common/ConfirmationDialogue";
 import expenseIcon from "../../../public/images/icons/Expense.png";
 import supplierIcon from "../../../public/images/icons/Supplier.png";
 import accountsIcon from "../../../public/images/icons/accounts.png";
@@ -73,6 +75,8 @@ const CARD_ICON_SIZE = 42;
 
 export default function RestaurantDashboard() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <div className="min-h-dvh w-full bg-[#EFEFEF]">
@@ -93,7 +97,11 @@ export default function RestaurantDashboard() {
             <a href="#" className="hover:opacity-80">ABOUT</a>
             <a href="#" className="hover:opacity-80">SUPPORT</a>
           </nav>
-          <button aria-label="Close" className="text-black hover:opacity-80">
+          <button 
+            aria-label="Close" 
+            className="text-black hover:opacity-80 cursor-pointer"
+            onClick={() => setIsLogoutModalOpen(true)}
+          >
             <X className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
         </div>
@@ -199,6 +207,15 @@ export default function RestaurantDashboard() {
     </div>
   </div>
 )}
+
+      <ConfirmationDialog
+        open={isLogoutModalOpen}
+        onOpenChange={setIsLogoutModalOpen}
+        onConfirm={() => router.push("/login")}
+        message="Are you sure you want to logout?"
+        confirmText="LOGOUT"
+        pendingText="LOGGING OUT..."
+      />
     </div>
   );
 }
