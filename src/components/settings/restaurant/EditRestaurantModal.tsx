@@ -141,7 +141,7 @@ export default function EditRestaurantModal({
 
           <div className="flex w-full flex-col gap-[16px] rounded-[20px] border border-[#A6A6A6] bg-[#E9E9E9] px-4 py-6 shadow-[0_0_30px_rgba(0,0,0,0.35)] sm:px-[34px]">
             <div className="flex items-start justify-between">
-              <h3 className="font-poppins text-[22px] font-semibold leading-none text-black">
+              <h3 className=" text-[22px] font-semibold leading-none text-black">
                 Edit Restaurant
               </h3>
               

@@ -34,7 +34,7 @@ export default function DeliveryPage() {
                   key={tab}
                   type="button"
                   onClick={() => setActiveTab(tab)}
-                  className={`flex h-[42px] shrink-0 items-center justify-center whitespace-nowrap rounded-[12px] border px-4 font-poppins text-[15px] font-semibold transition-colors sm:px-5 sm:text-[18px] ${
+                  className={`flex h-[42px] shrink-0 items-center justify-center whitespace-nowrap rounded-[12px] border px-4  text-[15px] font-semibold transition-colors sm:px-5 sm:text-[18px] ${
                     selected
                       ? "border-transparent bg-[#450042] text-white"
                       : "border-[#9C9C9C] bg-[#D2D2D2] text-black"
@@ -51,14 +51,14 @@ export default function DeliveryPage() {
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                className="h-[42px] shrink-0 whitespace-nowrap rounded-[12px] border border-[#9C9C9C] bg-transparent px-4 font-poppins text-[13px] font-medium text-[#5D5D5D] sm:px-5 sm:text-sm"
+                className="h-[42px] shrink-0 whitespace-nowrap rounded-[12px] border border-[#9C9C9C] bg-transparent px-4  text-[13px] font-medium text-[#5D5D5D] sm:px-5 sm:text-sm"
               >
                 From Date & Time
               </button>
 
               <button
                 type="button"
-                className="h-[42px] shrink-0 whitespace-nowrap rounded-[12px] border border-[#9C9C9C] bg-transparent px-4 font-poppins text-[13px] font-medium text-[#5D5D5D] sm:px-5 sm:text-sm"
+                className="h-[42px] shrink-0 whitespace-nowrap rounded-[12px] border border-[#9C9C9C] bg-transparent px-4  text-[13px] font-medium text-[#5D5D5D] sm:px-5 sm:text-sm"
               >
                 To Date & Time
               </button>
@@ -73,7 +73,7 @@ export default function DeliveryPage() {
           </div>
         </div>
 
-        <span className="font-poppins text-[12px] font-medium text-[#939393]">
+        <span className=" text-[12px] font-medium text-[#939393]">
           © 2026 F-FERM Digital Labs. All rights reserved.
         </span>
       </div>

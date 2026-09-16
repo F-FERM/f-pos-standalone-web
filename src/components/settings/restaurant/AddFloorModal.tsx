@@ -73,7 +73,7 @@ export default function AddFloorModal({
           </button>
 
           <div className="flex min-h-[249px] w-full flex-col gap-[16px] rounded-[20px] border border-[#A6A6A6] bg-[#E9E9E9] px-4 py-6 shadow-[0_0_30px_rgba(0,0,0,0.35)] sm:px-[34px]">
-            <h3 className="font-poppins text-[22px] font-semibold leading-none text-black">
+            <h3 className=" text-[22px] font-semibold leading-none text-black">
               {isEdit ? "Edit Floor" : "Add Floor"}
             </h3>
 
