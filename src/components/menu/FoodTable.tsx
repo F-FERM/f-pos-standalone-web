@@ -10,7 +10,7 @@ import { useDeleteFood } from "@/src/api/food/hooks/delete.hook";
 import { ColGroup, TruncatedCell } from "../settings/restaurant/TableHelpers";
 import { Food } from "@/src/interfaces/food/ListFoodResponse";
 
-const API_MEDIA_BASE_URL ="http://127.0.0.1:3010";
+const API_MEDIA_BASE_URL =process.env.NEXT_PUBLIC_API_BASE_URL!;
 
 function getMediaUrl(path?: string | null): string | undefined {
   if (!path) return undefined;
