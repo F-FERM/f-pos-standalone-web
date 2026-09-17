@@ -1,14 +1,13 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-
-import { CategorySidebar } from "./CategorySidebar";
-import { Product } from "./Types";
-import { PanelBackground, PanelBackgroundHandle } from "./PanelGround";
-import Image from "next/image";
-import { Food } from "@/src/interfaces/food/ListFoodResponse";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { ListFoodApi } from "@/src/api/food/api/GetAll";
+import { Food } from "@/src/interfaces/food/ListFoodResponse";
+import Image from "next/image";
+import { CategorySidebar } from "./CategorySidebar";
+import { PanelBackground, PanelBackgroundHandle } from "./PanelGround";
+import { Product } from "./Types";
 
 type ProductGridProps = {
   selectedProduct: Product;
@@ -21,7 +20,8 @@ function mapFoodToProduct(food: Food): Product {
     id: food._id,
     name: food.name,
     price: food.basePrice,
-    image: food.foodImage || "no image ",
+    image: food.foodImage || "",
+    food: food,
   };
 }
 
@@ -44,7 +44,7 @@ function ProductGrid({ selectedProduct, onSelect, products }: ProductGridProps) 
               <Image
                 width={150}
                 height={104}
-                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${product.image}`}
+                src={`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${product.image}`.trimEnd() || "/"}
                 alt={product.name}
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
               />

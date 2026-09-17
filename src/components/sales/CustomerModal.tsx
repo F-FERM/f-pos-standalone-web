@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { X } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { SearchInput } from "../common/SearchInput";
-import { Pagination } from "../common/Pagination";
 import { ListCustomerApi } from "@/src/api/customer/api/GetAll";
+import { useQuery } from "@tanstack/react-query";
+import { X } from "lucide-react";
+import { useState } from "react";
+import AddCustomerIcon from "../../../public/images/icons/usergroup.png";
+import { Pagination } from "../common/Pagination";
+import { SearchInput } from "../common/SearchInput";
 import AddCustomerModal from "../customer/AddCustomerDialogue";
 import { Button } from "../ui/button";
-import AddCustomerIcon from "../../../public/images/icons/usergroup.png";
 
 type CustomerModalProps = {
   open: boolean;

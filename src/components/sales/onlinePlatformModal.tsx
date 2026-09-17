@@ -1,7 +1,7 @@
 "use client";
 
+import { Check, ShoppingBag, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { X, ShoppingBag, Check } from "lucide-react";
 import { Button } from "../ui/button";
 
 interface OnlinePlatformModalProps {

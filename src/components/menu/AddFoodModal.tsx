@@ -423,7 +423,6 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
               label="Menu Type"
               options={menuTypeOptions}
               placeholder="Select Or search"
-              allowCreate
               required
             />
 

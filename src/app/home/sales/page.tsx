@@ -3,21 +3,87 @@
 import { CategoryHeader } from "@/src/components/sales/CategoryHeader";
 import { InvoiceHeader } from "@/src/components/sales/InvoiceHeader";
 import { OrderPanel } from "@/src/components/sales/OrderPanel";
+import { PortionChoicesModal } from "@/src/components/sales/PortionChoicesModal";
 import { POSHeader } from "@/src/components/sales/PosHeader";
 import { ProductSection } from "@/src/components/sales/ProductSection";
+import { TableModal } from "@/src/components/sales/TableModal";
+import { CustomerTypeEnum, type CartItemType, type Product } from "@/src/components/sales/Types";
+import { CustomerTypeValue } from "@/src/interfaces/customer-type/AddCustomerTypePayload";
 import { useState } from "react";
-import type { Product } from "@/src/components/sales/Types";
 
 export default function POSScreen() {
   const [selectedMenuType, setSelectedMenuType] = useState("All");
   const [search, setSearch] = useState("");
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  
+  // Lifted state for customer type and cart
+  const [selectedType, setSelectedType] = useState<CustomerTypeValue | null>(null);
+  const [cartItems, setCartItems] = useState<CartItemType[]>([]);
+  const [tableId, setTableId] = useState<string | null>(null);
 
+  // Modals state
+  const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+  const [isPortionModalOpen, setIsPortionModalOpen] = useState(false);
+  const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
+
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  
   const handleAddProduct = (product: Product) => {
-    setQuantities((prev) => ({
-      ...prev,
-      [product.id]: (prev[product.id] || 0) + 1,
-    }));
+    const hasChoices = product.food?.choices && product.food.choices.length > 0;
+    if (product.food?.isPortionEnabled || hasChoices) {
+      setPendingProduct(product);
+      if (selectedType === CustomerTypeEnum.DINE_IN && !tableId) {
+        setIsTableModalOpen(true);
+      } else {
+        setIsPortionModalOpen(true);
+      }
+    } else {
+      setCartItems((prev) => {
+        const existing = prev.find((item) => item.id === product.id);
+        if (existing) {
+          return prev.map((item) =>
+            item.id === product.id ? { ...item, qty: item.qty + 1 } : item
+          );
+        }
+        return [
+          ...prev,
+          {
+            id: product.id,
+            food: product.food,
+            portion: null,
+            choices: [],
+            qty: 1,
+          },
+        ];
+      });
+    }
+  };
+
+  const handleTableSelection = (id: string | null) => {
+    setTableId(id);
+    if (id !== null && pendingProduct) {
+      setIsPortionModalOpen(true);
+    } else if (id === null && pendingProduct) {
+      setPendingProduct(null);
+    }
+  };
+
+  const handleAddPortionedItems = (items: CartItemType[]) => {
+    setCartItems((prev) => {
+      let updatedCart = [...prev];
+      items.forEach((newItem) => {
+        const existingIndex = updatedCart.findIndex((item) => item.id === newItem.id);
+        if (existingIndex >= 0) {
+          updatedCart[existingIndex] = {
+            ...updatedCart[existingIndex],
+            qty: updatedCart[existingIndex].qty + newItem.qty,
+          };
+        } else {
+          updatedCart.push(newItem);
+        }
+      });
+      return updatedCart;
+    });
+    setPendingProduct(null);
   };
 
   return (
@@ -54,7 +120,17 @@ export default function POSScreen() {
             </div>
 
             <div className="min-h-0 flex-1">
-              <OrderPanel quantities={quantities} setQuantities={setQuantities} />
+              <OrderPanel 
+                cartItems={cartItems} 
+                setCartItems={setCartItems} 
+                selectedType={selectedType}
+                setSelectedType={setSelectedType}
+                tableId={tableId}
+                openTableModal={() => setIsTableModalOpen(true)}
+                editingOrderId={editingOrderId}
+                onClearEdit={() => setEditingOrderId(null)}
+                onEditOrder={(orderId) => setEditingOrderId(orderId)}
+              />
             </div>
           </div>
         </div>
@@ -66,6 +142,27 @@ export default function POSScreen() {
           © 2026 F-FERM Digital Labs. All rights reserved.
         </span>
       </div>
+
+      <TableModal 
+        open={isTableModalOpen} 
+        onClose={(isCancel) => {
+          setIsTableModalOpen(false);
+          if (isCancel && pendingProduct) {
+            setPendingProduct(null);
+          }
+        }} 
+        onSelectTable={handleTableSelection} 
+      />
+
+      <PortionChoicesModal
+        open={isPortionModalOpen}
+        onClose={() => {
+          setIsPortionModalOpen(false);
+          setPendingProduct(null);
+        }}
+        product={pendingProduct?.food || null}
+        onAdd={handleAddPortionedItems}
+      />
     </main>
   );
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import { ListMenuTypeApi } from "@/src/api/menu-type/api/GetAll";
-import { SearchInput } from "../common/SearchInput";
 import { useQuery } from "@tanstack/react-query";
+import { SearchInput } from "../common/SearchInput";
 
 type CategoryHeaderProps = {
   selectedFilter?: string;

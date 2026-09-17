@@ -24,16 +24,13 @@ const homeDeliverySchema = z
   })
   .transform((data) => ({
     ...data,
-    // Convert "YYYY-MM-DD" + "HH:MM" → ISO 8601 (e.g. "2024-01-15T12:02:00.000Z")
     deliveryTime:
       data.deliveryDate && data.deliveryTime
         ? new Date(`${data.deliveryDate}T${data.deliveryTime}:00`).toISOString()
         : data.deliveryTime,
   }));
 
-// Raw input type — what the form fields hold (before transform)
 export type RawHomeDeliveryFormValues = z.input<typeof homeDeliverySchema>;
-// Output type — what onSubmit receives (after transform, deliveryTime is ISO)
 export type HomeDeliveryFormValues = z.output<typeof homeDeliverySchema>;
 
 const emptyForm: RawHomeDeliveryFormValues = {
@@ -64,8 +61,6 @@ export function HomeDeliveryModal({ open, onClose, onSubmit }: HomeDeliveryModal
     enabled: open,
   });
 
-  // ASSUMPTION: customer records look like { _id, name } — align `.name`
-  // with your actual customer response shape.
   const customerOptions = (customerData?.data || []).map((c) => ({
     label: c.name,
     value: c._id,
@@ -86,15 +81,9 @@ export function HomeDeliveryModal({ open, onClose, onSubmit }: HomeDeliveryModal
   const handleSubmit = methods.handleSubmit(
     (values) => {
       onSubmit(values);
-      // NOTE: Do NOT reset here — resetting immediately after onSubmit causes a
-      // React state-batching race where the parent's state (selectedCustomerId,
-      // deliveryDetails) hasn't committed yet before the form is cleared,
-      // making the payload appear empty on the first submit.
-      // The useEffect above already resets the form whenever the modal reopens.
+    
     },
-    (errors) => {
-      console.log("Form validation errors:", errors);
-    },
+    
   );
 
   if (!open) return null;

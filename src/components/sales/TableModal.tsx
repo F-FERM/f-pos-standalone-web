@@ -1,16 +1,17 @@
 "use client";
 
-import { X, Users } from "lucide-react";
-import Image from "next/image";
-import { useQuery } from "@tanstack/react-query";
 import { ListTableApi } from "@/src/api/table/api/GetAll";
+import { IconArmchair } from '@tabler/icons-react';
+import { useQuery } from "@tanstack/react-query";
+import { X } from "lucide-react";
+import Image from "next/image";
 import changeTable from "../../../public/images/icons/changetable.png";
 import noTable from "../../../public/images/icons/notable.png";
-import { IconArmchair } from '@tabler/icons-react';
 
 type TableModalProps = {
   open: boolean;
-  onClose: () => void;
+  onClose: (isCancel?: boolean) => void;
+  onSelectTable?: (tableId: string | null) => void;
 };
 
 const legend = [
@@ -33,7 +34,7 @@ const STATUS_STYLES: Record<
 const getStatusStyle = (status: string) =>
   STATUS_STYLES[status] || STATUS_STYLES.Available;
 
-export function TableModal({ open, onClose }: TableModalProps) {
+export function TableModal({ open, onClose, onSelectTable }: TableModalProps) {
   const { data: tableData, isLoading } = useQuery({
     queryKey: ["getAllTables"],
     queryFn: () => ListTableApi({ page: 1, limit: 100 }),
@@ -55,8 +56,8 @@ export function TableModal({ open, onClose }: TableModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/65 p-3 backdrop-blur-[3px] sm:p-4"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto  p-3 backdrop-blur-[3px] sm:p-4"
+      onClick={() => onClose(true)}
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -65,7 +66,7 @@ export function TableModal({ open, onClose }: TableModalProps) {
         {/* Close button */}
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => onClose(true)}
           className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full border border-[#A6A6A6] bg-white text-[#FF3B3B] shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-transform hover:scale-110 active:scale-95 sm:-right-3 sm:-top-3 sm:h-9 sm:w-9"
           aria-label="Close table modal"
         >
@@ -91,6 +92,10 @@ export function TableModal({ open, onClose }: TableModalProps) {
 
             <button
               type="button"
+              onClick={() => {
+                if (onSelectTable) onSelectTable(null);
+                onClose();
+              }}
               className="flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-[#9C9C9C] bg-white px-3 py-1.5 text-xs font-semibold text-black shadow-sm transition-colors hover:bg-[#F5F5F5] sm:text-[15px]"
             >
               <Image src={noTable} alt="" width={14} height={14} />
@@ -138,7 +143,11 @@ export function TableModal({ open, onClose }: TableModalProps) {
                       <button
                         type="button"
                         key={table._id}
-                        className="group relative flex h-[105px] w-full flex-col items-center justify-center gap-1 rounded-[14px] border-2 p-2 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md active:scale-95 sm:h-[130px] sm:rounded-[16px]"
+                        onClick={() => {
+                          if (onSelectTable) onSelectTable(table._id);
+                          onClose();
+                        }}
+                        className="group relative flex h-[105px] w-full flex-col items-center justify-center gap-1 rounded-[14px] border-2 p-2 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md  sm:h-[130px] sm:rounded-[16px] focus:outline-none no-underline"
                         style={{
                           backgroundColor: style.bg,
                           borderColor: style.border,
