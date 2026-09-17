@@ -1,166 +1,204 @@
 "use client";
 
+import { ListTableApi } from "@/src/api/table/api/GetAll";
+import { IconArmchair } from '@tabler/icons-react';
+import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import Image from "next/image";
-import changeTable from "../../../public/images/icons/changetable.png"
-import noTable from "../../../public/images/icons/notable.png"
+import changeTable from "../../../public/images/icons/changetable.png";
+import noTable from "../../../public/images/icons/notable.png";
+
 type TableModalProps = {
   open: boolean;
-  onClose: () => void;
+  onClose: (isCancel?: boolean) => void;
+  onSelectTable?: (tableId: string | null) => void;
 };
 
 const legend = [
-  { color: "#9F9F9F", label: "Available Table" },
-  { color: "#FF7676", label: "Running Table" },
+  { color: "#9F9F9F", label: "Available" },
+  { color: "#FF7676", label: "Running" },
   { color: "#80C1FF", label: "Vacating Soon" },
+  { color: "#FFD166", label: "Running KOT" },
 ];
 
-export function TableModal({ open, onClose }: TableModalProps) {
+const STATUS_STYLES: Record<
+  string,
+  { bg: string; border: string; text: string }
+> = {
+  Available: { bg: "#F1F1F1", border: "#D8D8D8", text: "#4B4B4B" },
+  Running: { bg: "#FFE3E3", border: "#FF7676", text: "#B22B2B" },
+  VacatingSoon: { bg: "#E1F1FF", border: "#80C1FF", text: "#1E5A96" },
+  RunningKOT: { bg: "#FFF3D6", border: "#FFD166", text: "#8A6400" },
+};
+
+const getStatusStyle = (status: string) =>
+  STATUS_STYLES[status] || STATUS_STYLES.Available;
+
+export function TableModal({ open, onClose, onSelectTable }: TableModalProps) {
+  const { data: tableData, isLoading } = useQuery({
+    queryKey: ["getAllTables"],
+    queryFn: () => ListTableApi({ page: 1, limit: 100 }),
+    enabled: open,
+  });
+
+  const tables = tableData?.data || [];
+
+  const floors = tables.reduce((acc, table) => {
+    const floorName = table.floorId?.name || "Other";
+    if (!acc[floorName]) {
+      acc[floorName] = [];
+    }
+    acc[floorName].push(table);
+    return acc;
+  }, {} as Record<string, typeof tables>);
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-[2px]">
-      {/* main — 812x141, top:320 left:106, radius20, bg #EFEFEF, padding 26/34, gap16 */}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto  p-3 backdrop-blur-[3px] sm:p-4"
+      onClick={() => onClose(true)}
+    >
       <div
-        className="relative"
-        style={{
-          position: "absolute",
-          top: 320,
-          left: 106,
-          width: 812,
-          height: 141,
-          background: "#EFEFEF",
-          borderRadius: 20,
-          border: "1px solid #E0E0E0",
-          paddingTop: 26,
-          paddingRight: 34,
-          paddingBottom: 26,
-          paddingLeft: 34,
-          display: "flex",
-          flexDirection: "column",
-          gap: 16,
-        }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative flex w-full max-w-[860px] animate-[fadeIn_0.18s_ease-out] flex-col gap-4 rounded-2xl border border-[#E0E0E0] bg-[#EFEFEF] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:gap-5 sm:rounded-[20px] sm:p-6 sm:px-[30px]"
       >
-        {/* close button */}
+        {/* Close button */}
         <button
           type="button"
-          onClick={onClose}
-          className="flex items-center justify-center"
-          style={{
-            position: "absolute",
-            top: -14,
-            right: -14,
-            width: 36,
-            height: 36,
-            borderRadius: "50%",
-            background: "#EFEFEF",
-            border: "1px solid #FFFFFF",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-            color: "#FF3B3B",
-          }}
+          onClick={() => onClose(true)}
+          className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full border border-[#A6A6A6] bg-white text-[#FF3B3B] shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-transform hover:scale-110 active:scale-95 sm:-right-3 sm:-top-3 sm:h-9 sm:w-9"
           aria-label="Close table modal"
         >
-          <X size={20} strokeWidth={2.5} />
+          <X size={18} strokeWidth={2.5} className="sm:hidden" />
+          <X size={20} strokeWidth={2.5} className="hidden sm:block" />
         </button>
 
-        {/* title */}
-        <h3
-          className="mb-2"
-          style={{
-            fontFamily: "Poppins, sans-serif",
-            fontWeight: 600,
-            fontSize: 22,
-            lineHeight: "100%",
-            letterSpacing: 0,
-            color: "#000000",
-          }}
-        >
+        {/* Title */}
+        <h3 className="text-lg font-bold leading-none tracking-tight text-black sm:text-[22px]">
           Change Table
         </h3>
 
-        {/* under section — 732x38, gap 45 */}
-        <div className="flex items-center" style={{ width: 732, height: 38, gap: 45 }}>
-          {/* 2 buttons — 293x38, gap 12 */}
-          <div className="flex shrink-0 items-center" style={{ width: 293, height: 38, gap: 12 }}>
-            {/* Change Table button — 162x38 */}
+        {/* Controls + Legend row */}
+        <div className="flex flex-col gap-3 border-b border-[#DADADA] pb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <button
               type="button"
-              className="flex shrink-0 items-center justify-center text-[#000000]"
-              style={{
-                width: 162,
-                height: 38,
-                borderRadius: 7,
-                border: "1px solid #9C9C9C",
-                background: "#EFEFEF",
-                paddingTop: 6,
-                paddingRight: 10,
-                paddingBottom: 6,
-                paddingLeft: 10,
-                gap: 9,
-                fontFamily: "Poppins, sans-serif",
-                fontWeight: 600,
-                fontSize: 16,
-              }}
+              className="flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-[#9C9C9C] bg-white px-3 py-1.5 text-xs font-semibold text-black shadow-sm transition-colors hover:bg-[#F5F5F5] sm:text-[15px]"
             >
-              <Image src={changeTable} alt="" width={15} height={15} />
+              <Image src={changeTable} alt="" width={14} height={14} />
               Change Table
             </button>
 
-            {/* No Table button — 119x38 */}
             <button
               type="button"
-              className="flex shrink-0 items-center justify-center text-[#000000]"
-              style={{
-                width: 119,
-                height: 38,
-                borderRadius: 7,
-                border: "1px solid #9C9C9C",
-                background: "#EFEFEF",
-                paddingTop: 6,
-                paddingRight: 10,
-                paddingBottom: 6,
-                paddingLeft: 10,
-                gap: 9,
-                fontFamily: "Poppins, sans-serif",
-                fontWeight: 600,
-                fontSize: 16,
+              onClick={() => {
+                if (onSelectTable) onSelectTable(null);
+                onClose();
               }}
+              className="flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-[#9C9C9C] bg-white px-3 py-1.5 text-xs font-semibold text-black shadow-sm transition-colors hover:bg-[#F5F5F5] sm:text-[15px]"
             >
-              <Image src={noTable} alt="" width={15} height={15} />
+              <Image src={noTable} alt="" width={14} height={14} />
               No Table
             </button>
           </div>
 
-          {/* legend — 394x21, gap 12 */}
-          <div className="flex shrink-0 items-center" style={{ width: 394, height: 21, gap: 12 }}>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             {legend.map((item) => (
-              <span key={item.label} className="flex shrink-0 items-center" style={{ gap: 4 }}>
+              <span key={item.label} className="flex shrink-0 items-center gap-1.5">
                 <span
-                  style={{
-                    width: 14,
-                    height: 14,
-                    borderRadius: "50%",
-                    background: item.color,
-                    display: "inline-block",
-                  }}
+                  className="inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-white shadow-sm sm:h-3 sm:w-3"
+                  style={{ background: item.color }}
                 />
-                <span
-                  style={{
-                    fontFamily: "Poppins, sans-serif",
-                    fontWeight: 500,
-                    fontSize: 14,
-                    lineHeight: "100%",
-                    letterSpacing: 0,
-                    color: "#000000",
-                  }}
-                >
+                <span className="whitespace-nowrap text-[11px] font-medium leading-none text-[#4B4B4B] sm:text-sm">
                   {item.label}
                 </span>
               </span>
             ))}
           </div>
         </div>
+
+        {/* Table grid */}
+        <div className="flex max-h-[65vh] w-full flex-col gap-6 overflow-y-auto pr-1 custom-scrollbar sm:max-h-[60vh] sm:pr-2">
+          {isLoading ? (
+            <div className="flex h-32 flex-col items-center justify-center gap-2 text-[#5D5D5D]">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#B0B0B0] border-t-transparent" />
+              <span className="text-sm">Loading tables...</span>
+            </div>
+          ) : Object.keys(floors).length === 0 ? (
+            <div className="flex h-32 items-center justify-center text-sm text-[#5D5D5D]">
+              No tables found.
+            </div>
+          ) : (
+            Object.entries(floors).map(([floorName, floorTables]) => (
+              <div key={floorName} className="flex flex-col gap-3">
+                <h4 className="flex items-center gap-2 text-[15px] font-semibold capitalize text-black sm:text-[18px]">
+                  {floorName}
+                 
+                </h4>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(105px,1fr))] gap-3 sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] sm:gap-4">
+                  {floorTables.map((table) => {
+                    const style = getStatusStyle(table.currentStatus || "Available");
+                    return (
+                      <button
+                        type="button"
+                        key={table._id}
+                        onClick={() => {
+                          if (onSelectTable) onSelectTable(table._id);
+                          onClose();
+                        }}
+                        className="group relative flex h-[105px] w-full flex-col items-center justify-center gap-1 rounded-[14px] border-2 p-2 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md  sm:h-[130px] sm:rounded-[16px] focus:outline-none no-underline"
+                        style={{
+                          backgroundColor: style.bg,
+                          borderColor: style.border,
+                        }}
+                      >
+                        <div
+                          className="absolute right-1.5 top-1.5 flex items-center gap-1 rounded-full bg-white/70 px-1.5 py-0.5 text-[12px] font-semibold sm:right-2 sm:top-2 sm:text-[12px]"
+                          style={{ color: style.text }}
+                        >
+                          {table.capacity}
+                          <IconArmchair size={12} strokeWidth={2.5} className="sm:hidden" />
+                          <IconArmchair size={14} strokeWidth={2.5} className="hidden sm:block" />
+                        </div>
+                        <span
+                          className="px-1 text-center text-[16px] font-bold leading-tight [word-break:break-word] sm:text-[18px]"
+                          style={{ color: style.text }}
+                        >
+                          {table.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
+
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.97) translateY(6px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #c4c4c4;
+          border-radius: 999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+      `}</style>
     </div>
   );
 }

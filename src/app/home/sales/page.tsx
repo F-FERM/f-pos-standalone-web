@@ -3,114 +3,166 @@
 import { CategoryHeader } from "@/src/components/sales/CategoryHeader";
 import { InvoiceHeader } from "@/src/components/sales/InvoiceHeader";
 import { OrderPanel } from "@/src/components/sales/OrderPanel";
+import { PortionChoicesModal } from "@/src/components/sales/PortionChoicesModal";
 import { POSHeader } from "@/src/components/sales/PosHeader";
 import { ProductSection } from "@/src/components/sales/ProductSection";
+import { TableModal } from "@/src/components/sales/TableModal";
+import { CustomerTypeEnum, type CartItemType, type Product } from "@/src/components/sales/Types";
+import { CustomerTypeValue } from "@/src/interfaces/customer-type/AddCustomerTypePayload";
+import { useState } from "react";
 
 export default function POSScreen() {
-  const CARD_TOP = 77;
-  const CARD_LEFT = 20;
-  const CARD_WIDTH = 984;
-  const CARD_HEIGHT = 661;
+  const [selectedMenuType, setSelectedMenuType] = useState("All");
+  const [search, setSearch] = useState("");
+  
+  // Lifted state for customer type and cart
+  const [selectedType, setSelectedType] = useState<CustomerTypeValue | null>(null);
+  const [cartItems, setCartItems] = useState<CartItemType[]>([]);
+  const [tableId, setTableId] = useState<string | null>(null);
+
+  // Modals state
+  const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+  const [isPortionModalOpen, setIsPortionModalOpen] = useState(false);
+  const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
+
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  
+  const handleAddProduct = (product: Product) => {
+    const hasChoices = product.food?.choices && product.food.choices.length > 0;
+    if (product.food?.isPortionEnabled || hasChoices) {
+      setPendingProduct(product);
+      if (selectedType === CustomerTypeEnum.DINE_IN && !tableId) {
+        setIsTableModalOpen(true);
+      } else {
+        setIsPortionModalOpen(true);
+      }
+    } else {
+      setCartItems((prev) => {
+        const existing = prev.find((item) => item.id === product.id);
+        if (existing) {
+          return prev.map((item) =>
+            item.id === product.id ? { ...item, qty: item.qty + 1 } : item
+          );
+        }
+        return [
+          ...prev,
+          {
+            id: product.id,
+            food: product.food,
+            portion: null,
+            choices: [],
+            qty: 1,
+          },
+        ];
+      });
+    }
+  };
+
+  const handleTableSelection = (id: string | null) => {
+    setTableId(id);
+    if (id !== null && pendingProduct) {
+      setIsPortionModalOpen(true);
+    } else if (id === null && pendingProduct) {
+      setPendingProduct(null);
+    }
+  };
+
+  const handleAddPortionedItems = (items: CartItemType[]) => {
+    setCartItems((prev) => {
+      let updatedCart = [...prev];
+      items.forEach((newItem) => {
+        const existingIndex = updatedCart.findIndex((item) => item.id === newItem.id);
+        if (existingIndex >= 0) {
+          updatedCart[existingIndex] = {
+            ...updatedCart[existingIndex],
+            qty: updatedCart[existingIndex].qty + newItem.qty,
+          };
+        } else {
+          updatedCart.push(newItem);
+        }
+      });
+      return updatedCart;
+    });
+    setPendingProduct(null);
+  };
 
   return (
-    <main
-      className="relative mx-auto overflow-hidden w-full h-full"
-      style={{
-        backgroundColor: "#EFEFEF",
-      }}
-    >
-      {/* Navbar — 1024x77, bg #000000 */}
+    <main className="flex h-[100dvh] w-full flex-col overflow-hidden bg-[#EFEFEF]">
+      {/* Navbar */}
       <POSHeader />
 
-      {/* Backdrop — 984x661, top:77 left:20, radius 15, bg #D2D2D2 */}
-      <div
-        className="absolute"
-        style={{
-          top: CARD_TOP,
-          left: CARD_LEFT,
-          width: CARD_WIDTH,
-          height: CARD_HEIGHT,
-          borderRadius: 15,
-          backgroundColor: "#D2D2D2",
-        }}
-      />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-2 xs:p-3 sm:p-3">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 rounded-[15px] bg-[#D2D2D2] p-3 lg:flex-row lg:gap-4 lg:p-4">
+          {/* Left column: category/search bar + product panel */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 lg:basis-[63.6%]">
+            <div className="flex h-auto min-h-[56px] shrink-0 items-center gap-2.5 rounded-xl bg-[#EFEFEF] px-4 py-3 sm:gap-3">
+              <CategoryHeader
+                selectedFilter={selectedMenuType}
+                onSelectFilter={setSelectedMenuType}
+                search={search}
+                onSearchChange={setSearch}
+              />
+            </div>
 
-      {/* Section 1 — Categories/search bar — 613x56 */}
-      <div
-        className="absolute flex items-center"
-        style={{
-          top: 90,
-          left: 30,
-          width: 613,
-          height: 56,
-          gap: 10,
-          borderRadius: 12,
-          paddingTop: 12,
-          paddingRight: 17,
-          paddingBottom: 11,
-          paddingLeft: 18,
-          backgroundColor: "#EFEFEF",
-        }}
-      >
-        <CategoryHeader />
+            <div className="min-h-0 flex-1 rounded-xl bg-[#EFEFEF]">
+              <ProductSection
+                selectedMenuType={selectedMenuType}
+                search={search}
+                onAddProduct={handleAddProduct}
+              />
+            </div>
+          </div>
+
+          {/* Right column: invoice bar + order panel */}
+          <div className="flex min-h-0 min-w-0 flex-col gap-3 lg:basis-[calc(36.4%-16px)]">
+            <div className="flex h-auto min-h-[56px] shrink-0 items-center justify-between gap-2.5 rounded-xl bg-[#EFEFEF] px-4 py-3.5">
+              <InvoiceHeader />
+            </div>
+
+            <div className="min-h-0 flex-1">
+              <OrderPanel 
+                cartItems={cartItems} 
+                setCartItems={setCartItems} 
+                selectedType={selectedType}
+                setSelectedType={setSelectedType}
+                tableId={tableId}
+                openTableModal={() => setIsTableModalOpen(true)}
+                editingOrderId={editingOrderId}
+                onClearEdit={() => setEditingOrderId(null)}
+                onEditOrder={(orderId) => setEditingOrderId(orderId)}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Section 2 — Order/invoice info bar — 341x56 */}
-      <div
-        className="absolute flex items-center"
-        style={{
-          top: 90,
-          left: 653,
-          width: 341,
-          height: 56,
-          gap: 10,
-          borderRadius: 12,
-          paddingTop: 15,
-          paddingRight: 17,
-          paddingBottom: 14,
-          paddingLeft: 18,
-          backgroundColor: "#EFEFEF",
-        }}
-      >
-        <InvoiceHeader />
-      </div>
-
-      {/* Section 3 — Category + product panel — 613x564 */}
-      <div
-        className="absolute bg-[#EFEFEF] rounded-xl"
-        style={{
-          top: 159,
-          left: 30,
-          width: 613,
-          height: 564,
-        }}
-      >
-        <ProductSection />
-      </div>
-
-      {/* Section 4 — Order panel — anchored at top:153 left:653 */}
-      <div className="absolute" style={{ top: 153, left: 653, width: 341 }}>
-        <OrderPanel />
-      </div>
-
-      {/* Footer copyright — sits BELOW the backdrop card, not overlapping it */}
-      <div
-        className="absolute flex items-center justify-center"
-        style={{ top: CARD_TOP + CARD_HEIGHT + 14, left: CARD_LEFT, width: CARD_WIDTH }}
-      >
-        <span
-          style={{
-            fontFamily: "Poppins, sans-serif",
-            fontWeight: 500,
-            fontSize: 12,
-            lineHeight: "100%",
-            letterSpacing: 0,
-            color: "#939393",
-          }}
-        >
-          © 2026 Techon Innovations. All rights reserved.
+      {/* Footer */}
+      <div className="flex shrink-0 items-center justify-center py-2 text-center">
+        <span className="text-xs font-medium leading-none text-[#939393]">
+          © 2026 F-FERM Digital Labs. All rights reserved.
         </span>
       </div>
+
+      <TableModal 
+        open={isTableModalOpen} 
+        onClose={(isCancel) => {
+          setIsTableModalOpen(false);
+          if (isCancel && pendingProduct) {
+            setPendingProduct(null);
+          }
+        }} 
+        onSelectTable={handleTableSelection} 
+      />
+
+      <PortionChoicesModal
+        open={isPortionModalOpen}
+        onClose={() => {
+          setIsPortionModalOpen(false);
+          setPendingProduct(null);
+        }}
+        product={pendingProduct?.food || null}
+        onAdd={handleAddPortionedItems}
+      />
     </main>
   );
 }

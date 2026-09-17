@@ -1,22 +1,34 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
-
-import { CategorySidebar } from "./CategorySidebar";
-import { Product } from "./Types";
-import { products } from "./Data";
-import { PanelBackground, PanelBackgroundHandle } from "./PanelGround";
+import { ListFoodApi } from "@/src/api/food/api/GetAll";
+import { Food } from "@/src/interfaces/food/ListFoodResponse";
 import Image from "next/image";
+import { CategorySidebar } from "./CategorySidebar";
+import { PanelBackground, PanelBackgroundHandle } from "./PanelGround";
+import { Product } from "./Types";
 
 type ProductGridProps = {
   selectedProduct: Product;
   onSelect: (product: Product) => void;
+  products: Product[];
 };
 
-function ProductGrid({ selectedProduct, onSelect }: ProductGridProps) {
+function mapFoodToProduct(food: Food): Product {
+  return {
+    id: food._id,
+    name: food.name,
+    price: food.basePrice,
+    image: food.foodImage || "",
+    food: food,
+  };
+}
+
+function ProductGrid({ selectedProduct, onSelect, products }: ProductGridProps) {
   return (
-    <div className="min-w-0 flex-1 overflow-y-auto py-3 pr-0 xs:py-4 sm:py-[29px] ">
-      <div className="mx-auto flex flex-wrap content-start justify-between " style={{ width: 476, rowGap: 10,height:104 }}>
+    <div className="min-w-0 flex-1 overflow-y-auto py-3 pr-0 xs:py-4 sm:py-[29px]">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,150px))] content-start justify-start gap-2.5">
         {products.map((product) => {
           const selected = selectedProduct.id === product.id;
 
@@ -25,63 +37,26 @@ function ProductGrid({ selectedProduct, onSelect }: ProductGridProps) {
               key={product.id}
               type="button"
               onClick={() => onSelect(product)}
-              style={{
-                width: 150,
-                height: 104,
-                borderRadius: 5,
-                border: `3px solid ${selected ? "#670063" : "#565656"}`,
-              }}
-              className="group relative shrink-0 overflow-hidden text-left"
+              className={`group relative h-[104px] w-full shrink-0 overflow-hidden rounded-[5px] border-[3px] text-left ${
+                selected ? "border-[#670063]" : "border-[#565656]"
+              }`}
             >
               <Image
                 width={150}
                 height={104}
-                src={product.image}
+                src={`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${product.image}`.trimEnd() || "/"}
                 alt={product.name}
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
 
-              <div
-                className="absolute inset-0"
-                style={{
-                  background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 100%)",
-                }}
-              />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0)_0%,rgba(0,0,0,0.7)_100%)]" />
 
-              <div
-                className="absolute inset-0 flex flex-col justify-end"
-                style={{ paddingTop: 90, paddingRight: 8, paddingBottom: 8, paddingLeft: 9 }}
-              >
-                <div
-                  className="flex items-end justify-between gap-1"
-                  style={{ width: 127, minHeight: 39 }}
-                >
-                  <span
-                    className="text-white"
-                    style={{
-                      fontFamily: "Poppins",
-                      fontWeight: 500,
-                      fontSize: 12,
-                      lineHeight: "150%",
-                      letterSpacing: "5%",
-                      whiteSpace: "normal",
-                      wordBreak: "break-word",
-                      overflow: "visible",
-                    }}
-                  >
+              <div className="absolute inset-0 flex flex-col justify-end pb-2 pl-[9px] pr-2 pt-[90px]">
+                <div className="flex min-h-[39px] w-[127px] items-end justify-between gap-1">
+                  <span className="font-['Poppins'] text-xs font-medium leading-[1.5] tracking-wide text-white [word-break:break-word]">
                     {product.name}
                   </span>
-
-                  <span
-                    className="shrink-0 text-white"
-                    style={{
-                 
-                      fontWeight: 600,
-                      fontSize: 14,
-                      lineHeight: "100%",
-                      letterSpacing: "0%",
-                    }}
-                  >
+                  <span className="shrink-0 text-sm font-semibold leading-none text-white">
                     ₹{product.price}
                   </span>
                 </div>
@@ -94,16 +69,41 @@ function ProductGrid({ selectedProduct, onSelect }: ProductGridProps) {
   );
 }
 
-export function ProductSection() {
-  const [selectedProduct, setSelectedProduct] = useState(products[0]);
-  const [selectedCategory, setSelectedCategory] = useState(4);
+type ProductSectionProps = {
+  selectedMenuType?: string;
+  search?: string;
+  onAddProduct?: (product: Product) => void;
+};
+
+export function ProductSection({
+  selectedMenuType = "All",
+  search = "",
+  onAddProduct,
+}: ProductSectionProps) {
+  const [selectedProductId, setSelectedProductId] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [size, setSize] = useState({ width: 613, height: 564 });
+
+  const foodsQuery = useQuery({
+    queryKey: ["getAllFoods", search],
+    queryFn: () => ListFoodApi({ search, page: 1, limit: 100 }),
+  });
+
+  const filteredFoods = (foodsQuery.data?.data || []).filter((food) => {
+    const matchesCategory =
+      !selectedCategory || food.categoryId._id === selectedCategory;
+    const matchesMenuType =
+      selectedMenuType === "All" || food.menuTypeId.name === selectedMenuType;
+
+    return matchesCategory && matchesMenuType;
+  });
+  const products = filteredFoods.map(mapFoodToProduct);
+  const selectedProduct =
+    products.find((product) => product.id === selectedProductId) || products[0];
 
   const sectionRef = useRef<HTMLElement>(null);
   const panelRef = useRef<PanelBackgroundHandle>(null);
 
-  // deliberately not state: the sidebar calls this on every scroll event and
-  // the notch has to move in that same frame, so it goes straight to the svg
   const handleNotchCenterChange = useCallback((centerY: number) => {
     panelRef.current?.setNotchCenterY(centerY);
   }, []);
@@ -112,7 +112,8 @@ export function ProductSection() {
     const el = sectionRef.current;
     if (!el) return;
 
-    const update = () => setSize({ width: el.clientWidth, height: el.clientHeight });
+    const update = () =>
+      setSize({ width: el.clientWidth, height: el.clientHeight });
     update();
 
     const ro = new ResizeObserver(update);
@@ -121,11 +122,10 @@ export function ProductSection() {
   }, []);
 
   return (
-    <section
+       <section
       ref={sectionRef}
       className="relative flex h-full w-full min-w-0 overflow-hidden rounded-[15px]"
     >
-      {/* single unified background shape — draws the sidebar/grid split AND the notch */}
       <PanelBackground
         ref={panelRef}
         width={size.width}
@@ -140,7 +140,22 @@ export function ProductSection() {
           onSelect={setSelectedCategory}
           onSelectedCenterChange={handleNotchCenterChange}
         />
-        <ProductGrid selectedProduct={selectedProduct} onSelect={setSelectedProduct} />
+        {selectedProduct ? (
+          <ProductGrid
+            products={products}
+            selectedProduct={selectedProduct}
+            onSelect={(product) => {
+              const audio = new Audio('/voices/beep.mp3');
+              audio.play().catch((err) => console.error("Audio play failed", err));
+              setSelectedProductId(product.id);
+              if (onAddProduct) onAddProduct(product);
+            }}
+          />
+        ) : (
+          <div className="flex min-w-0 flex-1 items-center justify-center text-sm text-[#5D5D5D]">
+            No products available
+          </div>
+        )}
       </div>
     </section>
   );

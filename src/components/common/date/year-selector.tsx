@@ -30,3 +30,4 @@ export function YearSelector({ value, onChange, minYear, maxYear, disabled }: Ye
     </Select>
   )
 }
+

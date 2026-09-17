@@ -112,14 +112,16 @@ export const PanelBackground = forwardRef<PanelBackgroundHandle, PanelBackground
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <mask id={maskId} fill="white">
-          <path
-            ref={(el) => {
-              pathRefs.current[0] = el;
-            }}
-            d={d}
-          />
-        </mask>
+        {borderColor && (
+          <mask id={maskId} fill="white">
+            <path
+              ref={(el) => {
+                pathRefs.current[0] = el;
+              }}
+              d={d}
+            />
+          </mask>
+        )}
 
         {/* base fill */}
         <path
@@ -131,17 +133,20 @@ export const PanelBackground = forwardRef<PanelBackgroundHandle, PanelBackground
         />
 
         {/* thin inner highlight ring, reproducing the masked border from the source svg */}
-        <path
-          ref={(el) => {
-            pathRefs.current[2] = el;
-          }}
-          d={d}
-          fill="none"
-          stroke={borderColor}
-          strokeWidth={6}
-          mask={`url(#${maskId})`}
-        />
+        {borderColor && (
+          <path
+            ref={(el) => {
+              pathRefs.current[2] = el;
+            }}
+            d={d}
+            fill="none"
+            stroke={borderColor}
+            strokeWidth={6}
+            mask={`url(#${maskId})`}
+          />
+        )}
       </svg>
     );
   },
 );
+

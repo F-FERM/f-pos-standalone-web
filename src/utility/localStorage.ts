@@ -18,3 +18,4 @@ export class LocalStorage {
     return !LocalStorage.isServer() && localStorage.removeItem(key);
   };
 }
+

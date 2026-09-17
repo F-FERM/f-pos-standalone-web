@@ -1,36 +1,28 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import userPlus from "../../../../../public/images/icons/usergroup.png";
+import { Suspense, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Pagination } from "@/src/components/common/Pagination";
 import { SearchInput } from "@/src/components/common/SearchInput";
 import { POSHeader } from "@/src/components/sales/PosHeader";
-import AddPrinterModal, { NewPrinterInput } from "@/src/components/settings/AddPrinterModal";
-import { Button } from "@/src/components/ui/button";
-import { SettingsToggleCard } from "@/src/components/settings/PosSettingsPanel";
+import { SettingsToggleCard } from "@/src/components/settings/pos-settings/PosSettingsPanel";
 
-type Printer = {
-  id: number;
-  printerName: string;
-  printType: string;
-  kitchenCustomerType: string;
-  printerIp: string;
-};
+import { ListPrinterApi } from "@/src/api/printer/api/GetAll";
+import { ListKitchenApi } from "@/src/api/kitchen/api/GetAll";
+import { ListCustomerTypeApi } from "@/src/api/customer-type/api/GetAll";
+import { Printer } from "@/src/interfaces/printer/ListPrinterResponse";
+import { PrinterFormAction } from "@/src/components/settings/pos-settings/AddPrinter";
+import { PrinterTable } from "@/src/components/settings/pos-settings/PrinterTable";
 
 const TABS = ["POS Settings", "Printer Settings"] as const;
 type SettingsTab = (typeof TABS)[number];
+const DEFAULT_TAB: SettingsTab = "POS Settings";
 
-const PRINTER_COLUMNS = [
-  "No",
-  "Printer Name",
-  "Print Type",
-  "Kitchen/Customer Type",
-  "Printer Ip",
-  "Actions",
-] as const;
-
-const PRINTER_GRID = "grid-cols-[48px_1.1fr_1fr_1.3fr_1fr_70px]";
+function isSettingsTab(value: string | null): value is SettingsTab {
+  return (TABS as readonly string[]).includes(value ?? "");
+}
 
 type KotSettings = {
   kotSettings: boolean;
@@ -42,14 +34,48 @@ type BillSettings = {
   vatExcludedAddVat: boolean;
 };
 
-export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>("POS Settings");
+type PrinterRow = {
+  id: string;
+  printerName: string;
+  printerType: string;
+  kitchenCustomerType: string;
+  kitchenId: string;
+  customerTypeId: string;
+  printerIp: string;
+  paperWidth: string;
+  isDefault: boolean;
+};
+
+function mapPrinter(printer: Printer): PrinterRow {
+  const kitchenName = printer.kitchenId ? printer.kitchenId.name : "-";
+  const customerType = printer.customerTypeId ? printer.customerTypeId.type : "-";
+  const kitchenId = printer.kitchenId ? printer.kitchenId._id : "";
+  const customerTypeId = printer.customerTypeId ? printer.customerTypeId._id : "";
+
+  return {
+    id: printer._id,
+    printerName: printer.printerName,
+    printerType: printer.printerType,
+    kitchenCustomerType: [kitchenName, customerType].filter(Boolean).join(" / ") || "-",
+    kitchenId,
+    customerTypeId,
+    printerIp: printer.printerIp,
+    isDefault: printer.isDefault,
+    paperWidth: printer.paperWidth,
+  };
+}
+
+// Renamed: holds the useSearchParams() call and all the page logic
+function SettingsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const tabFromUrl = searchParams.get("tab");
+  const activeTab: SettingsTab = isSettingsTab(tabFromUrl) ? tabFromUrl : DEFAULT_TAB;
+
   const [search, setSearch] = useState("");
   const [pageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isPrinterModalOpen, setIsPrinterModalOpen] = useState(false);
-
-  const [printers, setPrinters] = useState<Printer[]>([]);
 
   const [kotSettings, setKotSettings] = useState<KotSettings>({
     kotSettings: false,
@@ -62,16 +88,45 @@ export default function SettingsPage() {
 
   const isPosSettings = activeTab === "POS Settings";
 
+  const handleTabChange = (tab: SettingsTab) => {
+    setSearch("");
+    const params = new URLSearchParams(searchParams.toString());
+    if (tab === DEFAULT_TAB) {
+      params.delete("tab");
+    } else {
+      params.set("tab", tab);
+    }
+    const query = params.toString();
+    router.replace(query ? `?${query}` : "?", { scroll: false });
+  };
+
+  const printersQuery = useQuery({
+    queryKey: ["getAllPrinters"],
+    queryFn: () => ListPrinterApi({ page: 1, limit: 100 }),
+  });
+
+  const kitchensQuery = useQuery({
+    queryKey: ["getAllKitchens"],
+    queryFn: () => ListKitchenApi({ page: 1, limit: 100 }),
+  });
+
+  const customerTypesQuery = useQuery({
+    queryKey: ["getAllCustomerTypes"],
+    queryFn: () => ListCustomerTypeApi({ page: 1, limit: 100 }),
+  });
+
+  const printerRows: PrinterRow[] = (printersQuery.data?.data ?? []).map(mapPrinter);
+
   const filteredPrinters = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return printers;
-    return printers.filter((printer) =>
-      [printer.printerName, printer.printType, printer.kitchenCustomerType, printer.printerIp]
+    if (!query) return printerRows;
+    return printerRows.filter((printer) =>
+      [printer.printerName, printer.printerType, printer.kitchenCustomerType, printer.printerIp]
         .join(" ")
         .toLowerCase()
         .includes(query),
     );
-  }, [printers, search]);
+  }, [printerRows, search]);
 
   const toggleKot = (key: keyof KotSettings) => {
     setKotSettings((current) => ({ ...current, [key]: !current[key] }));
@@ -81,44 +136,35 @@ export default function SettingsPage() {
     setBillSettings((current) => ({ ...current, [key]: !current[key] }));
   };
 
-  const handleAddPrinter = (data: NewPrinterInput) => {
-    setPrinters((current) => [
-      ...current,
-      {
-        id: current.length + 1,
-        printerName: data.printerName,
-        printType: data.printerType,
-        kitchenCustomerType: "-",
-        printerIp: data.printerIp,
-      },
-    ]);
-    setIsPrinterModalOpen(false);
-  };
-
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
+  const kitchenOptions = (kitchensQuery.data?.data || []).map((kitchen) => ({
+    label: kitchen.name,
+    value: kitchen._id,
+  }));
+  const customerTypeOptions = (customerTypesQuery.data?.data || []).map((customerType) => ({
+    label: customerType.type,
+    value: customerType._id,
+  }));
+
   return (
-    <main className="flex h-full flex-col overflow-y-auto bg-black text-black">
+    <main className="flex h-screen flex-col overflow-x-hidden bg-black text-black">
       <POSHeader />
 
-      <div className="flex flex-1 flex-col items-center gap-4 bg-[#EFEFEF] ">
-        <div className="flex w-full max-w-[984px] flex-col gap-4 rounded-[15px] bg-[#D2D2D2] p-4 sm:gap-5 sm:p-6 md:p-7 lg:h-[661px]">
-          {/* Tabs stay mounted and switchable regardless of active tab */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap gap-3">
+      <div className="flex flex-1 flex-col items-center gap-4 overflow-y-auto bg-[#EFEFEF] px-3 pb-4">
+        <div className="flex w-full flex-1 flex-col gap-4 rounded-[15px] bg-[#D2D2D2] p-4 sm:gap-5 sm:p-6 md:p-7">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {TABS.map((tab) => {
                 const selected = activeTab === tab;
                 return (
                   <button
                     key={tab}
                     type="button"
-                    onClick={() => {
-                      setActiveTab(tab);
-                      setSearch("");
-                    }}
-                    className={`flex h-[38px] shrink-0 items-center justify-center whitespace-nowrap rounded-[12px] border px-4 font-poppins text-[13px] font-semibold transition-colors sm:text-[14px] ${
+                    onClick={() => handleTabChange(tab)}
+                    className={`flex h-[38px] shrink-0 items-center justify-center whitespace-nowrap rounded-[12px] border px-4  text-[13px] font-semibold transition-colors sm:text-[14px] ${
                       selected
                         ? "border-transparent bg-[#450042] text-white"
                         : "border-[#9C9C9C] bg-[#EFEFEF] text-black"
@@ -131,20 +177,16 @@ export default function SettingsPage() {
             </div>
 
             {!isPosSettings && (
-              <Button
-                variant="addcustomer"
-                size="none"
-                iconSrc={userPlus}
-                iconAlt="Add printer"
-                onClick={() => setIsPrinterModalOpen(true)}
-              >
-                Add Printer
-              </Button>
+              <PrinterFormAction
+                isEdit={false}
+                kitchenOptions={kitchenOptions}
+                customerTypeOptions={customerTypeOptions}
+              />
             )}
           </div>
 
           {isPosSettings ? (
-            <div className="flex flex-1 flex-col gap-4 lg:min-h-0">
+            <div className="flex flex-1 flex-col gap-4">
               <SettingsToggleCard
                 title="KOT Settings"
                 description="Configure your KOT printing preferences"
@@ -184,42 +226,22 @@ export default function SettingsPage() {
               />
             </div>
           ) : (
-            <div className="flex flex-1 flex-col gap-4 lg:min-h-0">
+            <div className="flex flex-1 flex-col gap-4">
               <div className="flex justify-end">
-                <SearchInput variant="panel" value={search} onChange={(value) => setSearch(value)} />
+                <SearchInput
+                  variant="panel"
+                  value={search}
+                  onChange={(value) => setSearch(value)}
+                  className="w-full sm:w-auto"
+                />
               </div>
 
-              <div
-                className={`hidden items-center justify-between gap-2 rounded-[10px] bg-[#EFEFEF] px-3 py-2 font-poppins text-[12px] font-normal text-black sm:grid ${PRINTER_GRID}`}
-              >
-                {PRINTER_COLUMNS.map((column) => (
-                  <span key={column} className="truncate text-center">
-                    {column}
-                  </span>
-                ))}
-              </div>
-
-              <div className="flex flex-1 min-h-[180px] flex-col overflow-y-auto rounded-[10px] bg-[#B8B8B8] py-4 lg:min-h-0">
-                {filteredPrinters.length === 0 ? (
-                  <p className="px-4 font-poppins text-[14px] font-normal text-[#5D5D5D]">
-                    No data Data Available
-                  </p>
-                ) : (
-                  filteredPrinters.slice(0, pageSize).map((printer) => (
-                    <div
-                      key={printer.id}
-                      className={`grid gap-2 border-b border-black/5 px-4 py-2.5 font-poppins text-[12px] text-black ${PRINTER_GRID}`}
-                    >
-                      <span className="truncate">{printer.id}</span>
-                      <span className="truncate">{printer.printerName}</span>
-                      <span className="truncate">{printer.printType}</span>
-                      <span className="truncate">{printer.kitchenCustomerType}</span>
-                      <span className="truncate">{printer.printerIp}</span>
-                      <span />
-                    </div>
-                  ))
-                )}
-              </div>
+              <PrinterTable
+                data={filteredPrinters.slice(0, pageSize)}
+                isLoading={printersQuery.isLoading}
+                kitchenOptions={kitchenOptions}
+                customerTypeOptions={customerTypeOptions}
+              />
 
               <Pagination
                 currentPage={currentPage}
@@ -231,16 +253,19 @@ export default function SettingsPage() {
           )}
         </div>
 
-        <span className="font-poppins text-[12px] font-medium text-[#939393]">
-          © 2026 Techon Innovations. All rights reserved.
+        <span className=" text-[12px] font-medium text-[#939393]">
+          © 2026 F-FERM Digital Labs. All rights reserved.
         </span>
       </div>
-
-      <AddPrinterModal
-        isOpen={isPrinterModalOpen}
-        onClose={() => setIsPrinterModalOpen(false)}
-        onAdd={handleAddPrinter}
-      />
     </main>
+  );
+}
+
+// Default export: wraps content in Suspense
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={null}>
+      <SettingsPageContent />
+    </Suspense>
   );
 }

@@ -18,101 +18,64 @@ export default function DeliveryPage() {
   const [activeTab, setActiveTab] = useState<DeliveryTab>("Placed Orders");
 
   return (
-    <main className="flex h-full flex-col overflow-hidden bg-black text-black">
+    <main className="flex h-screen flex-col overflow-x-hidden bg-black text-black">
       {/* Navbar */}
       <POSHeader />
 
-      <div className="flex min-h-0 flex-1 flex-col bg-[#D2D2D2] px-[29px] pt-[22px] pb-[18px]">
-        <div className="flex flex-wrap items-center gap-[9px]">
-          {TABS.map((tab) => {
-            const selected = activeTab === tab;
+      <div className="flex flex-1 flex-col items-center gap-4 overflow-y-auto bg-[#EFEFEF] px-3 pb-4">
+        <div className="flex w-full flex-1 flex-col gap-3 rounded-[15px] bg-[#D2D2D2] p-4">
+          {/* Tabs */}
+          <div className="flex flex-wrap gap-2 sm:gap-3">
+            {TABS.map((tab) => {
+              const selected = activeTab === tab;
 
-            return (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={`
-                  flex
-                  items-center
-                  justify-center
-                  whitespace-nowrap
-                  rounded-[7px]
-                  border
-                  px-[12px]
-                  py-[9px]
-                  text-[16px]
-                  font-medium
-                  transition
-                  ${
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex h-[42px] shrink-0 items-center justify-center whitespace-nowrap rounded-[12px] border px-4  text-[15px] font-semibold transition-colors sm:px-5 sm:text-[18px] ${
                     selected
-                      ? "border-[#450042] bg-[#450042] text-white"
-                      : "border-[#9C9C9C] bg-transparent text-black"
-                  }
-                `}
+                      ? "border-transparent bg-[#450042] text-white"
+                      : "border-[#9C9C9C] bg-[#D2D2D2] text-black"
+                  }`}
+                >
+                  {tab}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Filters row */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className="h-[42px] shrink-0 whitespace-nowrap rounded-[12px] border border-[#9C9C9C] bg-transparent px-4  text-[13px] font-medium text-[#5D5D5D] sm:px-5 sm:text-sm"
               >
-                {tab}
+                From Date & Time
               </button>
-            );
-          })}
-        </div>
 
-        <div className="mt-[18px] flex items-center gap-[14px]">
-          <button
-            type="button"
-            className="
-              h-[40px]
-              rounded-[10px]
-              border
-              border-[#8A8A8A]
-              bg-transparent
-              px-[18px]
-              text-[14px]
-              font-medium
-              whitespace-nowrap
-              text-[#5D5D5D]
-            "
-          >
-            From Date & Time
-          </button>
+              <button
+                type="button"
+                className="h-[42px] shrink-0 whitespace-nowrap rounded-[12px] border border-[#9C9C9C] bg-transparent px-4  text-[13px] font-medium text-[#5D5D5D] sm:px-5 sm:text-sm"
+              >
+                To Date & Time
+              </button>
+            </div>
 
-          <button
-            type="button"
-            className="
-              h-[40px]
-              rounded-[10px]
-              border
-              border-[#8A8A8A]
-              bg-transparent
-              px-[18px]
-              text-[14px]
-              font-medium
-              whitespace-nowrap
-              text-[#5D5D5D]
-            "
-          >
-            To Date & Time
-          </button>
-
-          <div className="relative ml-auto w-[280px]">
             <SearchInput variant="panel" className="w-full sm:ml-auto sm:w-[270px]" />
+          </div>
+
+          {/* Orders content goes here */}
+          <div className="flex flex-1 flex-col gap-4">
+            {/* e.g. {activeTab === "Placed Orders" && <PlacedOrdersTable data={...} isLoading={...} />} */}
           </div>
         </div>
 
-        <div className="mt-auto flex items-center justify-center pt-[14px]">
-          <span
-            style={{
-              fontFamily: "Poppins, sans-serif",
-              fontWeight: 500,
-              fontSize: 12,
-              lineHeight: "100%",
-              letterSpacing: 0,
-              color: "#939393",
-            }}
-          >
-            © 2026 Techon Innovations. All rights reserved.
-          </span>
-        </div>
+        <span className=" text-[12px] font-medium text-[#939393]">
+          © 2026 F-FERM Digital Labs. All rights reserved.
+        </span>
       </div>
     </main>
   );
