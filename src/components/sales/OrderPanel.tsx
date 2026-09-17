@@ -61,6 +61,7 @@ type OrderPanelProps = {
   editingOrderId: string | null;
   onClearEdit: () => void;
   onEditOrder: (orderId: string) => void;
+   onTotalChange?: (total: number) => void;
 };
 
 export function OrderPanel({ 
@@ -72,7 +73,8 @@ export function OrderPanel({
   openTableModal,
   editingOrderId,
   onClearEdit,
-  onEditOrder
+  onEditOrder,
+   onTotalChange,
 }: OrderPanelProps) {
   const router = useRouter();
 
@@ -256,7 +258,9 @@ export function OrderPanel({
   const subtotal = existingSubtotal + newSubtotal;
   const vat = existingVat + newVat;
   const total = existingTotal + newSubtotal + newVat;
-
+ useEffect(() => {
+    onTotalChange?.(total);
+  }, [total, onTotalChange]);
 
   const buildOrderTypeExtras = (): Pick<
     Partial<CreateOrderPayload>,

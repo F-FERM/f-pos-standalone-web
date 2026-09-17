@@ -26,7 +26,7 @@ export default function POSScreen() {
   const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
 
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
-
+const [invoiceTotal, setInvoiceTotal] = useState(0);
   const handleAddProduct = (product: Product) => {
     const hasChoices = product.food?.choices && product.food.choices.length > 0;
     if (product.food?.isPortionEnabled || hasChoices) {
@@ -116,7 +116,7 @@ export default function POSScreen() {
           {/* Right column: invoice bar + order panel */}
           <div className="flex min-h-[380px] min-w-0 flex-col gap-3 md:min-h-[420px] lg:min-h-0 lg:basis-[calc(36.4%-16px)]">
             <div className="flex h-auto min-h-[52px] shrink-0 items-center justify-between gap-2.5 rounded-xl bg-[#EFEFEF] px-3 py-3 sm:min-h-[56px] sm:px-4 sm:py-3.5">
-              <InvoiceHeader />
+              <InvoiceHeader total={invoiceTotal}  />
             </div>
 
             <div className="min-h-0 flex-1">
@@ -130,6 +130,7 @@ export default function POSScreen() {
                 editingOrderId={editingOrderId}
                 onClearEdit={() => setEditingOrderId(null)}
                 onEditOrder={(orderId) => setEditingOrderId(orderId)}
+                 onTotalChange={setInvoiceTotal}
               />
             </div>
           </div>
