@@ -479,7 +479,7 @@ export function OrderPanel({
                       </div>
 
                       <div className="ml-0.5 flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-                        <p className="truncate font-['Poppins'] text-[11px] font-medium text-black sm:text-xs md:text-sm">
+                        <p className="truncate  text-[11px] font-medium text-black sm:text-xs md:text-sm">
                           {item.foodName} {item.portionName ? `(${item.portionName})` : ''} {item.choices && item.choices.length > 0 ? `[${item.choices.join(', ')}]` : ''}
                         </p>
                         <div className="flex items-center gap-1.5">
@@ -505,7 +505,7 @@ export function OrderPanel({
                         </div>
                       </div>
 
-                      <span className="w-[70px] shrink-0 text-right font-['Inter'] text-sm font-semibold text-black sm:w-[80px] sm:text-base md:w-24 md:text-lg">
+                      <span className="w-[70px] shrink-0 text-right  text-sm font-semibold text-black sm:w-[80px] sm:text-base md:w-24 md:text-lg">
                         ₹{item.totalPrice?.toFixed(2)}
                       </span>
                     </div>
@@ -543,7 +543,7 @@ export function OrderPanel({
                     </div>
 
                     <div className="ml-0.5 flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-                      <p className="truncate font-['Poppins'] text-[11px] font-medium text-black sm:text-xs md:text-sm">
+                      <p className="truncate  text-[11px] font-medium text-black sm:text-xs md:text-sm">
                         {item.food.name} {item.portion ? `(${item.portion.name})` : ''} {item.choices && item.choices.length > 0 ? `[${item.choices.join(', ')}]` : ''}
                       </p>
                       <div className="flex items-center gap-1.5">
@@ -569,7 +569,7 @@ export function OrderPanel({
                       </div>
                     </div>
 
-                    <span className="w-[70px] shrink-0 text-right font-['Inter'] text-sm font-semibold text-black sm:w-[80px] sm:text-base md:w-24 md:text-lg">
+                    <span className="w-[70px] shrink-0 text-right  text-sm font-semibold text-black sm:w-[80px] sm:text-base md:w-24 md:text-lg">
                       ₹{lineTotal.toFixed(2)}
                     </span>
 

@@ -79,7 +79,6 @@ export default function CreateNewComboModal({
         >
           <h2
             style={{
-              fontFamily: "Poppins",
               fontWeight: 600,
               fontSize: 24,
               lineHeight: "100%",
@@ -90,7 +89,6 @@ export default function CreateNewComboModal({
           </h2>
           <p
             style={{
-              fontFamily: "Poppins",
               fontWeight: 500,
               fontSize: 14,
               lineHeight: "100%",
@@ -127,8 +125,7 @@ export default function CreateNewComboModal({
             <div className="flex flex-col gap-3" >
               <span
                 style={{
-                  fontFamily: "Poppins",
-                  fontWeight: 600,
+                      fontWeight: 600,
                   fontSize: 16,
                   lineHeight: "100%",
                   color: "#000000",
@@ -138,8 +135,7 @@ export default function CreateNewComboModal({
               </span>
               <span
                 style={{
-                  fontFamily: "Poppins",
-                  fontWeight: 500,
+                      fontWeight: 500,
                   fontSize: 14,
                   lineHeight: "100%",
                   color: "#A4A4A4",
@@ -149,8 +145,7 @@ export default function CreateNewComboModal({
               </span>
               <span
                 style={{
-                  fontFamily: "Poppins",
-                  fontWeight: 500,
+                      fontWeight: 500,
                   fontSize: 16,
                   lineHeight: "100%",
                   color: "#000000",
@@ -161,8 +156,7 @@ export default function CreateNewComboModal({
               </span>
               <span
                 style={{
-                  fontFamily: "Poppins",
-                  fontWeight: 600,
+                      fontWeight: 600,
                   fontSize: 16,
                   lineHeight: "100%",
                   color: "#000000",
@@ -182,8 +176,7 @@ export default function CreateNewComboModal({
               <span
               className="mb-2"
                 style={{
-                  fontFamily: "Poppins",
-                  fontWeight: 500,
+                      fontWeight: 500,
                   fontSize: 14,
                   lineHeight: "100%",
                   color: "#A4A4A4",
@@ -194,8 +187,7 @@ export default function CreateNewComboModal({
               <span
               className="mb-2"
                 style={{
-                  fontFamily: "Poppins",
-                  fontWeight: 500,
+                      fontWeight: 500,
                   fontSize: 14,
                   lineHeight: "100%",
                   color: "#A4A4A4",
@@ -226,8 +218,7 @@ export default function CreateNewComboModal({
                   </span>
                   <span
                     style={{
-                      fontFamily: "Poppins",
-                      fontWeight: 500,
+                              fontWeight: 500,
                       fontSize: 16,
                       lineHeight: "100%",
                       color: "#000000",
@@ -238,8 +229,7 @@ export default function CreateNewComboModal({
                 </button>
                 <span
                   style={{
-                    fontFamily: "Poppins",
-                    fontWeight: 600,
+                          fontWeight: 600,
                     fontSize: 16,
                     lineHeight: "100%",
                     color: "#000000",
