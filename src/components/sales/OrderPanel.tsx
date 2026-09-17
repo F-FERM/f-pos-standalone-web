@@ -197,14 +197,24 @@ export function OrderPanel({
 
   const handleIncrement = (itemId: string) => {
     setCartItems((prev) =>
-      prev.map((item) => (item.id === itemId ? { ...item, qty: item.qty + 1 } : item))
+      prev.map((item) => {
+        if (item.id === itemId) {
+          const currentQty = typeof item.qty === "number" ? item.qty : 0;
+          return { ...item, qty: currentQty + 1 };
+        }
+        return item;
+      })
     );
   };
   const handleDecrement = (itemId: string) => {
     setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === itemId ? { ...item, qty: Math.max(1, item.qty - 1) } : item
-      )
+      prev.map((item) => {
+        if (item.id === itemId) {
+          const currentQty = typeof item.qty === "number" ? item.qty : 1;
+          return { ...item, qty: Math.max(1, currentQty - 1) };
+        }
+        return item;
+      })
     );
   };
 
@@ -219,11 +229,23 @@ export function OrderPanel({
   });
 
   const existingOrder = orderResponse?.data;
-  const existingItems = existingOrder?.items || [];
+  
+  const [localExistingItems, setLocalExistingItems] = useState<any[]>([]);
 
-  const existingSubtotal = existingOrder?.subtotal || 0;
-  const existingVat = existingOrder?.vatAmount || 0;
-  const existingTotal = existingOrder?.totalAmount || 0;
+  useEffect(() => {
+    if (existingOrder?.items) {
+      setLocalExistingItems(existingOrder.items);
+    } else {
+      setLocalExistingItems([]);
+    }
+  }, [existingOrder?.items]);
+
+  const existingSubtotal = localExistingItems.reduce(
+    (sum, item) => sum + (item.unitPrice * (typeof item.quantity === 'number' ? item.quantity : 0)),
+    0
+  );
+  const existingVat = (existingSubtotal * vatPercentage) / 100;
+  const existingTotal = existingSubtotal + existingVat;
 
   const newSubtotal = cartItems.reduce(
     (sum, item) => sum + getItemPrice(item) * item.qty,
@@ -283,13 +305,13 @@ export function OrderPanel({
           tableId: selectedType === CustomerTypeEnum.DINE_IN ? tableId || undefined : undefined,
           vat,
           items: [
-            ...existingItems.map(item => ({
+            ...localExistingItems.map(item => ({
               foodId: typeof item.foodId === 'object' ? item.foodId._id : item.foodId,
               portion: item.portionId || null,
               price: item.unitPrice,
               originalPrice: item.unitPrice,
-              qty: item.quantity,
-              total: item.totalPrice,
+              qty: typeof item.quantity === "number" ? item.quantity : 0,
+              total: item.unitPrice * (typeof item.quantity === "number" ? item.quantity : 0),
               foodName: item.foodName,
               choices: item.choices || [],
             })),
@@ -396,16 +418,17 @@ export function OrderPanel({
     };
   }, [cartItems.length]);
 
-  const getFoodImageUrl = (foodImage?: string) => {
+ const getFoodImageUrl = (foodImage?: string): string | undefined => {
   if (!foodImage) {
-    return "no image";
+    return undefined;
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-
+ 
+const baseUrl =
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "http://localhost:3005";
   if (!baseUrl) {
     console.error("NEXT_PUBLIC_BASE_URL is not defined");
-    return "no image";
+    return undefined;
   }
 
   return `${baseUrl.replace(/\/$/, "")}/${foodImage.replace(/^\//, "")}`;
@@ -467,9 +490,9 @@ export function OrderPanel({
               ref={cartScrollRef}
               className="flex h-full flex-col gap-2 overflow-y-auto bg-[#EFEFEF] py-2.5 pb-1.5 pl-2.5 pr-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
-              {existingItems.length > 0 && (
+              {localExistingItems.length > 0 && (
                 <div className="flex flex-col gap-2 mb-2">
-                  {existingItems.map((item, index) => (
+                  {localExistingItems.map((item, index) => (
                     <div
                       key={`existing-${index}`}
                       className="flex h-14 shrink-0 items-center gap-1.5 rounded-md border border-[#CECECE] py-[3px] pl-[5px] pr-[5px] xs:h-[58px] sm:h-16 sm:gap-2 md:h-[68px] lg:h-[74px] opacity-80"
@@ -485,19 +508,50 @@ export function OrderPanel({
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
-                            disabled
-                            className="flex h-[14px] w-[14px] items-center justify-center rounded-full border border-[#C4C4C4] bg-gray-200 sm:h-[15px] sm:w-[15px] md:h-4 md:w-4"
+                            onClick={() => {
+                              setLocalExistingItems(prev => prev.map((i, idx) => {
+                                if (idx === index) {
+                                  const currentQty = typeof i.quantity === "number" ? i.quantity : 1;
+                                  return { ...i, quantity: Math.max(1, currentQty - 1) };
+                                }
+                                return i;
+                              }));
+                            }}
+                            className="flex h-[14px] w-[14px] items-center justify-center rounded-full border border-[#C4C4C4] bg-white sm:h-[15px] sm:w-[15px] md:h-4 md:w-4"
                           >
-                            <Minus size={8} className="text-gray-400 sm:hidden" />
-                            <Minus size={9} className="hidden text-gray-400 sm:block" />
+                            <Minus size={8} className="text-black sm:hidden" />
+                            <Minus size={9} className="hidden text-black sm:block" />
                           </button>
-                          <span className="text-xs font-medium text-black sm:text-[13px] md:text-sm">
-                            {item.quantity}
-                          </span>
+                          <input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              if (!isNaN(val) && val > 0) {
+                                setLocalExistingItems(prev => prev.map((i, idx) => idx === index ? { ...i, quantity: val } : i));
+                              } else if (e.target.value === "") {
+                                setLocalExistingItems(prev => prev.map((i, idx) => idx === index ? { ...i, quantity: "" as unknown as number } : i));
+                              }
+                            }}
+                            onBlur={(e) => {
+                              if (!e.target.value || parseInt(e.target.value, 10) < 1) {
+                                setLocalExistingItems(prev => prev.map((i, idx) => idx === index ? { ...i, quantity: 1 } : i));
+                              }
+                            }}
+                            className="w-6 border-b border-black/30 text-center text-xs font-medium text-black outline-none bg-transparent sm:w-8 sm:text-[13px] md:text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
                           <button
                             type="button"
-                            disabled
-                            className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-gray-400 sm:h-[15px] sm:w-[15px] md:h-4 md:w-4"
+                            onClick={() => {
+                              setLocalExistingItems(prev => prev.map((i, idx) => {
+                                if (idx === index) {
+                                  const currentQty = typeof i.quantity === "number" ? i.quantity : 0;
+                                  return { ...i, quantity: currentQty + 1 };
+                                }
+                                return i;
+                              }));
+                            }}
+                            className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-[#670063] sm:h-[15px] sm:w-[15px] md:h-4 md:w-4"
                           >
                             <Plus size={8} className="text-white sm:hidden" />
                             <Plus size={9} className="hidden text-white sm:block" />
@@ -506,7 +560,7 @@ export function OrderPanel({
                       </div>
 
                       <span className="w-[70px] shrink-0 text-right  text-sm font-semibold text-black sm:w-[80px] sm:text-base md:w-24 md:text-lg">
-                        ₹{item.totalPrice?.toFixed(2)}
+                        ₹{((item.unitPrice || 0) * (typeof item.quantity === 'number' ? item.quantity : 0)).toFixed(2)}
                       </span>
                     </div>
                   ))}
@@ -532,15 +586,21 @@ export function OrderPanel({
                     key={item.id}
                     className="flex h-14 shrink-0 items-center gap-1.5 rounded-md border border-[#CECECE] py-[3px] pl-[5px] pr-[5px] xs:h-[58px] sm:h-16 sm:gap-2 md:h-[68px] lg:h-[74px]"
                   >
-                    <div className="relative h-9 w-24 shrink-0 overflow-hidden rounded-[5px] xs:h-10 xs:w-28 sm:h-[41px] sm:w-[115px] md:h-[46px] md:w-[130px] lg:h-[52px] lg:w-[150px]">
-                      <Image
-                        src={getFoodImageUrl(item.food.foodImage ?? undefined)}
-                        alt={item.food.name}
-                        fill
-                        sizes="(min-width: 1024px) 150px, (min-width: 768px) 130px, (min-width: 640px) 115px, 96px"
-                        className="object-cover"
-                      />
-                    </div>
+                   <div className="relative h-9 w-24 shrink-0 overflow-hidden rounded-[5px] xs:h-10 xs:w-28 sm:h-[41px] sm:w-[115px] md:h-[46px] md:w-[130px] lg:h-[52px] lg:w-[150px]">
+  {getFoodImageUrl(item.food.foodImage ?? undefined) ? (
+    <Image
+      src={getFoodImageUrl(item.food.foodImage ?? undefined)!}
+      alt={item.food.name}
+      fill
+      sizes="(min-width: 1024px) 150px, (min-width: 768px) 130px, (min-width: 640px) 115px, 96px"
+      className="object-cover"
+    />
+  ) : (
+    <div className="absolute inset-0 flex items-center justify-center bg-[#D0D0D0] text-[9px] text-white/70 sm:text-[10px]">
+      No image
+    </div>
+  )}
+</div>
 
                     <div className="ml-0.5 flex min-w-0 flex-1 flex-col justify-center gap-0.5">
                       <p className="truncate  text-[11px] font-medium text-black sm:text-xs md:text-sm">
@@ -555,9 +615,31 @@ export function OrderPanel({
                           <Minus size={8} className="text-black sm:hidden" />
                           <Minus size={9} className="hidden text-black sm:block" />
                         </button>
-                        <span className="text-xs font-medium text-black sm:text-[13px] md:text-sm">
-                          {qty}
-                        </span>
+                        <input
+                          type="number"
+                          value={qty}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            if (!isNaN(val) && val > 0) {
+                              setCartItems((prev) =>
+                                prev.map((i) => (i.id === item.id ? { ...i, qty: val } : i))
+                              );
+                            } else if (e.target.value === "") {
+                              // Temporarily allow empty while typing
+                              setCartItems((prev) =>
+                                prev.map((i) => (i.id === item.id ? { ...i, qty: "" as unknown as number } : i))
+                              );
+                            }
+                          }}
+                          onBlur={(e) => {
+                            if (!e.target.value || parseInt(e.target.value, 10) < 1) {
+                              setCartItems((prev) =>
+                                prev.map((i) => (i.id === item.id ? { ...i, qty: 1 } : i))
+                              );
+                            }
+                          }}
+                          className="w-6 border-b border-black/30 text-center text-xs font-medium text-black outline-none bg-transparent sm:w-8 sm:text-[13px] md:text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
                         <button
                           type="button"
                           onClick={() => handleIncrement(item.id)}
