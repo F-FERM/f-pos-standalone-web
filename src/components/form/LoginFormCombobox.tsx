@@ -222,7 +222,7 @@ const LoginFormCombobox = ({
                   <CommandInput
                     placeholder="Search..."
                     onValueChange={(search) => setSearch?.(search)}
-                    className="font-poppins text-[15px] sm:text-[16px] md:text-[18px] leading-normal text-white placeholder:text-white/60"
+                    className=" text-[15px] sm:text-[16px] md:text-[18px] leading-normal text-white placeholder:text-white/60"
                     wrapperClassName="h-9! sm:h-10! py-2 rounded-lg! border-white/20 bg-white/5"
                     containerClassName="p-2"
                   />

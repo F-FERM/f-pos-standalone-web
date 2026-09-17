@@ -282,7 +282,6 @@ export default function AddComboModal({
   <div className="flex flex-1 min-h-0 flex-col">
     <p
       style={{
-        fontFamily: "Poppins",
         fontWeight: 500,
         fontSize: 14,
         lineHeight: "100%",
@@ -318,7 +317,6 @@ export default function AddComboModal({
     >
       <p
         style={{
-          fontFamily: "Poppins",
           fontWeight: 600,
           fontSize: 22,
           lineHeight: "100%",
@@ -332,7 +330,6 @@ export default function AddComboModal({
       <div
         className="grid grid-cols-3 mt-[10px] pb-[8px] border-b border-[#D4D4D4]"
         style={{
-          fontFamily: "Poppins",
           fontWeight: 500,
           fontSize: 16,
           lineHeight: "100%",
@@ -354,7 +351,7 @@ export default function AddComboModal({
             <div key={gIdx} className="mt-[10px]">
               <p
                 style={{
-                  fontFamily: "Poppins",
+                
                   fontWeight: 600,
                   fontSize: 22,
                   lineHeight: "100%",
@@ -384,7 +381,7 @@ export default function AddComboModal({
         <div className="mt-[10px]">
           <p
             style={{
-              fontFamily: "Poppins",
+            
               fontWeight: 600,
               fontSize: 22,
               lineHeight: "100%",
@@ -436,7 +433,7 @@ export default function AddComboModal({
                 height: 24,
                 opacity: 1,
                 gap: 5,
-                fontFamily: "Poppins",
+              
                 fontWeight: 400,
                 fontSize: 16,
                 lineHeight: "100%",
@@ -458,7 +455,7 @@ export default function AddComboModal({
             </span>
             <span
               style={{
-                fontFamily: "Poppins",
+              
                 fontWeight: 500,
                 fontSize: 12,
                 lineHeight: "150%",

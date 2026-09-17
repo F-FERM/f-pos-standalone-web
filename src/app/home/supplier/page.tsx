@@ -111,7 +111,6 @@ export default function SupplierPage() {
         >
           <span
             style={{
-              fontFamily: "Poppins, sans-serif",
               fontWeight: 600,
               fontSize: 26,
               lineHeight: "100%",
@@ -164,7 +163,6 @@ export default function SupplierPage() {
               key={column}
               className="truncate text-center"
               style={{
-                fontFamily: "Poppins, sans-serif",
                 fontWeight: 400,
                 fontSize: 12,
                 lineHeight: "normal",
@@ -194,7 +192,7 @@ export default function SupplierPage() {
             <p
               className="px-[16px]"
               style={{
-                fontFamily: "Poppins, sans-serif",
+             
                 fontWeight: 400,
                 fontSize: 14,
                 lineHeight: "100%",
@@ -250,7 +248,7 @@ export default function SupplierPage() {
         >
           <span
             style={{
-              fontFamily: "Poppins, sans-serif",
+             
               fontWeight: 500,
               fontSize: 12,
               lineHeight: "100%",
@@ -258,7 +256,7 @@ export default function SupplierPage() {
               color: "#939393",
             }}
           >
-            © 2026 FFERM Digital Labs. All rights reserved.
+            © 2026 F-FERM Digital Labs. All rights reserved.
           </span>
         </div>
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
+import { Check, ShoppingBag, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { X, ShoppingBag, Check } from "lucide-react";
 import { Button } from "../ui/button";
 
 interface OnlinePlatformModalProps {
@@ -11,13 +11,7 @@ interface OnlinePlatformModalProps {
   onSubmit: (platform: string) => void;
 }
 
-// ASSUMPTION: platforms is a simple string[] of platform names (e.g.
-// ["Zomato", "Swiggy", "Uber Eats"]) coming from the ONLINE customer type's
-// `onlinePlatforms` field. If your API instead returns objects with
-// {_id, name, logoUrl}, swap the map/key logic below accordingly.
 
-// Deterministic color per platform name so each card looks distinct without
-// needing per-brand logo assets.
 const CARD_COLORS = [
   "from-[#FF3B3B] to-[#FF7A7A]",
   "from-[#3EA200] to-[#7ED957]",
@@ -27,10 +21,9 @@ const CARD_COLORS = [
   "from-[#00A8A8] to-[#5FE0E0]",
 ];
 
-const getPlatformColor = (name: string) => {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return CARD_COLORS[Math.abs(hash) % CARD_COLORS.length];
+const getPlatformColor = (platform: string, platforms: string[]) => {
+  const index = platforms.indexOf(platform);
+  return CARD_COLORS[index % CARD_COLORS.length];
 };
 
 export function OnlinePlatformModal({
@@ -74,7 +67,7 @@ export function OnlinePlatformModal({
             <h3 className="text-[22px] font-semibold leading-none text-black">
               Select Online Platform
             </h3>
-            <p className="mt-1.5 text-xs text-[#767676]">
+            <p className="mt-1.5 text-[14px] text-[#767676]">
               Choose which platform this order is coming from.
             </p>
           </div>
@@ -105,7 +98,7 @@ export function OnlinePlatformModal({
                     )}
                     <span
                       className={`flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br text-white shadow-inner ${getPlatformColor(
-                        platform,
+                        platform,platforms,
                       )}`}
                     >
                       <ShoppingBag size={22} />

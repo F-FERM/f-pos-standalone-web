@@ -30,7 +30,7 @@ export function Pagination({
     paddingBottom: 6,
     paddingLeft: 15,
     gap: 9,
-    fontFamily: "Poppins, sans-serif",
+   
     fontWeight: 400,
     fontSize: 14,
     lineHeight: "100%",
@@ -42,7 +42,7 @@ export function Pagination({
     <div
       className={`flex flex-col gap-3 px-1 text-[13px] text-black/70 sm:flex-row sm:items-center sm:justify-between sm:text-[14px] ${className}`}
     >
-      <span style={{ fontFamily: "Poppins, sans-serif" }}>
+      <span >
         Showing {from} to {to} of {totalItems} entries
       </span>
 
@@ -68,7 +68,6 @@ export function Pagination({
             paddingRight: 15,
             paddingBottom: 6,
             paddingLeft: 15,
-            fontFamily: "Poppins, sans-serif",
             fontWeight: 400,
             fontSize: 14,
             lineHeight: "100%",

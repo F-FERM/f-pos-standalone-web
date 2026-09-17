@@ -7,6 +7,7 @@ import {
   Plus,
   Table2,
   UsersRound,
+  Utensils,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -14,23 +15,22 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { createOrder, type CreateOrderPayload, type OrderStatus } from "@/src/api/order";
+import { createOrder, getOrderById, updateOrder, type CreateOrderPayload } from "@/src/api/order";
 import { CustomerModal } from "./CustomerModal";
 import { OrderModal } from "./OrderModal";
-import { TableModal } from "./TableModal";
 
 import { ListCustomerTypeApi } from "@/src/api/customer-type/api/GetAll";
 import { ListCustomerApi } from "@/src/api/customer/api/GetAll";
 import { ListFoodApi } from "@/src/api/food/api/GetAll";
-import { CustomerTypeValue, CUSTOMER_TYPE_OPTIONS } from "@/src/interfaces/customer-type/AddCustomerTypePayload";
+import { listRestaurants } from "@/src/api/restaurant";
+import { CustomerTypeValue } from "@/src/interfaces/customer-type/AddCustomerTypePayload";
 import { Food } from "@/src/interfaces/food/ListFoodResponse";
 import { HomeDeliveryModal, type HomeDeliveryFormValues } from "./HomDeleiveryModal";
 import { OnlinePlatformModal } from "./onlinePlatformModal";
-import { listRestaurants } from "@/src/api/restaurant";
 
 const CUSTOMER_TYPE_LABELS: Record<CustomerTypeValue, string> = {
-  DINE_IN: "Dine",
   TAKE_AWAY: "Take Away",
+  DINE_IN: "Dine",
   ONLINE: "Online",
   HOME_DELIVERY: "Home delivery",
 };
@@ -49,16 +49,33 @@ interface DeliveryDetailsState {
   deliveryTime: string;
 }
 
+import { CartItemType, CustomerTypeEnum, OrderStatus } from "./Types";
+
 type OrderPanelProps = {
-  quantities: Record<string, number>;
-  setQuantities: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  cartItems: CartItemType[];
+  setCartItems: React.Dispatch<React.SetStateAction<CartItemType[]>>;
+  selectedType: CustomerTypeValue | null;
+  setSelectedType: React.Dispatch<React.SetStateAction<CustomerTypeValue | null>>;
+  tableId: string | null;
+  openTableModal: () => void;
+  editingOrderId: string | null;
+  onClearEdit: () => void;
+  onEditOrder: (orderId: string) => void;
 };
 
-export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
+export function OrderPanel({ 
+  cartItems, 
+  setCartItems, 
+  selectedType, 
+  setSelectedType, 
+  tableId, 
+  openTableModal,
+  editingOrderId,
+  onClearEdit,
+  onEditOrder
+}: OrderPanelProps) {
   const router = useRouter();
 
-  const [selectedType, setSelectedType] = useState<CustomerTypeValue | null>(null);
-  const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
@@ -84,7 +101,7 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
   const customersQuery = useQuery({
     queryKey: ["getAllCustomers"],
     queryFn: () => ListCustomerApi({ limit: 100, page: 1 }),
-    enabled: selectedType === "HOME_DELIVERY",
+    enabled: selectedType === CustomerTypeEnum.HOME_DELIVERY,
   });
 
   const customerTypes = customerTypesQuery.data?.data || [];
@@ -95,11 +112,11 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
       vat: restaurant.vatPercentage,
     };
   }) || [];
-  // VAT percentage pulled from the restaurant record (assumes a single-location setup;
-  // adjust the selection logic here if the app supports multiple restaurants).
+  const sortedCustomerTypes = [...customerTypes].sort(
+  (a: any, b: any) => (a.order ?? a.index ?? 0) - (b.order ?? b.index ?? 0)
+);
   const vatPercentage = restaurants[0]?.vat ?? 0;
-  const foods = foodsQuery.data?.data || [];
-  const customers = customersQuery.data?.data || [];
+ 
 
   useEffect(() => {
     if (!selectedType && customerTypes.length > 0) {
@@ -111,14 +128,13 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
     (customerType) => customerType.type === selectedType,
   );
 
-  const onlineCustomerType = customerTypes.find((ct) => ct.type === "ONLINE") as
+  const onlineCustomerType = customerTypes.find((ct) => ct.type === CustomerTypeEnum.ONLINE) as
     | (typeof customerTypes[number] & { onlinePlatforms?: string[] })
     | undefined;
   const onlinePlatformOptions = onlineCustomerType?.onlinePlatforms ?? [];
 
   useEffect(() => {
-    console.log("[TRACE] selectedType changed to:", selectedType);
-    if (selectedType === "HOME_DELIVERY") {
+    if (selectedType === CustomerTypeEnum.HOME_DELIVERY) {
       if (!selectedCustomerId || !deliveryDetails) {
         setIsHomeDeliveryModalOpen(true);
       }
@@ -128,7 +144,7 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
       setIsHomeDeliveryModalOpen(false);
     }
 
-    if (selectedType === "ONLINE") {
+    if (selectedType === CustomerTypeEnum.ONLINE) {
       if (!onlinePlatform) {
         setIsOnlinePlatformModalOpen(true);
       }
@@ -153,12 +169,6 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
     setIsOnlinePlatformModalOpen(false);
   };
 
-  const cartItems = foods.filter((food) => (quantities[food._id] || 0) > 0);
-
-  const getQty = (foodId: string) => quantities[foodId] ?? 1;
-  const getSelectedPortion = (food: Food) =>
-    food.isPortionEnabled ? food.portions?.[0] : undefined;
-
   const getCustomerTypePrice = (food: Food) => {
     const override = selectedCustomerType
       ? food.customerTypes?.find(
@@ -168,14 +178,12 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
     return override?.price ?? food.basePrice;
   };
 
-  const getItemPrice = (food: Food) => {
-    const portion = getSelectedPortion(food);
-    return portion ? portion.basePrice : getCustomerTypePrice(food);
+  const getItemPrice = (item: CartItemType) => {
+    if (item.portion) return item.portion.basePrice;
+    return getCustomerTypePrice(item.food);
   };
 
   const getItemOriginalPrice = (food: Food) => getCustomerTypePrice(food);
-  const getItemPortionId = (food: Food): string | null =>
-    getSelectedPortion(food)?._id ?? null;
 
   const getPriceDetails = (food: Food) => {
     const override = selectedCustomerType
@@ -187,103 +195,187 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
     return { customerTypeId: selectedCustomerType._id, price: override.price };
   };
 
-  const handleIncrement = (foodId: string) => {
-    setQuantities((prev) => ({ ...prev, [foodId]: getQty(foodId) + 1 }));
+  const handleIncrement = (itemId: string) => {
+    setCartItems((prev) =>
+      prev.map((item) => {
+        if (item.id === itemId) {
+          const currentQty = typeof item.qty === "number" ? item.qty : 0;
+          return { ...item, qty: currentQty + 1 };
+        }
+        return item;
+      })
+    );
   };
-  const handleDecrement = (foodId: string) => {
-    setQuantities((prev) => ({ ...prev, [foodId]: Math.max(1, getQty(foodId) - 1) }));
+  const handleDecrement = (itemId: string) => {
+    setCartItems((prev) =>
+      prev.map((item) => {
+        if (item.id === itemId) {
+          const currentQty = typeof item.qty === "number" ? item.qty : 1;
+          return { ...item, qty: Math.max(1, currentQty - 1) };
+        }
+        return item;
+      })
+    );
   };
 
-  const handleRemoveItem = (foodId: string) => {
-    setQuantities((prev) => {
-      const next = { ...prev };
-      delete next[foodId];
-      return next;
-    });
+  const handleRemoveItem = (itemId: string) => {
+    setCartItems((prev) => prev.filter((item) => item.id !== itemId));
   };
 
-  const subtotal = cartItems.reduce(
-    (sum, food) => sum + getItemPrice(food) * getQty(food._id),
+  const { data: orderResponse } = useQuery({
+    queryKey: ["orderById", editingOrderId],
+    queryFn: () => getOrderById(editingOrderId as string),
+    enabled: !!editingOrderId,
+  });
+
+  const existingOrder = orderResponse?.data;
+  
+  const [localExistingItems, setLocalExistingItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (existingOrder?.items) {
+      setLocalExistingItems(existingOrder.items);
+    } else {
+      setLocalExistingItems([]);
+    }
+  }, [existingOrder?.items]);
+
+  const existingSubtotal = localExistingItems.reduce(
+    (sum, item) => sum + (item.unitPrice * (typeof item.quantity === 'number' ? item.quantity : 0)),
+    0
+  );
+  const existingVat = (existingSubtotal * vatPercentage) / 100;
+  const existingTotal = existingSubtotal + existingVat;
+
+  const newSubtotal = cartItems.reduce(
+    (sum, item) => sum + getItemPrice(item) * item.qty,
     0,
   );
-  const vat = (subtotal * vatPercentage) / 100;
-  const total = subtotal + vat;
+  const newVat = (newSubtotal * vatPercentage) / 100;
+  
+  const subtotal = existingSubtotal + newSubtotal;
+  const vat = existingVat + newVat;
+  const total = existingTotal + newSubtotal + newVat;
 
 
   const buildOrderTypeExtras = (): Pick<
     Partial<CreateOrderPayload>,
     "customerId" | "deliveryDetails" | "onlinePlatform"
   > => {
-    if (selectedType === "HOME_DELIVERY") {
+    if (selectedType === CustomerTypeEnum.HOME_DELIVERY) {
       const extras = {
         ...(selectedCustomerId ? { customerId: selectedCustomerId } : {}),
         ...(deliveryDetails ? { deliveryDetails } : {}),
       };
       return extras;
     }
-    if (selectedType === "ONLINE" && onlinePlatform) {
+    if (selectedType === CustomerTypeEnum.ONLINE && onlinePlatform) {
       return { onlinePlatform };
     }
     return {};
   };
 
   const resetOrderState = () => {
-    setQuantities({});
+    setCartItems([]);
     setSelectedCustomerId(null);
     setDeliveryDetails(null);
     setOnlinePlatform(null);
+    onClearEdit();
   };
 
   const handleOrderAction = async (status: OrderStatus) => {
     if (!selectedCustomerType || cartItems.length === 0) return;
 
-    if (selectedType === "HOME_DELIVERY" && !deliveryDetails) {
+    if (selectedType === CustomerTypeEnum.HOME_DELIVERY && !deliveryDetails) {
       toast.error("Please fill in the home delivery details first.");
       setIsHomeDeliveryModalOpen(true);
       return;
     }
 
-    if (selectedType === "ONLINE" && !onlinePlatform) {
+    if (selectedType === CustomerTypeEnum.ONLINE && !onlinePlatform) {
       toast.error("Please select an online platform first.");
       setIsOnlinePlatformModalOpen(true);
       return;
     }
 
     try {
-      await createOrder({
-        customerTypeId: selectedCustomerType._id,
-        vat,
-        items: cartItems.map((food: Food) => {
-          const qty = getQty(food._id);
-          const price = getItemPrice(food);
-          const originalPrice = getItemOriginalPrice(food);
-          return {
-            foodId: food._id,
-            portion: getItemPortionId(food),
-            price,
-            originalPrice,
-            qty,
-            total: price * qty,
-            foodName: food.name,
-            priceDetails: getPriceDetails(food),
-          };
-        }),
-        subTotal: subtotal,
-        total,
-        discount: 0,
-        status,
-        ...buildOrderTypeExtras(),
-      });
+      if (editingOrderId) {
+        await updateOrder(editingOrderId, {
+          customerTypeId: selectedCustomerType._id,
+          tableId: selectedType === CustomerTypeEnum.DINE_IN ? tableId || undefined : undefined,
+          vat,
+          items: [
+            ...localExistingItems.map(item => ({
+              foodId: typeof item.foodId === 'object' ? item.foodId._id : item.foodId,
+              portion: item.portionId || null,
+              price: item.unitPrice,
+              originalPrice: item.unitPrice,
+              qty: typeof item.quantity === "number" ? item.quantity : 0,
+              total: item.unitPrice * (typeof item.quantity === "number" ? item.quantity : 0),
+              foodName: item.foodName,
+              choices: item.choices || [],
+            })),
+            ...cartItems.map((item) => {
+              const qty = item.qty;
+              const price = getItemPrice(item);
+              const originalPrice = getItemOriginalPrice(item.food);
+              return {
+                foodId: item.food._id,
+                portion: item.portion ? item.portion._id : null,
+                price,
+                originalPrice,
+                qty,
+                total: price * qty,
+                foodName: item.food.name,
+                priceDetails: getPriceDetails(item.food),
+                choices: item.choices,
+              };
+            })
+          ],
+          subTotal: subtotal,
+          total,
+          discount: 0,
+          status,
+          ...buildOrderTypeExtras(),
+        } as any);
+      } else {
+        await createOrder({
+          customerTypeId: selectedCustomerType._id,
+          tableId: selectedType === CustomerTypeEnum.DINE_IN ? tableId || undefined : undefined,
+          vat,
+          items: cartItems.map((item) => {
+            const qty = item.qty;
+            const price = getItemPrice(item);
+            const originalPrice = getItemOriginalPrice(item.food);
+            return {
+              foodId: item.food._id,
+              portion: item.portion ? item.portion._id : null,
+              price,
+              originalPrice,
+              qty,
+              total: price * qty,
+              foodName: item.food.name,
+              priceDetails: getPriceDetails(item.food),
+              choices: item.choices,
+            };
+          }),
+          subTotal: subtotal,
+          total,
+          discount: 0,
+          status,
+          ...buildOrderTypeExtras(),
+        });
+      }
 
-      if (status === "Placed") {
+      if (status === OrderStatus.PLACED) {
         toast.success("Order saved successfully!");
         resetOrderState();
         // router.push(ORDER_SUCCESS_REDIRECT_PATH);
-      } else if (status === "Printed") {
+      } else if (status === OrderStatus.PRINTED) {
         toast.success("Order sent to print!");
         resetOrderState();
         // router.push(ORDER_SUCCESS_REDIRECT_PATH);
-      } else if (status === "Cancelled") {
+      } else if (status === OrderStatus.CANCELLED) {
         toast.success("Order cancelled.");
         resetOrderState();
       }
@@ -326,16 +418,17 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
     };
   }, [cartItems.length]);
 
-  const getFoodImageUrl = (foodImage?: string) => {
+ const getFoodImageUrl = (foodImage?: string): string | undefined => {
   if (!foodImage) {
-    return "no image";
+    return undefined;
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-
+ 
+const baseUrl =
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "http://localhost:3005";
   if (!baseUrl) {
     console.error("NEXT_PUBLIC_BASE_URL is not defined");
-    return "no image";
+    return undefined;
   }
 
   return `${baseUrl.replace(/\/$/, "")}/${foodImage.replace(/^\//, "")}`;
@@ -345,35 +438,32 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
   return (
     <>
       <div className="flex h-full w-full flex-col">
-        {/* Order-type toggle bar */}
-        <div className="flex h-5 w-full shrink-0 items-center justify-between gap-1.5 rounded-[10px] bg-[#D2D2D2] p-[3px] xs:h-6 sm:h-7 md:h-8 lg:h-9">
-          {CUSTOMER_TYPE_OPTIONS.map((option) => {
-            const typeValue = option.value;
-            const active = typeValue === selectedType;
-            const label = CUSTOMER_TYPE_LABELS[typeValue] || option.label;
-            return (
-              <button
-                key={typeValue}
-                type="button"
-                onClick={() => {
-                  console.log("[TRACE] Button clicked! Setting selectedType to:", typeValue, "from button:", label);
-                  setSelectedType(typeValue);
-                }}
-                className={`flex h-full flex-1 items-center justify-center rounded-md px-1.5 transition-colors xs:px-2 ${
-                  active ? "bg-[#3B0038]" : " bg-[#EFEFEF]"
-                }`}
-              >
-                <span
-                  className={`whitespace-nowrap text-[7.5px] font-medium leading-none tracking-wide xs:text-[8px] sm:text-[9.5px] md:text-[10.5px] lg:text-[12px] ${
-                    active ? "text-white" : "text-[#3B0038]"
-                  }`}
-                >
-                  {label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+      
+<div className="flex h-5 w-full shrink-0 items-center justify-between gap-1.5 rounded-[10px] bg-[#D2D2D2] p-[3px] xs:h-6 sm:h-7 md:h-8 lg:h-9">
+  {sortedCustomerTypes.map((customerType) => {
+    const typeValue = customerType.type as CustomerTypeValue;
+    const active = typeValue === selectedType;
+    const label = CUSTOMER_TYPE_LABELS[typeValue] || customerType.type || customerType.type;
+    return (
+      <button
+        key={customerType._id}
+        type="button"
+        onClick={() => setSelectedType(typeValue)}
+        className={`flex h-full flex-1 items-center justify-center rounded-md px-1.5 transition-colors xs:px-2 ${
+          active ? "bg-[#3B0038]" : " bg-[#EFEFEF]"
+        }`}
+      >
+        <span
+          className={`whitespace-nowrap text-[7.5px] font-medium leading-none tracking-wide xs:text-[8px] sm:text-[9.5px] md:text-[10.5px] lg:text-[12px] ${
+            active ? "text-white" : "text-[#3B0038]"
+          }`}
+        >
+          {label}
+        </span>
+      </button>
+    );
+  })}
+</div>
 
         {/* Card */}
         <div className="mt-1.5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[15px] border border-[#C4C4C4] bg-[#EFEFEF] sm:mt-2">
@@ -400,49 +490,159 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
               ref={cartScrollRef}
               className="flex h-full flex-col gap-2 overflow-y-auto bg-[#EFEFEF] py-2.5 pb-1.5 pl-2.5 pr-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
+              {localExistingItems.length > 0 && (
+                <div className="flex flex-col gap-2 mb-2">
+                  {localExistingItems.map((item, index) => (
+                    <div
+                      key={`existing-${index}`}
+                      className="flex h-14 shrink-0 items-center gap-1.5 rounded-md border border-[#CECECE] py-[3px] pl-[5px] pr-[5px] xs:h-[58px] sm:h-16 sm:gap-2 md:h-[68px] lg:h-[74px] opacity-80"
+                    >
+                      <div className="relative h-9 w-24 shrink-0 overflow-hidden rounded-[5px] bg-[#D0D0D0] xs:h-10 xs:w-28 sm:h-[41px] sm:w-[115px] md:h-[46px] md:w-[130px] lg:h-[52px] lg:w-[150px] flex items-center justify-center">
+                        <span className="text-xs text-gray-500">Image</span>
+                      </div>
+
+                      <div className="ml-0.5 flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+                        <p className="truncate  text-[11px] font-medium text-black sm:text-xs md:text-sm">
+                          {item.foodName} {item.portionName ? `(${item.portionName})` : ''} {item.choices && item.choices.length > 0 ? `[${item.choices.join(', ')}]` : ''}
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLocalExistingItems(prev => prev.map((i, idx) => {
+                                if (idx === index) {
+                                  const currentQty = typeof i.quantity === "number" ? i.quantity : 1;
+                                  return { ...i, quantity: Math.max(1, currentQty - 1) };
+                                }
+                                return i;
+                              }));
+                            }}
+                            className="flex h-[14px] w-[14px] items-center justify-center rounded-full border border-[#C4C4C4] bg-white sm:h-[15px] sm:w-[15px] md:h-4 md:w-4"
+                          >
+                            <Minus size={8} className="text-black sm:hidden" />
+                            <Minus size={9} className="hidden text-black sm:block" />
+                          </button>
+                          <input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              if (!isNaN(val) && val > 0) {
+                                setLocalExistingItems(prev => prev.map((i, idx) => idx === index ? { ...i, quantity: val } : i));
+                              } else if (e.target.value === "") {
+                                setLocalExistingItems(prev => prev.map((i, idx) => idx === index ? { ...i, quantity: "" as unknown as number } : i));
+                              }
+                            }}
+                            onBlur={(e) => {
+                              if (!e.target.value || parseInt(e.target.value, 10) < 1) {
+                                setLocalExistingItems(prev => prev.map((i, idx) => idx === index ? { ...i, quantity: 1 } : i));
+                              }
+                            }}
+                            className="w-6 border-b border-black/30 text-center text-xs font-medium text-black outline-none bg-transparent sm:w-8 sm:text-[13px] md:text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLocalExistingItems(prev => prev.map((i, idx) => {
+                                if (idx === index) {
+                                  const currentQty = typeof i.quantity === "number" ? i.quantity : 0;
+                                  return { ...i, quantity: currentQty + 1 };
+                                }
+                                return i;
+                              }));
+                            }}
+                            className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-[#670063] sm:h-[15px] sm:w-[15px] md:h-4 md:w-4"
+                          >
+                            <Plus size={8} className="text-white sm:hidden" />
+                            <Plus size={9} className="hidden text-white sm:block" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <span className="w-[70px] shrink-0 text-right  text-sm font-semibold text-black sm:w-[80px] sm:text-base md:w-24 md:text-lg">
+                        ₹{((item.unitPrice || 0) * (typeof item.quantity === 'number' ? item.quantity : 0)).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                  
+                  <div className="flex items-center gap-2 mt-2 px-1 py-1.5 bg-[#E2E2E2] rounded-md font-bold text-sm text-[#3B0038]">
+                    <span>Additional Order</span>
+                    <Utensils size={14} />
+                  </div>
+                </div>
+              )}
+              
               {cartItems.length === 0 && (
                 <p className="py-4 text-center text-[10px] text-[#878787] sm:text-xs">
                   No items in cart
                 </p>
               )}
-              {cartItems.map((product) => {
-                const qty = getQty(product._id);
-                const lineTotal = getItemPrice(product) * qty;
+              {cartItems.map((item) => {
+                const qty = item.qty;
+                const lineTotal = getItemPrice(item) * qty;
 
                 return (
                   <div
-                    key={product._id}
+                    key={item.id}
                     className="flex h-14 shrink-0 items-center gap-1.5 rounded-md border border-[#CECECE] py-[3px] pl-[5px] pr-[5px] xs:h-[58px] sm:h-16 sm:gap-2 md:h-[68px] lg:h-[74px]"
                   >
-                    <div className="relative h-9 w-24 shrink-0 overflow-hidden rounded-[5px] xs:h-10 xs:w-28 sm:h-[41px] sm:w-[115px] md:h-[46px] md:w-[130px] lg:h-[52px] lg:w-[150px]">
-                      <Image
-                        src={getFoodImageUrl(product.foodImage ?? undefined)}
-                        alt={product.name}
-                        fill
-                        sizes="(min-width: 1024px) 150px, (min-width: 768px) 130px, (min-width: 640px) 115px, 96px"
-                        className="object-cover"
-                      />
-                    </div>
+                   <div className="relative h-9 w-24 shrink-0 overflow-hidden rounded-[5px] xs:h-10 xs:w-28 sm:h-[41px] sm:w-[115px] md:h-[46px] md:w-[130px] lg:h-[52px] lg:w-[150px]">
+  {getFoodImageUrl(item.food.foodImage ?? undefined) ? (
+    <Image
+      src={getFoodImageUrl(item.food.foodImage ?? undefined)!}
+      alt={item.food.name}
+      fill
+      sizes="(min-width: 1024px) 150px, (min-width: 768px) 130px, (min-width: 640px) 115px, 96px"
+      className="object-cover"
+    />
+  ) : (
+    <div className="absolute inset-0 flex items-center justify-center bg-[#D0D0D0] text-[9px] text-white/70 sm:text-[10px]">
+      No image
+    </div>
+  )}
+</div>
 
                     <div className="ml-0.5 flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-                      <p className="truncate font-['Poppins'] text-[11px] font-medium text-black sm:text-xs md:text-sm">
-                        {product.name}
+                      <p className="truncate  text-[11px] font-medium text-black sm:text-xs md:text-sm">
+                        {item.food.name} {item.portion ? `(${item.portion.name})` : ''} {item.choices && item.choices.length > 0 ? `[${item.choices.join(', ')}]` : ''}
                       </p>
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
-                          onClick={() => handleDecrement(product._id)}
+                          onClick={() => handleDecrement(item.id)}
                           className="flex h-[14px] w-[14px] items-center justify-center rounded-full border border-[#C4C4C4] bg-white sm:h-[15px] sm:w-[15px] md:h-4 md:w-4"
                         >
                           <Minus size={8} className="text-black sm:hidden" />
                           <Minus size={9} className="hidden text-black sm:block" />
                         </button>
-                        <span className="text-xs font-medium text-black sm:text-[13px] md:text-sm">
-                          {qty}
-                        </span>
+                        <input
+                          type="number"
+                          value={qty}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            if (!isNaN(val) && val > 0) {
+                              setCartItems((prev) =>
+                                prev.map((i) => (i.id === item.id ? { ...i, qty: val } : i))
+                              );
+                            } else if (e.target.value === "") {
+                              // Temporarily allow empty while typing
+                              setCartItems((prev) =>
+                                prev.map((i) => (i.id === item.id ? { ...i, qty: "" as unknown as number } : i))
+                              );
+                            }
+                          }}
+                          onBlur={(e) => {
+                            if (!e.target.value || parseInt(e.target.value, 10) < 1) {
+                              setCartItems((prev) =>
+                                prev.map((i) => (i.id === item.id ? { ...i, qty: 1 } : i))
+                              );
+                            }
+                          }}
+                          className="w-6 border-b border-black/30 text-center text-xs font-medium text-black outline-none bg-transparent sm:w-8 sm:text-[13px] md:text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
                         <button
                           type="button"
-                          onClick={() => handleIncrement(product._id)}
+                          onClick={() => handleIncrement(item.id)}
                           className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-[#670063] sm:h-[15px] sm:w-[15px] md:h-4 md:w-4"
                         >
                           <Plus size={8} className="text-white sm:hidden" />
@@ -451,14 +651,14 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
                       </div>
                     </div>
 
-                    <span className="w-[70px] shrink-0 text-right font-['Inter'] text-sm font-semibold text-black sm:w-[80px] sm:text-base md:w-24 md:text-lg">
-                      ₹{lineTotal}
+                    <span className="w-[70px] shrink-0 text-right  text-sm font-semibold text-black sm:w-[80px] sm:text-base md:w-24 md:text-lg">
+                      ₹{lineTotal.toFixed(2)}
                     </span>
 
                     <button
                       type="button"
-                      onClick={() => handleRemoveItem(product._id)}
-                      aria-label={`Remove ${product.name} from cart`}
+                      onClick={() => handleRemoveItem(item.id)}
+                      aria-label={`Remove ${item.food.name} from cart`}
                       className="ml-1 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[10px] bg-[#FF0F0F] p-0.5 sm:ml-2 sm:h-4 sm:w-4 md:h-[18px] md:w-[18px]"
                     >
                       <X size={9} className="text-white sm:hidden" />
@@ -506,21 +706,21 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
             <div className="mb-2 flex flex-wrap justify-between gap-1.5 sm:gap-2">
               <button
                 type="button"
-                onClick={() => handleOrderAction("Placed")}
+                onClick={() => handleOrderAction(OrderStatus.PLACED)}
                 className="flex h-8 flex-1 min-w-[80px] items-center justify-center rounded-[10px] bg-[#3EA200] text-[11px] font-semibold text-white sm:min-w-[90px] sm:text-xs md:h-9 md:text-sm"
               >
                 Save
               </button>
               <button
                 type="button"
-                onClick={() => void handleOrderAction("Printed")}
+                onClick={() => void handleOrderAction(OrderStatus.PRINTED)}
                 className="flex h-8 flex-1 min-w-[80px] items-center justify-center rounded-[10px] bg-[#3B0038] text-[11px] font-semibold text-white sm:min-w-[90px] sm:text-xs md:h-9 md:text-sm"
               >
                 Print
               </button>
               <button
                 type="button"
-                onClick={() => handleOrderAction("Cancelled")}
+                onClick={() => handleOrderAction(OrderStatus.CANCELLED)}
                 className="flex h-8 flex-1 min-w-[80px] items-center justify-center rounded-[10px] bg-[#FF0F0F] text-[11px] font-semibold text-white sm:min-w-[90px] sm:text-xs md:h-9 md:text-sm"
               >
                 Cancel
@@ -533,7 +733,7 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
                   key={label}
                   type="button"
                   onClick={() => {
-                    if (label === "Table") setIsTableModalOpen(true);
+                    if (label === "Table") openTableModal();
                     if (label === "Order") setIsOrderModalOpen(true);
                     if (label === "Customers") setIsCustomerModalOpen(true);
                   }}
@@ -552,8 +752,14 @@ export function OrderPanel({ quantities, setQuantities }: OrderPanelProps) {
         </div>
       </div>
 
-      <TableModal open={isTableModalOpen} onClose={() => setIsTableModalOpen(false)} />
-      <OrderModal open={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} />
+      <OrderModal 
+        open={isOrderModalOpen} 
+        onClose={() => setIsOrderModalOpen(false)} 
+        onEdit={(orderId) => {
+           onEditOrder(orderId);
+           setIsOrderModalOpen(false);
+        }}
+      />
       <CustomerModal open={isCustomerModalOpen} onClose={() => setIsCustomerModalOpen(false)} />
 
       <HomeDeliveryModal

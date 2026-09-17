@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { X } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { SearchInput } from "../common/SearchInput";
-import { Pagination } from "../common/Pagination";
 import { ListCustomerApi } from "@/src/api/customer/api/GetAll";
+import { useQuery } from "@tanstack/react-query";
+import { X } from "lucide-react";
+import { useState } from "react";
+import AddCustomerIcon from "../../../public/images/icons/usergroup.png";
+import { Pagination } from "../common/Pagination";
+import { SearchInput } from "../common/SearchInput";
+import AddCustomerModal from "../customer/AddCustomerDialogue";
+import { Button } from "../ui/button";
 
 type CustomerModalProps = {
   open: boolean;
@@ -22,9 +25,10 @@ export function CustomerModal({
 }: CustomerModalProps) {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
+  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
 
   const { data: customerData, isLoading } = useQuery({
-    queryKey: ["getAllCustomer", ""], // we fetch all up to a reasonable limit and filter client-side for immediate responsiveness
+    queryKey: ["getAllCustomer", ""], 
     queryFn: () => ListCustomerApi({ search: "", page: 1, limit: 1000 }),
     enabled: open,
   });
@@ -55,9 +59,22 @@ export function CustomerModal({
         </button>
 
         <div className="flex max-h-[85vh] w-full flex-col gap-1.5 overflow-y-auto rounded-[20px] border border-[#A6A6A6] bg-[#E9E9E9] p-5 backdrop-blur-[4px] sm:px-[34px] sm:py-[26px]">
-          <h3 className="mb-4  text-lg font-semibold leading-none text-black sm:text-[22px]">
-            Customers
-          </h3>
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold leading-none text-black sm:text-[22px]">
+              Customers
+            </h3>
+            <Button
+              type="button"
+              variant="addcustomer"
+              size="none"
+              iconSrc={AddCustomerIcon}
+              iconAlt="Add customer"
+              className="px-4 py-2 sm:px-6 sm:py-2.5 h-auto rounded-[10px]"
+              onClick={() => setIsAddCustomerOpen(true)}
+            >
+              ADD CUSTOMER
+            </Button>
+          </div>
 
           <SearchInput
             variant="panel"
@@ -136,6 +153,12 @@ export function CustomerModal({
           </div>
         </div>
       </div>
+
+      <AddCustomerModal
+        isOpen={isAddCustomerOpen}
+        onClose={() => setIsAddCustomerOpen(false)}
+        mode="add"
+      />
     </div>
   );
 }
