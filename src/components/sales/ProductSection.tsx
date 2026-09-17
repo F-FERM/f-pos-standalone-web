@@ -14,7 +14,14 @@ type ProductGridProps = {
   onSelect: (product: Product) => void;
   products: Product[];
 };
+const API_MEDIA_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "http://localhost:3005";
 
+function getMediaUrl(path?: string | null): string | undefined {
+  if (!path) return undefined;
+  if (/^(https?:|blob:|data:)/i.test(path)) return path;
+  return `${API_MEDIA_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
 function mapFoodToProduct(food: Food): Product {
   return {
     id: food._id,
@@ -41,14 +48,19 @@ function ProductGrid({ selectedProduct, onSelect, products }: ProductGridProps) 
                 selected ? "border-[#670063]" : "border-[#565656]"
               }`}
             >
-              <Image
-                width={150}
-                height={104}
-                src={`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${product.image}`.trimEnd() || "/"}
-                alt={product.name}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-
+{product.food.foodImage ? (
+  <Image
+    width={150}
+    height={104}
+    src={getMediaUrl(product.food.foodImage)!}
+    alt={product.name}
+    className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+  />
+) : (
+  <div className="absolute inset-0 bg-[#D2D2D2] flex items-center justify-center text-xs text-white/70">
+    No image
+  </div>
+)}
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0)_0%,rgba(0,0,0,0.7)_100%)]" />
 
               <div className="absolute inset-0 flex flex-col justify-end pb-2 pl-[9px] pr-2 pt-[90px]">
