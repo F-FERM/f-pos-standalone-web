@@ -401,7 +401,7 @@ export function OrderPanel({
     return "no image";
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL!;
 
   if (!baseUrl) {
     console.error("NEXT_PUBLIC_BASE_URL is not defined");
