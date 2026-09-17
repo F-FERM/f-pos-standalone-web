@@ -29,19 +29,9 @@ export function POSHeader({ variant = "default" }: POSHeaderProps) {
 
       {/* Center: restaurant avatar + name */}
       <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5 xs:gap-2 sm:gap-3">
-        <Avatar
-          className="flex shrink-0 items-center justify-center bg-[#EFEFEF] p-1.5 xs:p-2"
-          style={{
-            width: isCompact ? 32 : undefined,
-            height: isCompact ? 32 : undefined,
-            borderRadius: 40,
-            boxShadow: "0px 0px 4px 0px #00000040",
-          }}
-        >
-          <AvatarFallback className="bg-transparent text-black font-normal">
-            <User className="h-3.5 w-3.5 xs:h-4 xs:w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 lg:h-7 lg:w-7" />
-          </AvatarFallback>
-        </Avatar>
+         <div className="flex items-center justify-center rounded-full bg-[#EFEFEF] border shadow-sm border-gray-300 h-10 w-10 sm:h-12 sm:w-12 md:h-[47px] md:w-[47px] p-2 sm:p-2.5">
+            <User className="text-black h-5 w-5 sm:h-6 sm:w-6" />
+          </div>
         <span
           className="truncate text-black text-base font-semibold xs:text-lg sm:text-2xl md:text-[32px] lg:text-[36px]"
           style={{
