@@ -3,8 +3,8 @@
 export interface AddFoodPayload {
   name: string;
   foodImage?: string;
-  foodType: "VEG" | "NON_VEG";
-  menuTypeId: string;
+  foodType?: "VEG" | "NON_VEG";
+  menuTypeId?: string;
   categoryId: string;
   kitchenId: string;
   isPortionEnabled: boolean;

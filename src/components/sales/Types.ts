@@ -22,6 +22,7 @@ export type CartItemType = {
   portion: Portion | null;
   choices: string[];
   qty: number;
+  customRate?: number; // user-overridden rate; if undefined, computed from portion/basePrice
 };
 
 export type TableStatus = "available" | "running" | "vacating";

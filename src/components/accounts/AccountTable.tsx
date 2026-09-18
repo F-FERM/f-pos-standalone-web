@@ -1,33 +1,36 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Badge, Trash2 } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
+
+import { useDeleteAccount } from "@/src/api/account/hooks/delete.hook";
+import { ConfirmationDialog } from "../common/ConfirmationDialogue";
+import AccountTableSkeleton from "./AccountTableSkeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { Account } from "@/src/interfaces/accounts/ListAccountResponse";
+import { AccountFormAction } from "./AddAccount";
 
-import { useDeleteKitchen } from "@/src/api/kitchen/hooks/delete.hook";
+const TABLE_COLUMNS = [
+  "No.", "Account Name", "Account Type", "Opening Balance", "Show In POS",
+  "Description", "Created Date", "Actions",
+] as const;
 
-import { KitchenFormAction } from "./AddKitchen";
-import KitchenTableSkeleton from "./KitchenTableSkeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
-import { ConfirmationDialog } from "../../common/ConfirmationDialogue";
-
-export type Kitchen = {
-  _id: string;
-  isDefault: boolean;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-const TABLE_COLUMNS = ["No.", "Kitchen Name", "Created Date", "Updated Date", "Actions"] as const;
-const COLUMN_WIDTHS = ["60px", "260px", "160px", "160px", "100px"];
+const COLUMN_WIDTHS = [
+  "60px", "200px", "160px", "130px", "100px",
+  "220px", "130px", "90px",
+];
 
 function formatDate(date: string) {
   const parsedDate = new Date(date);
   return Number.isNaN(parsedDate.getTime())
     ? date
     : parsedDate.toLocaleDateString("en-GB");
+}
+
+function formatBalance(value: number) {
+  return Number.isFinite(value) ? value.toLocaleString("en-IN") : "0";
 }
 
 function ColGroup() {
@@ -40,6 +43,7 @@ function ColGroup() {
   );
 }
 
+// TruncatedCell
 function TruncatedCell({ value }: { value: string }) {
   if (!value) return <div className="truncate">{value}</div>;
 
@@ -54,35 +58,34 @@ function TruncatedCell({ value }: { value: string }) {
     </Tooltip>
   );
 }
-
-type KitchenTableProps = {
-  data: Kitchen[];
+type AccountTableProps = {
+  data: Account[];
   isLoading?: boolean;
 };
 
-export function KitchenTable({ data, isLoading }: KitchenTableProps) {
+export function AccountTable({ data, isLoading }: AccountTableProps) {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-  const [kitchenToDelete, setKitchenToDelete] = useState<{
+  const [accountToDelete, setAccountToDelete] = useState<{
     id: string;
     name: string;
   } | null>(null);
 
-  const { mutate: deleteKitchen, isPending } = useDeleteKitchen();
+  const { mutate: deleteAccount, isPending } = useDeleteAccount();
 
   const openDeleteDialog = (id: string, name: string) => {
-    setKitchenToDelete({ id, name });
+    setAccountToDelete({ id, name });
     setIsConfirmDialogOpen(true);
   };
 
   const handleConfirmDelete = () => {
-    if (!kitchenToDelete) return;
+    if (!accountToDelete) return;
 
-    deleteKitchen(
-      { id: kitchenToDelete.id, name: kitchenToDelete.name },
+    deleteAccount(
+      { id: accountToDelete.id, name: accountToDelete.name },
       {
         onSuccess: () => {
           setIsConfirmDialogOpen(false);
-          setKitchenToDelete(null);
+          setAccountToDelete(null);
         },
       },
     );
@@ -90,21 +93,22 @@ export function KitchenTable({ data, isLoading }: KitchenTableProps) {
 
   const handleConfirmDialogClose = () => {
     setIsConfirmDialogOpen(false);
-    setKitchenToDelete(null);
+    setAccountToDelete(null);
   };
 
   return (
     <div className="mt-[5px] flex flex-col gap-[10px]">
+      {/* header — own rounded block, radius10, bg #EFEFEF */}
       <div className="overflow-hidden rounded-[10px] bg-[#EFEFEF]">
         <div className="overflow-x-auto">
-          <Table className="w-full min-w-[600px] table-fixed sm:min-w-[720px]">
+          <Table className="w-full min-w-[700px] table-fixed sm:min-w-[820px]">
             <ColGroup />
             <TableHeader>
               <TableRow className="border-b-0 hover:bg-transparent">
                 {TABLE_COLUMNS.map((column) => (
                   <TableHead
                     key={column}
-                    className={`text-[11px] font-normal text-black sm:text-[12px] ${
+                    className={` text-[11px] font-normal text-black sm:text-[12px] ${
                       column === "Actions" ? "text-center" : "text-left"
                     }`}
                   >
@@ -117,39 +121,57 @@ export function KitchenTable({ data, isLoading }: KitchenTableProps) {
         </div>
       </div>
 
+      {/* list — own rounded block, radius10, bg #B8B8B8 */}
       <div className="overflow-hidden rounded-[10px] bg-[#B8B8B8]">
         <div className="overflow-x-auto">
-          <Table className="w-full min-w-[600px] table-fixed sm:min-w-[720px]">
+          <Table className="w-full min-w-[700px] table-fixed sm:min-w-[820px]">
             <ColGroup />
             <TableBody>
               {isLoading ? (
-                <KitchenTableSkeleton />
+                <AccountTableSkeleton />
               ) : data.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell
                     colSpan={TABLE_COLUMNS.length}
                     className="py-8 text-center text-sm text-[#5D5D5D]"
                   >
-                    No kitchens Data Available
+                    No accounts Data Available
                   </TableCell>
                 </TableRow>
               ) : (
-                data.map((kitchen, index) => (
+                data.map((account, index) => (
                   <TableRow
-                    key={kitchen._id}
+                    key={account._id}
                     className="border-black/5 text-[11px] text-black hover:bg-black/5 sm:text-[12px]"
                   >
                     <TableCell>{index + 1}</TableCell>
                     <TableCell>
-                      <TruncatedCell value={kitchen.name} />
+                      <TruncatedCell value={account.accountName} />
                     </TableCell>
-                    <TableCell>{formatDate(kitchen.createdAt)}</TableCell>
-                    <TableCell>{formatDate(kitchen.updatedAt)}</TableCell>
+                    <TableCell>
+                      <TruncatedCell value={account.accountType} />
+                    </TableCell>
+                    <TableCell>{formatBalance(account.openingBalance)}</TableCell>
+           <TableCell>
+  <span
+    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+      account.showInPos
+        ? "bg-green-700 text-green-200"
+        : "bg-red-700 text-red-200"
+    }`}
+  >
+    {account.showInPos ? "Yes" : "No"}
+  </span>
+</TableCell>
+                    <TableCell>
+                      <TruncatedCell value={account.description} />
+                    </TableCell>
+                    <TableCell>{formatDate(account.createdAt)}</TableCell>
                     <TableCell>
                       <div className="flex items-center justify-center gap-2">
-                        <KitchenFormAction isEdit id={kitchen._id} />
+                        <AccountFormAction isEdit id={account._id} />
 
-                          {!kitchen.isDefault && (
+                        {!account.isSystemGenerated && (
                           <Tooltip>
                             <TooltipTrigger
                               render={
@@ -157,19 +179,15 @@ export function KitchenTable({ data, isLoading }: KitchenTableProps) {
                                   type="button"
                                   variant="deleteicon"
                                   size="icon"
-                                  aria-label={`Delete ${kitchen.name}`}
+                                  aria-label={`Delete ${account.accountName}`}
                                   onClick={() =>
-                                    openDeleteDialog(
-                                      kitchen._id,
-                                      kitchen.name
-                                    )
+                                    openDeleteDialog(account._id, account.accountName)
                                   }
                                 >
                                   <Trash2 size={15} />
                                 </Button>
                               }
                             />
-
                             <TooltipContent>
                               <p>Delete</p>
                             </TooltipContent>
@@ -189,7 +207,7 @@ export function KitchenTable({ data, isLoading }: KitchenTableProps) {
         open={isConfirmDialogOpen}
         onOpenChange={handleConfirmDialogClose}
         onConfirm={handleConfirmDelete}
-        message={`Are you sure you want to delete kitchen "${kitchenToDelete?.name}?"`}
+        message={`Are you sure you want to delete account "${accountToDelete?.name}?"`}
         isPending={isPending}
       />
     </div>

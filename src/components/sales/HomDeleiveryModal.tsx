@@ -89,7 +89,7 @@ export function HomeDeliveryModal({ open, onClose, onSubmit }: HomeDeliveryModal
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[40] flex items-center justify-center overflow-y-auto p-4 py-6 backdrop-blur-[2px] bg-black/50">
+    <div className="fixed inset-0 z-[40] flex items-center justify-center overflow-y-auto p-4 py-6 backdrop-blur-[2px] ">
       <FormProvider {...methods}>
         <div className="relative my-auto w-[812px] max-w-[calc(100vw-2rem)]">
           <button
