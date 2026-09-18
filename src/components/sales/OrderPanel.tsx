@@ -43,9 +43,6 @@ import { OnlinePlatformModal } from "./onlinePlatformModal";
 import { CartItemType, CustomerTypeEnum, OrderStatus } from "./Types";
 import { playBeep } from "./Beep";
 
-
-/* -------------------------------------------------------------------------- */
-/* Media URL                                                                  */
 /* -------------------------------------------------------------------------- */
 
 const API_MEDIA_BASE_URL =
@@ -62,15 +59,7 @@ function getMediaUrl(path?: string | null): string | undefined {
   return `${API_MEDIA_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Numeric input sizing                                                       */
-/* ASSUMPTION: qty / rate values are expected to stay in the 1–999999 range.  */
-/* The width grows in `ch` (character) units with the value's length so long  */
-/* numbers (9999, 15000.50, etc.) are never clipped, but it's capped at 8ch   */
-/* so a runaway value can't blow out the row layout — beyond 8 digits it      */
-/* just stops growing and the number scrolls within the input. Raise maxCh    */
-/* if you expect larger numbers than that.                                   */
-/* -------------------------------------------------------------------------- */
+
 
 function numInputWidth(
   value: number | string | undefined | null,
@@ -81,9 +70,7 @@ function numInputWidth(
   return `${Math.min(Math.max(len + 1, minCh), maxCh)}ch`;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Constants                                                                  */
-/* -------------------------------------------------------------------------- */
+
 
 const CUSTOMER_TYPE_LABELS: Record<CustomerTypeValue, string> = {
   TAKE_AWAY: "Take Away",
@@ -98,20 +85,6 @@ const footerActions = [
   { icon: UsersRound, label: "Customers" },
 ];
 
-/* -------------------------------------------------------------------------- */
-/* Fluid sizing tokens                                                        */
-/* All scale continuously between the two viewport widths via clamp() —       */
-/* one rule per property, no stacked breakpoint variants, no plugin, no JS.   */
-/* clamp(MIN, PREFERRED, MAX): stays at MIN below ~360px, at MAX above        */
-/* ~1440px, and scales linearly with viewport width in between.              */
-/*                                                                            */
-/* CHANGE: colQty / colVat / colRate / colAmount switched from `w-[...]`      */
-/* (fixed width) to `min-w-[...]` (floor only). That lets each column grow    */
-/* past its clamp() size when the value inside is wider than usual (large    */
-/* qty, rate, VAT or amount), while the item-name column — which already has */
-/* `flex-1 min-w-0` + `truncate` — absorbs the shrink instead of the numbers */
-/* getting clipped.                                                          */
-/* -------------------------------------------------------------------------- */
 
 const fluid = {
   tabH: "h-[clamp(20px,3.4vw,36px)]",
@@ -149,9 +122,6 @@ const fluid = {
   footerLabel: "text-[clamp(6.5px,0.85vw,9px)]",
 };
 
-/* -------------------------------------------------------------------------- */
-/* Types                                                                      */
-/* -------------------------------------------------------------------------- */
 
 interface DeliveryDetailsState {
   location: string;
@@ -178,9 +148,6 @@ type OrderPanelProps = {
   onTotalChange?: (total: number) => void;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Component                                                                  */
-/* -------------------------------------------------------------------------- */
 
 export function OrderPanel({
   cartItems,
@@ -194,7 +161,6 @@ export function OrderPanel({
   onEditOrder,
   onTotalChange,
 }: OrderPanelProps) {
-  const router = useRouter();
 
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
@@ -216,26 +182,8 @@ export function OrderPanel({
 
   const [onlinePlatform, setOnlinePlatform] = useState<string | null>(null);
 
-  /* ------------------------------- Discount ------------------------------ */
-
-  // CHANGE: default is a real "0" now, not "" with a display-time fallback.
-  // The old version rendered "0" whenever the state was "" (`discount === ""
-  // ? "0" : discount`), so `onFocus` clearing the state to "" immediately
-  // got overwritten back to "0" on the next render — the field could never
-  // actually be cleared. Now the state itself holds what's shown.
   const [discount, setDiscount] = useState<string>("0");
-
-  /* ------------------------------------------------------------------------ */
-  /* Add-to-cart beep                                                         */
-  /* ------------------------------------------------------------------------ */
-
-  // Snapshot of the previous cart, used to tell an "add" apart from any other
-  // cart change (remove, rate edit, reset).
   const prevCartRef = useRef<{ ids: string[]; totalQty: number } | null>(null);
-
-  // Set to true right before a quantity change that came from the cart's own
-  // +/- buttons or qty input, so those don't beep — only adds from the product
-  // grid do. Delete these if you want every quantity bump to beep.
   const suppressBeepRef = useRef(false);
 
   useEffect(() => {
@@ -246,25 +194,16 @@ export function OrderPanel({
         sum + (typeof item.qty === "number" ? item.qty : 0),
       0
     );
-
     const prev = prevCartRef.current;
-
     prevCartRef.current = { ids, totalQty };
-
-    // First run — don't beep for a cart that was already there on mount
-    // (e.g. when opening an existing order for editing).
     if (!prev) {
       return;
     }
-
     if (suppressBeepRef.current) {
       suppressBeepRef.current = false;
       return;
     }
-
     const hasNewItem = ids.some((id) => !prev.ids.includes(id));
-
-    // A brand new row, or the same food added again (which bumps qty).
     if (hasNewItem || totalQty > prev.totalQty) {
       playBeep();
     }
@@ -279,21 +218,12 @@ export function OrderPanel({
     queryFn: () => ListCustomerTypeApi({ limit: 100, page: 1 }),
   });
 
-  const foodsQuery = useQuery({
-    queryKey: ["getAllFoods"],
-    queryFn: () => ListFoodApi({ page: 1, limit: 100 }),
-  });
-
   const restaurantQuery = useQuery({
     queryKey: ["getAllRestaurants"],
     queryFn: () => listRestaurants(),
   });
 
-  const customersQuery = useQuery({
-    queryKey: ["getAllCustomers"],
-    queryFn: () => ListCustomerApi({ limit: 100, page: 1 }),
-    enabled: selectedType === CustomerTypeEnum.HOME_DELIVERY,
-  });
+
 
   const customerTypes = customerTypesQuery.data?.data || [];
 
@@ -337,9 +267,6 @@ export function OrderPanel({
 
   const onlinePlatformOptions = onlineCustomerType?.onlinePlatforms ?? [];
 
-  /* ------------------------------------------------------------------------ */
-  /* Type-specific modal handling                                             */
-  /* ------------------------------------------------------------------------ */
 
   useEffect(() => {
     if (selectedType === CustomerTypeEnum.HOME_DELIVERY) {
@@ -378,13 +305,6 @@ export function OrderPanel({
     setOnlinePlatform(platform);
     setIsOnlinePlatformModalOpen(false);
   };
-
-  // Re-clicking a tab that's already selected doesn't change `selectedType`,
-  // so the effect above (which only fires on a real change) won't reopen the
-  // Online/Home Delivery picker if it was closed without completing it. This
-  // handler opens the right modal directly from the click itself, so it
-  // works whether or not the tab was already active — and it's what the tab
-  // button's onClick below must call (not setSelectedType directly).
   const handleSelectCustomerType = (typeValue: CustomerTypeValue) => {
     setSelectedType(typeValue);
 
@@ -811,9 +731,6 @@ export function OrderPanel({
     }
   };
 
-  /* ------------------------------------------------------------------------ */
-  /* Cart scrollbar                                                           */
-  /* ------------------------------------------------------------------------ */
 
   const cartScrollRef = useRef<HTMLDivElement>(null);
 
@@ -878,13 +795,7 @@ export function OrderPanel({
     };
   }, [cartItems.length]);
 
-  /* ------------------------------------------------------------------------ */
-  /* Column configuration — fluid widths, no breakpoint chains                */
-  /* CHANGE: qty / vat / amount are now `whitespace-nowrap tabular-nums` so   */
-  /* large numbers stay on one line and digits stay aligned as the column     */
-  /* grows past its clamp() floor. `rate` keeps its own centering wrapper     */
-  /* since it holds an input, not a span.                                    */
-  /* ------------------------------------------------------------------------ */
+
 
   const colCls = {
     img: fluid.imgW,
@@ -895,10 +806,6 @@ export function OrderPanel({
     amount: `${fluid.colAmount} shrink-0 text-right whitespace-nowrap tabular-nums`,
     del: `${fluid.colDel} shrink-0`,
   };
-
-  /* ------------------------------------------------------------------------ */
-  /* Render                                                                   */
-  /* ------------------------------------------------------------------------ */
 
   return (
     <>
@@ -1557,10 +1464,7 @@ export function OrderPanel({
                   }
                 }}
                 onFocus={(e) => {
-                  // Select the current value so the first keystroke
-                  // replaces it (e.g. typing "5" over a selected "0"
-                  // gives "5", not "05"), and backspace clears it in
-                  // one press instead of fighting a leading zero.
+              
                   e.target.select();
                 }}
                 onBlur={(e) => {

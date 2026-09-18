@@ -233,10 +233,7 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
     setChoiceInput("");
   }, [isOpen, isEdit, foodData, customerTypeData]);
 
-  // ─── Auto-select the default kitchen (isDefault: true) in add mode ─────────
-  // Runs whenever the kitchen list loads/changes while the dialog is open in
-  // "add" mode, and only fills the field if it hasn't been set yet — so it
-  // won't override a kitchen the user has already picked.
+ 
   useEffect(() => {
     if (!isOpen || isEdit) return;
 
