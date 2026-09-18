@@ -40,7 +40,7 @@ const menuItems: MenuItem[] = [
   { label: "Supplier", icon: supplierIcon, href: "/home/supplier" },
   { label: "Menu", icon: menuIcon, href: "/home/menu" },
   { label: "Reports", icon: reportsIcon, href: "/reports" },
-  { label: "Accounts", icon: accountsIcon, href: "/accounts" },
+  { label: "Accounts", icon: accountsIcon, href: "/home/accounts" },
   { label: "User", icon: userIcon, href: "/home/users" },
   { label: "Settings", icon: settingsIcon, href: "" }, 
 ];

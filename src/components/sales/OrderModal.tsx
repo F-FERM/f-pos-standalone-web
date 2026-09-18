@@ -1,13 +1,15 @@
 "use client";
 
 import { getOrders, Item, ListOrderFilteredResponse, updateOrder, type CreateOrderPayload } from "@/src/api/order";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueries, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Eye, Pen, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { OrderDetailsModal } from "./OrderDetailsModal";
+import { PaymentModal } from "./PaymentModal";
 import { CustomerTypeEnum, OrderStatus, OrderTab } from "./Types";
+import { printOrder } from "@/src/api/order";
 
 type OrderModalProps = {
   open: boolean;
@@ -42,12 +44,19 @@ export function OrderModal({ open, onClose, onEdit }: OrderModalProps) {
   const [activeType, setActiveType] = useState<CustomerTypeEnum>(CustomerTypeEnum.DINE_IN);
   const [search, setSearch] = useState("");
   const [viewOrderId, setViewOrderId] = useState<string | null>(null);
+  const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["orders", activeTab, activeType],
-    queryFn: () => getOrders(activeTab, activeType),
-    enabled: open,
+  const orderQueries = useQueries({
+    queries: customerTypes.map((type) => ({
+      queryKey: ["orders", activeTab, type.value],
+      queryFn: () => getOrders(activeTab, type.value),
+      enabled: open,
+    })),
   });
+
+  const activeQueryIndex = customerTypes.findIndex((t) => t.value === activeType);
+  const data = orderQueries[activeQueryIndex]?.data;
+  const isLoading = orderQueries[activeQueryIndex]?.isLoading;
 
   interface UpdateOrderVariables {
     order: ListOrderFilteredResponse["data"][0];
@@ -95,6 +104,15 @@ export function OrderModal({ open, onClose, onEdit }: OrderModalProps) {
     updateMutation.mutate({ order, status });
   };
 
+  const handlePrint = async (orderId: string) => {
+    try {
+      await printOrder(orderId);
+      toast.success("Order printed successfully");
+    } catch (error) {
+      toast.error("Failed to print order");
+    }
+  };
+
   if (!open) return null;
 
   const orders = data?.data || [];
@@ -103,8 +121,9 @@ export function OrderModal({ open, onClose, onEdit }: OrderModalProps) {
     o._id.toLowerCase().includes(search.toLowerCase())
   );
   
-  // The API returns meta.count for the current tab + type combo.
-  const currentCount = data?.meta?.count || 0;
+  // Meta count for the currently active tab is in data?.meta?.count
+  // But for the badges we use the individual query data
+
 
   return (
     <>
@@ -145,9 +164,9 @@ export function OrderModal({ open, onClose, onEdit }: OrderModalProps) {
           {/* Customer Type Sub-Tabs + Search */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap gap-3">
-              {customerTypes.map((type) => {
+              {customerTypes.map((type, index) => {
                 const isActive = activeType === type.value;
-                const count = isActive ? currentCount : 0;
+                const count = orderQueries[index]?.data?.meta?.count || 0;
                 return (
                   <div key={type.value} className="relative">
                     <button
@@ -234,14 +253,14 @@ export function OrderModal({ open, onClose, onEdit }: OrderModalProps) {
                     {/* Actions */}
                     <div className="mt-auto flex border-t border-[#F0F0F0] bg-gray-50">
                       <button 
-                        onClick={() => handleUpdateStatus(order, OrderStatus.PRINTED)}
+                        onClick={() => handlePrint(order._id)}
                         className="flex-1 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100"
                       >
                         Print
                       </button>
                       <div className="w-px bg-[#F0F0F0]"></div>
                       <button 
-                        onClick={() => handleUpdateStatus(order, OrderStatus.COMPLETED)}
+                        onClick={() => setPaymentOrderId(order._id)}
                         className="flex-1 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100"
                       >
                         Complete
@@ -259,6 +278,13 @@ export function OrderModal({ open, onClose, onEdit }: OrderModalProps) {
       <OrderDetailsModal 
         orderId={viewOrderId} 
         onClose={() => setViewOrderId(null)} 
+      />
+
+      {/* Sub-modal for payment process */}
+      <PaymentModal
+        open={!!paymentOrderId}
+        onClose={() => setPaymentOrderId(null)}
+        orderId={paymentOrderId}
       />
     </>
   );

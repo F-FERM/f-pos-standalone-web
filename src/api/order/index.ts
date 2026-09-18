@@ -191,6 +191,7 @@ export const updateOrder = async (id: string, payload: CreateOrderPayload) => {
   return response.data;
 };
 
-
-
-
+export const printOrder = async (id: string) => {
+  const response = await axiosInstance.post(`order/${id}/print`);
+  return response.data;
+};
