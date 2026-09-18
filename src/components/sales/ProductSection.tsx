@@ -1,27 +1,35 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-
-import { CategorySidebar } from "./CategorySidebar";
-import { Product } from "./Types";
-import { PanelBackground, PanelBackgroundHandle } from "./PanelGround";
-import Image from "next/image";
-import { Food } from "@/src/interfaces/food/ListFoodResponse";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ListFoodApi } from "@/src/api/food/api/GetAll";
+import { Food } from "@/src/interfaces/food/ListFoodResponse";
+import Image from "next/image";
+import { CategorySidebar } from "./CategorySidebar";
+import { PanelBackground, PanelBackgroundHandle } from "./PanelGround";
+import { Product } from "./Types";
+import { resumeBeepCtx, warmUpBeep } from "./Beep";
 
 type ProductGridProps = {
   selectedProduct: Product;
   onSelect: (product: Product) => void;
   products: Product[];
 };
+const API_MEDIA_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "http://localhost:3005";
 
+function getMediaUrl(path?: string | null): string | undefined {
+  if (!path) return undefined;
+  if (/^(https?:|blob:|data:)/i.test(path)) return path;
+  return `${API_MEDIA_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
 function mapFoodToProduct(food: Food): Product {
   return {
     id: food._id,
     name: food.name,
     price: food.basePrice,
-    image: food.foodImage || "no image ",
+    image: food.foodImage || "",
+    food: food,
   };
 }
 
@@ -41,14 +49,19 @@ function ProductGrid({ selectedProduct, onSelect, products }: ProductGridProps) 
                 selected ? "border-[#670063]" : "border-[#565656]"
               }`}
             >
-              <Image
-                width={150}
-                height={104}
-                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${product.image}`}
-                alt={product.name}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-
+{product.food.foodImage ? (
+  <Image
+    width={150}
+    height={104}
+    src={getMediaUrl(product.food.foodImage)!}
+    alt={product.name}
+    className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+  />
+) : (
+  <div className="absolute inset-0 bg-[#D2D2D2] flex items-center justify-center text-xs text-white/70">
+    No image
+  </div>
+)}
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0)_0%,rgba(0,0,0,0.7)_100%)]" />
 
               <div className="absolute inset-0 flex flex-col justify-end pb-2 pl-[9px] pr-2 pt-[90px]">
@@ -83,6 +96,42 @@ export function ProductSection({
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [size, setSize] = useState({ width: 613, height: 564 });
+
+  // The beep itself is now fired by OrderPanel when the cart actually changes.
+  // This section still unlocks + pre-decodes the audio on pointer input, since
+  // the click on a food card is the user gesture that lets the AudioContext
+  // start running in the first place.
+  useEffect(() => {
+    const warmup = () => {
+      void resumeBeepCtx().then(() => warmUpBeep());
+    };
+
+    // Restoring from bfcache / returning to the tab can leave the context
+    // suspended or closed — repair it as soon as the page is visible again.
+    const onPageShow = () => {
+      void resumeBeepCtx().then(() => warmUpBeep());
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void warmUpBeep();
+      }
+    };
+
+    window.addEventListener("pointerdown", warmup);
+    window.addEventListener("pageshow", onPageShow);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    // Also warm up straight away on mount (covers SPA back navigation, where
+    // no pageshow fires but the component remounts).
+    void warmUpBeep();
+
+    return () => {
+      window.removeEventListener("pointerdown", warmup);
+      window.removeEventListener("pageshow", onPageShow);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
 
   const foodsQuery = useQuery({
     queryKey: ["getAllFoods", search],

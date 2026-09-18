@@ -1,7 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { ListInvoiceApi } from "@/src/api/invoice/api/GetAll";
+import { useQuery } from "@tanstack/react-query";
 
 type InvoiceHeaderProps = {
   total?: number;
@@ -22,7 +22,7 @@ export function InvoiceHeader({
       <span className="text-sm font-semibold leading-none text-black">
         {isLoading ? "Loading..." : invoiceNumber}
       </span>
-      <span className="text-base font-medium leading-none text-black">
+      <span className="text-base font-bold leading-none text-black">
         ₹{total}
       </span>
     </div>

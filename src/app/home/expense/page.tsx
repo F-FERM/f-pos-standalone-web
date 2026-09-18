@@ -131,7 +131,6 @@ export default function ExpensePage() {
         >
           <span
             style={{
-              fontFamily: "Poppins, sans-serif",
               fontWeight: 600,
               fontSize: 26,
               lineHeight: "100%",
@@ -183,7 +182,6 @@ export default function ExpensePage() {
               key={column}
               className="truncate text-center"
               style={{
-                fontFamily: "Poppins, sans-serif",
                 fontWeight: 400,
                 fontSize: 12,
                 lineHeight: "normal",
@@ -212,7 +210,7 @@ export default function ExpensePage() {
             <p
               className="px-[16px]"
               style={{
-                fontFamily: "Poppins, sans-serif",
+            
                 fontWeight: 400,
                 fontSize: 14,
                 color: "#5D5D5D",
@@ -283,13 +281,13 @@ export default function ExpensePage() {
         >
           <span
             style={{
-              fontFamily: "Poppins, sans-serif",
+       
               fontWeight: 500,
               fontSize: 12,
               color: "#939393",
             }}
           >
-            © 2026 FFERM Digital Labs. All rights reserved.
+            © 2026 F-FERM Digital Labs. All rights reserved.
           </span>
         </div>
       </div>

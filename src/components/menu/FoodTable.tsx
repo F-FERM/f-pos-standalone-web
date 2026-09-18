@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -102,43 +103,48 @@ export function FoodTable({ data, isLoading }: FoodTableProps) {
                   </TableCell>
                 </TableRow>
               ) : (
-                data.map((food, index) => (
-                  <TableRow key={food._id} className="border-black/5 text-[11px] text-black hover:bg-black/5 sm:text-[12px]">
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>
-                      {getMediaUrl(food.foodImage) ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={getMediaUrl(food.foodImage)}
-                          alt={food.name}
-                          className="h-8 w-8 rounded-[6px] object-cover"
-                        />
-                      ) : (
-                        <span className="block h-8 w-8 rounded-[6px] bg-black/10" />
-                      )}
-                    </TableCell>
-                    <TableCell><TruncatedCell value={food.name} /></TableCell>
-                    <TableCell><TruncatedCell value={food.categoryId?.name || "-"} /></TableCell>
-                    <TableCell><TruncatedCell value={food.kitchenId?.name || "-"} /></TableCell>
-                    <TableCell>{food.foodType}</TableCell>
-                    <TableCell><TruncatedCell value={food.createdBy?.username || "Admin"} /></TableCell>
-                    <TableCell>{formatApiDate(food.createdAt)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-center gap-2">
-                        <FoodFormAction isEdit id={food._id} />
-                        <Button
-                          type="button"
-                          variant="deleteicon"
-                          size="icon"
-                          aria-label={`Delete ${food.name}`}
-                          onClick={() => openDelete(food._id, food.name)}
-                        >
-                          <Trash2 size={15} />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                data.map((food, index) => {
+                  const imageSrc = getMediaUrl(food.foodImage);
+
+                  return (
+                    <TableRow key={food._id} className="border-black/5 text-[11px] text-black hover:bg-black/5 sm:text-[12px]">
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>
+                        {imageSrc ? (
+                          <Image
+                            src={imageSrc}
+                            alt={food.name}
+                            width={32}
+                            height={32}
+                            className="h-8 w-8 rounded-[6px] object-cover"
+                          />
+                        ) : (
+                          <span className="block h-8 w-8 rounded-[6px] bg-black/10" />
+                        )}
+                      </TableCell>
+                      <TableCell><TruncatedCell value={food.name} /></TableCell>
+                      <TableCell><TruncatedCell value={food.categoryId?.name || "-"} /></TableCell>
+                      <TableCell><TruncatedCell value={food.kitchenId?.name || "-"} /></TableCell>
+                      <TableCell>{food.foodType}</TableCell>
+                      <TableCell><TruncatedCell value={food.createdBy?.username || "Admin"} /></TableCell>
+                      <TableCell>{formatApiDate(food.createdAt)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-2">
+                          <FoodFormAction isEdit id={food._id} />
+                          <Button
+                            type="button"
+                            variant="deleteicon"
+                            size="icon"
+                            aria-label={`Delete ${food.name}`}
+                            onClick={() => openDelete(food._id, food.name)}
+                          >
+                            <Trash2 size={15} />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

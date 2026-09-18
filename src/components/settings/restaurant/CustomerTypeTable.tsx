@@ -90,7 +90,21 @@ export function CustomerTypeTable({ data, isLoading }: CustomerTypeTableProps) {
               ) : (
                 data.map((item) => (
                   <TableRow key={item._id} className="border-black/5 text-[11px] text-black hover:bg-black/5 sm:text-[12px]">
-                    <TableCell className="truncate">{item.type}</TableCell>
+                    <TableCell className="align-top py-4">
+                      <div className="font-medium text-[13px]">{item.type}</div>
+                      {item.onlinePlatforms && item.onlinePlatforms.length > 0 && (
+                        <div className="mt-2.5 flex flex-wrap gap-2">
+                          {item.onlinePlatforms.map((platform) => (
+                            <span
+                              key={platform}
+                              className="rounded-full bg-secondary px-3 py-1.5 text-[11px] text-white"
+                            >
+                              {platform}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-center gap-2">
                         <CustomerTypeFormAction isEdit id={item._id} currentType={item.type} />

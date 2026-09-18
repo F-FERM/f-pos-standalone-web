@@ -10,6 +10,7 @@ export interface Kitchen {
   createdBy: string;
   name: string;
   companyId: string;
+  isDefault: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

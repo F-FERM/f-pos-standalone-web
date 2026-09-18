@@ -7,15 +7,11 @@ type SearchInputProps = {
   value?: string;
   onChange?: (value: string) => void;
   placeholder?: string;
-  /** "compact" = small pill used in the categories header, "panel" = wider bar used inside modals */
   variant?: "compact" | "panel";
   className?: string;
 };
 
-/**
- * Shared search field. Reused by CategoryHeader, OrderModal and CustomerModal
- * so styling and behaviour stay in one place.
- */
+
 export function SearchInput({
   value,
   onChange,
@@ -53,7 +49,6 @@ export function SearchInput({
                 paddingRight: 20,
                 paddingBottom: 6,
                 paddingLeft: 53, 
-                fontFamily: "Poppins, sans-serif",
                 fontWeight: 400,
                 fontSize: 16,
                 lineHeight: "100%",
@@ -71,7 +66,7 @@ export function SearchInput({
                 paddingRight: 10,
                 paddingBottom: 5,
                 paddingLeft: 38,
-                fontFamily: "Poppins, sans-serif",
+             
                 fontWeight: 400,
                 fontSize: 12,
                 lineHeight: "100%",

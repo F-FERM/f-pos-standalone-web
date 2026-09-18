@@ -164,7 +164,7 @@ function SettingsPageContent() {
                     key={tab}
                     type="button"
                     onClick={() => handleTabChange(tab)}
-                    className={`flex h-[38px] shrink-0 items-center justify-center whitespace-nowrap rounded-[12px] border px-4 font-poppins text-[13px] font-semibold transition-colors sm:text-[14px] ${
+                    className={`flex h-[38px] shrink-0 items-center justify-center whitespace-nowrap rounded-[12px] border px-4  text-[13px] font-semibold transition-colors sm:text-[14px] ${
                       selected
                         ? "border-transparent bg-[#450042] text-white"
                         : "border-[#9C9C9C] bg-[#EFEFEF] text-black"
@@ -253,7 +253,7 @@ function SettingsPageContent() {
           )}
         </div>
 
-        <span className="font-poppins text-[12px] font-medium text-[#939393]">
+        <span className=" text-[12px] font-medium text-[#939393]">
           © 2026 F-FERM Digital Labs. All rights reserved.
         </span>
       </div>

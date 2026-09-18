@@ -11,6 +11,8 @@ interface ConfirmationDialogProps {
   onConfirm: (remark: string) => void;
   message: string;
   isPending?: boolean;
+  confirmText?: string;
+  pendingText?: string;
 }
 
 export function ConfirmationDialog({
@@ -19,6 +21,8 @@ export function ConfirmationDialog({
   onConfirm,
   message,
   isPending,
+  confirmText = "DELETE",
+  pendingText = "DELETING...",
 }: ConfirmationDialogProps) {
   const [remark, setRemark] = useState("");
 
@@ -94,7 +98,7 @@ export function ConfirmationDialog({
             onClick={handleConfirm}
             disabled={isPending}
           >
-            {isPending ? "DELETING..." : "DELETE"}
+            {isPending ? pendingText : confirmText}
           </Button>
         </div>
       </DialogContent>

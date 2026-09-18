@@ -213,7 +213,7 @@ export default function AddPrinterModal({
                   className="h-4 w-4 rounded border-[#B5B5B5]"
                   {...form.register("isDefault")}
                 />
-                <span className="font-poppins text-[13px] font-medium text-black">
+                <span className="text-[13px] font-medium text-black">
                   Set as Default Printer
                 </span>
               </label>

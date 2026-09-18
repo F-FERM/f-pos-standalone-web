@@ -48,7 +48,7 @@ interface CustomerTypeId {
   onlinePlatforms: any[];
 }
 
-interface Portion {
+export interface Portion {
   name: string;
   basePrice: number;
   _id: string;

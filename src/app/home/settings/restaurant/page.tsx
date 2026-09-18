@@ -157,7 +157,7 @@ function RestaurantSettingsPageContent() {
                     key={tab}
                     type="button"
                     onClick={() => handleTabChange(tab)}
-                    className={`flex h-[42px] shrink-0 items-center justify-center whitespace-nowrap rounded-[12px] border px-4 font-poppins text-[15px] font-semibold transition-colors sm:px-5 sm:text-[18px] ${
+                    className={`flex h-[42px] shrink-0 items-center justify-center whitespace-nowrap rounded-[12px] border px-4  text-[15px] font-semibold transition-colors sm:px-5 sm:text-[18px] ${
                       selected
                         ? "border-transparent bg-[#450042] text-white"
                         : "border-[#9C9C9C] bg-[#D2D2D2] text-black"
@@ -187,7 +187,7 @@ function RestaurantSettingsPageContent() {
                   )}
                 </div>
 
-                <div className="mb-2 flex items-center gap-2 font-poppins text-[18px] font-semibold leading-none text-black">
+                <div className="mb-2 flex items-center gap-2  text-[18px] font-semibold leading-none text-black">
                   <Building2 size={18} />
                   {isRestaurantLoading ? "Loading..." : restaurant?.name ?? "Restaurant"}
                   <button
@@ -202,11 +202,11 @@ function RestaurantSettingsPageContent() {
                 </div>
 
                 <div className="flex flex-col items-center lg:items-start">
-                  <div className="flex items-center gap-2 font-poppins text-[16px] font-medium text-[#4D4D4D]">
+                  <div className="flex items-center gap-2  text-[16px] font-medium text-[#4D4D4D]">
                     <Calendar size={16} />
                     Created: {restaurant ? formatDisplayDate(restaurant.createdAt) : "-"}
                   </div>
-                  <div className="flex items-center gap-2 font-poppins text-[16px] font-medium text-[#4D4D4D]">
+                  <div className="flex items-center gap-2  text-[16px] font-medium text-[#4D4D4D]">
                     <RefreshCw size={16} />
                     Updated: {restaurant ? formatDisplayDate(restaurant.updatedAt) : "-"}
                   </div>
@@ -220,12 +220,12 @@ function RestaurantSettingsPageContent() {
                     key={label}
                     className="flex h-[93px] w-full flex-col gap-[10px] rounded-[10px] bg-[#B8B8B8] pb-[26px] pl-[20px] pr-[20px] pt-[27px] sm:w-[220px]"
                   >
-                    <div className="flex items-center gap-2 font-poppins text-[16px] font-semibold leading-none text-black">
+                    <div className="flex items-center gap-2  text-[16px] font-semibold leading-none text-black">
                       <Icon size={16} />
                       {label}
                     </div>
                     <p
-                      className={`font-poppins text-[16px] font-medium leading-none text-[#4D4D4D] ${
+                      className={` text-[16px] font-medium leading-none text-[#4D4D4D] ${
                         !value || value === "Not specified" ? "italic" : ""
                       }`}
                     >
@@ -254,7 +254,7 @@ function RestaurantSettingsPageContent() {
           )}
         </div>
 
-        <span className="font-poppins text-[12px] font-medium text-[#939393]">
+        <span className=" text-[12px] font-medium text-[#939393]">
           © 2026 F-FERM Digital Labs. All rights reserved.
         </span>
       </div>

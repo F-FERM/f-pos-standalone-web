@@ -205,7 +205,6 @@ export default function PurchasePage() {
         >
           <span
             style={{
-              fontFamily: "Poppins, sans-serif",
               fontWeight: 600,
               fontSize: 26,
               lineHeight: "100%",
@@ -249,7 +248,7 @@ export default function PurchasePage() {
                     ? "1px solid transparent"
                     : "1px solid #9C9C9C",
                   background: selected ? "#450042" : "#D2D2D2",
-                  fontFamily: "Poppins, sans-serif",
+                 
                   fontWeight: 600,
                   fontSize: 15,
                   lineHeight: "100%",
@@ -288,7 +287,7 @@ export default function PurchasePage() {
               key={column}
               className="truncate text-center"
               style={{
-                fontFamily: "Poppins, sans-serif",
+               
                 fontWeight: 400,
                 fontSize: 12,
                 lineHeight: "normal",
@@ -317,7 +316,7 @@ export default function PurchasePage() {
             <p
               className="px-[16px]"
               style={{
-                fontFamily: "Poppins, sans-serif",
+              
                 fontWeight: 400,
                 fontSize: 14,
                 color: "#5D5D5D",
@@ -403,13 +402,13 @@ export default function PurchasePage() {
         >
           <span
             style={{
-              fontFamily: "Poppins, sans-serif",
+             
               fontWeight: 500,
               fontSize: 12,
               color: "#939393",
             }}
           >
-            © 2026 FFERM Digital Labs. All rights reserved.
+            © 2026 F-FERM Digital Labs. All rights reserved.
           </span>
         </div>
       </div>

@@ -19,10 +19,10 @@ export function SettingsToggleCard({ title, description, items }: SettingsToggle
   return (
     <div className="flex w-full flex-col gap-4 rounded-[10px] bg-[#B8B8B8] px-4 py-4 sm:px-5 sm:py-5">
       <div>
-        <h4 className="font-poppins text-[16px] font-semibold leading-none text-black sm:text-[18px]">
+        <h4 className=" text-[16px] font-semibold leading-none text-black sm:text-[18px]">
           {title}
         </h4>
-        <p className="mt-1.5 max-w-prose font-poppins text-[13px] font-normal leading-normal text-[#5B5B5B] sm:text-[14px]">
+        <p className="mt-1.5 max-w-prose  text-[13px] font-normal leading-normal text-[#5B5B5B] sm:text-[14px]">
           {description}
         </p>
       </div>
@@ -41,10 +41,10 @@ export function SettingsToggleCard({ title, description, items }: SettingsToggle
               {item.checked && <Check size={12} strokeWidth={3} className="text-white" />}
             </span>
             <span className="max-w-prose">
-              <span className="block font-poppins text-[13px] font-semibold text-black sm:text-[14px]">
+              <span className="block  text-[13px] font-semibold text-black sm:text-[14px]">
                 {item.label}
               </span>
-              <span className="block font-poppins text-[11px] font-normal text-[#5B5B5B] sm:text-[12px]">
+              <span className="block  text-[11px] font-normal text-[#5B5B5B] sm:text-[12px]">
                 {item.description}
               </span>
             </span>
@@ -52,7 +52,7 @@ export function SettingsToggleCard({ title, description, items }: SettingsToggle
         ))}
       </div>
 
-      <p className="font-poppins text-[11px] font-normal text-[#5B5B5B] sm:text-[12px]">
+      <p className=" text-[11px] font-normal text-[#5B5B5B] sm:text-[12px]">
         Changes are saved automatically
       </p>
     </div>

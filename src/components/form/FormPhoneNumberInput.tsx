@@ -1,7 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command";
+import { Check } from "lucide-react";
+import { cn } from "@/src/lib/utils";
 import { Input } from "../ui/input";
 
 interface CountryCode {
@@ -27,28 +30,17 @@ interface PhoneNumberInputProps {
   readOnly?: boolean;
 }
 
-const countryCodes: CountryCode[] = [
-  { code: "+91", country: "India", flag: "🇮🇳" },
-  { code: "+1", country: "United States", flag: "🇺🇸" },
-  { code: "+44", country: "United Kingdom", flag: "🇬🇧" },
-  { code: "+86", country: "China", flag: "🇨🇳" },
-  { code: "+81", country: "Japan", flag: "🇯🇵" },
-  { code: "+49", country: "Germany", flag: "🇩🇪" },
-  { code: "+33", country: "France", flag: "🇫🇷" },
-  { code: "+39", country: "Italy", flag: "🇮🇹" },
-  { code: "+7", country: "Russia", flag: "🇷🇺" },
-  { code: "+55", country: "Brazil", flag: "🇧🇷" },
-  { code: "+61", country: "Australia", flag: "🇦🇺" },
-  { code: "+82", country: "South Korea", flag: "🇰🇷" },
-  { code: "+34", country: "Spain", flag: "🇪🇸" },
-  { code: "+31", country: "Netherlands", flag: "🇳🇱" },
-  { code: "+46", country: "Sweden", flag: "🇸🇪" },
-  { code: "+41", country: "Switzerland", flag: "🇨🇭" },
-  { code: "+65", country: "Singapore", flag: "🇸🇬" },
-  { code: "+971", country: "UAE", flag: "🇦🇪" },
-  { code: "+966", country: "Saudi Arabia", flag: "🇸🇦" },
-  { code: "+60", country: "Malaysia", flag: "🇲🇾" },
-];
+import { Country } from "country-state-city";
+
+const allCountries = Country.getAllCountries();
+const countryCodes: CountryCode[] = Array.from(
+  new Map(
+    allCountries.map((c) => [
+      `+${c.phonecode}`,
+      { code: `+${c.phonecode}`, country: c.name, flag: c.flag },
+    ])
+  ).values()
+);
 
 const FormPhoneNumberInput = ({
   name,
@@ -67,6 +59,7 @@ const FormPhoneNumberInput = ({
   readOnly = false,
 }: PhoneNumberInputProps) => {
   const [selectedCountryCode, setSelectedCountryCode] = useState(countryCode);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     setSelectedCountryCode(countryCode);
@@ -108,44 +101,58 @@ const FormPhoneNumberInput = ({
               }`}
             >
               {/* Country Code Selector */}
-              <Select
-                value={selectedCountryCode}
-                onValueChange={handleCountryCodeChange}
-                disabled={disabled}
-              >
-                <SelectTrigger
+              {/* Country Code Selector */}
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger 
+                  disabled={disabled}
                   className="h-full w-fit shrink-0 gap-1 border-0 border-r border-[#B5B5B5] bg-transparent
                     text-gray-500 hover:bg-black/5
                     font-poppins font-normal text-sm leading-none tracking-normal
                     rounded-l-[7px] rounded-r-none
                     pl-[14px] pr-[10px]
                     focus:ring-0 focus:ring-offset-0
-                    disabled:text-gray-300"
+                    disabled:text-gray-300 flex items-center justify-center outline-none"
                 >
-                  <SelectValue>
-                    <span className="text-base leading-none">
-                      {countryCodes.find((c) => c.code === selectedCountryCode)?.flag}
-                    </span>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="h-72 overflow-y-scroll rounded-[10px] border border-[#D2D2D2] bg-white p-0 text-gray-500">
-                  {countryCodes.map((country) => (
-                    <SelectItem
-                      key={country.code}
-                      value={country.code}
-                      className="cursor-pointer rounded-none font-poppins text-sm text-gray-700 focus:bg-[#F0EAF0] focus:text-black data-[state=checked]:bg-[#F0EAF0] data-[state=checked]:text-black"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>{country.flag}</span>
-                        <span className="text-sm">{country.code}</span>
-                        <span className="text-sm text-[#797979]">
-                          {country.country}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  <span className="text-base leading-none">
+                    {countryCodes.find((c) => c.code === selectedCountryCode)?.flag || "🏳️"}
+                  </span>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search country or code..." />
+                    <CommandList className="max-h-[300px] overflow-y-auto">
+                      <CommandEmpty>No country found.</CommandEmpty>
+                      <CommandGroup>
+                        {countryCodes.map((country) => (
+                          <CommandItem
+                            key={country.code}
+                            value={`${country.country} ${country.code}`}
+                            onSelect={() => {
+                              handleCountryCodeChange(country.code);
+                              setOpen(false);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span>{country.flag}</span>
+                              <span className="text-sm font-medium">{country.code}</span>
+                              <span className="text-sm text-[#797979]">
+                                {country.country}
+                              </span>
+                            </div>
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                selectedCountryCode === country.code ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
 
               {/* Phone Number Input */}
               <Input
