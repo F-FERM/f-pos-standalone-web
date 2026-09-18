@@ -1,13 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ListFoodApi } from "@/src/api/food/api/GetAll";
 import { Food } from "@/src/interfaces/food/ListFoodResponse";
 import Image from "next/image";
 import { CategorySidebar } from "./CategorySidebar";
 import { PanelBackground, PanelBackgroundHandle } from "./PanelGround";
 import { Product } from "./Types";
+import { resumeBeepCtx, warmUpBeep } from "./Beep";
 
 type ProductGridProps = {
   selectedProduct: Product;
@@ -96,6 +97,42 @@ export function ProductSection({
   const [selectedCategory, setSelectedCategory] = useState("");
   const [size, setSize] = useState({ width: 613, height: 564 });
 
+  // The beep itself is now fired by OrderPanel when the cart actually changes.
+  // This section still unlocks + pre-decodes the audio on pointer input, since
+  // the click on a food card is the user gesture that lets the AudioContext
+  // start running in the first place.
+  useEffect(() => {
+    const warmup = () => {
+      void resumeBeepCtx().then(() => warmUpBeep());
+    };
+
+    // Restoring from bfcache / returning to the tab can leave the context
+    // suspended or closed — repair it as soon as the page is visible again.
+    const onPageShow = () => {
+      void resumeBeepCtx().then(() => warmUpBeep());
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void warmUpBeep();
+      }
+    };
+
+    window.addEventListener("pointerdown", warmup);
+    window.addEventListener("pageshow", onPageShow);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    // Also warm up straight away on mount (covers SPA back navigation, where
+    // no pageshow fires but the component remounts).
+    void warmUpBeep();
+
+    return () => {
+      window.removeEventListener("pointerdown", warmup);
+      window.removeEventListener("pageshow", onPageShow);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
   const foodsQuery = useQuery({
     queryKey: ["getAllFoods", search],
     queryFn: () => ListFoodApi({ search, page: 1, limit: 100 }),
@@ -157,8 +194,6 @@ export function ProductSection({
             products={products}
             selectedProduct={selectedProduct}
             onSelect={(product) => {
-              const audio = new Audio('/voices/beep.mp3');
-              audio.play().catch((err) => console.error("Audio play failed", err));
               setSelectedProductId(product.id);
               if (onAddProduct) onAddProduct(product);
             }}

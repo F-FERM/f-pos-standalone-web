@@ -14,6 +14,7 @@ import { ConfirmationDialog } from "../../common/ConfirmationDialogue";
 
 export type Kitchen = {
   _id: string;
+  isDefault: boolean;
   name: string;
   createdAt: string;
   updatedAt: string;
@@ -148,24 +149,32 @@ export function KitchenTable({ data, isLoading }: KitchenTableProps) {
                       <div className="flex items-center justify-center gap-2">
                         <KitchenFormAction isEdit id={kitchen._id} />
 
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={
-                              <Button
-                                type="button"
-                                variant="deleteicon"
-                                size="icon"
-                                aria-label={`Delete ${kitchen.name}`}
-                                onClick={() => openDeleteDialog(kitchen._id, kitchen.name)}
-                              >
-                                <Trash2 size={15} />
-                              </Button>
-                            }
-                          />
-                          <TooltipContent>
-                            <p>Delete</p>
-                          </TooltipContent>
-                        </Tooltip>
+                          {!kitchen.isDefault && (
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="deleteicon"
+                                  size="icon"
+                                  aria-label={`Delete ${kitchen.name}`}
+                                  onClick={() =>
+                                    openDeleteDialog(
+                                      kitchen._id,
+                                      kitchen.name
+                                    )
+                                  }
+                                >
+                                  <Trash2 size={15} />
+                                </Button>
+                              }
+                            />
+
+                            <TooltipContent>
+                              <p>Delete</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

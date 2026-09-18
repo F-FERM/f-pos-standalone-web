@@ -26,12 +26,15 @@ import { ListKitchenApi } from "@/src/api/kitchen/api/GetAll";
 import { ListFoodByIdApi } from "@/src/api/food/api/GetById";
 import { useAddFood } from "@/src/api/food/hooks/create.hook";
 import { useUpdateFood } from "@/src/api/food/hooks/update.hook";
+import { Kitchen } from "@/src/interfaces/kitchen/ListKitchenResponse";
 
 const MAX_IMAGE_SIZE_BYTES = 4 * 1024 * 1024; // 4MB
 
 // ─── Zod schema ─────────────────────────────────────────────────────────────
+
+// Portion name is optional — only the price is required per portion.
 const portionSchema = z.object({
-  name: z.string().min(1, "Portion name is required"),
+  name: z.string().optional(),
   price: z.coerce.number().min(0, "Price must be 0 or more"),
 });
 
@@ -39,8 +42,10 @@ const foodSchema = z
   .object({
     foodName: z.string().min(1, "Food name is required").max(150),
     foodImage: z.string().nullish(),
-    foodType: z.enum(["Veg", "Non-Veg"]),
-    menuTypes: z.array(z.string()).min(1, "Select at least one menu type"),
+    foodType: z.enum(["Veg", "Non-Veg"], {
+      error: "Please select a food type",
+    }),
+    menuTypes: z.array(z.string()).default([]),
     category: z.string().min(1, "Category is required"),
     kitchen: z.string().min(1, "Kitchen is required"),
     hasPortions: z.boolean(),
@@ -48,10 +53,7 @@ const foodSchema = z
     basePrice: z
       .union([z.string(), z.number()])
       .transform((val) => (typeof val === "string" ? val.trim() : val))
-      .refine((val) => val !== "" && val !== undefined && val !== null, {
-        message: "Base price is required",
-      })
-      .transform((val) => Number(val))
+      .transform((val) => (val === "" || val === undefined || val === null ? 0 : Number(val)))
       .refine((val) => !Number.isNaN(val), { message: "Base price must be a valid number" })
       .refine((val) => val >= 0, { message: "Base price must be 0 or more" }),
     customerPrices: z.record(z.string(), z.coerce.number().min(0)),
@@ -76,7 +78,7 @@ export type FoodFormValues = z.infer<typeof foodSchema>;
 const emptyForm: FoodFormValues = {
   foodName: "",
   foodImage: undefined,
-  foodType: "Veg",
+  foodType: undefined as unknown as FoodFormValues["foodType"],
   menuTypes: [],
   category: "",
   kitchen: "",
@@ -125,6 +127,7 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
 
   const hasOffer = methods.watch("hasOffer");
   const hasPortions = methods.watch("hasPortions");
+  const foodTypeError = getErrorMessage(methods.formState.errors.foodType);
 
   const {
     fields: portionFields,
@@ -201,7 +204,12 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
       methods.reset({
         foodName: record.name,
         foodImage: record.foodImage ?? undefined,
-        foodType: record.foodType === "VEG" ? "Veg" : "Non-Veg",
+        foodType:
+          record.foodType === "VEG"
+            ? "Veg"
+            : record.foodType === "NON_VEG"
+              ? "Non-Veg"
+              : (undefined as unknown as FoodFormValues["foodType"]),
         menuTypes: record.menuTypeId?._id ? [record.menuTypeId._id] : [],
         category: record.categoryId?._id || "",
         kitchen: record.kitchenId?._id || "",
@@ -224,6 +232,22 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
     setImageError(undefined);
     setChoiceInput("");
   }, [isOpen, isEdit, foodData, customerTypeData]);
+
+  // ─── Auto-select the default kitchen (isDefault: true) in add mode ─────────
+  // Runs whenever the kitchen list loads/changes while the dialog is open in
+  // "add" mode, and only fills the field if it hasn't been set yet — so it
+  // won't override a kitchen the user has already picked.
+  useEffect(() => {
+    if (!isOpen || isEdit) return;
+
+    const kitchens = kitchenData?.data || [];
+    if (kitchens.length === 0) return;
+
+    const defaultKitchen = kitchens.find((k: Kitchen) => k.isDefault);
+    if (defaultKitchen && !methods.getValues("kitchen")) {
+      methods.setValue("kitchen", defaultKitchen._id, { shouldValidate: true });
+    }
+  }, [isOpen, isEdit, kitchenData, methods]);
 
   const handlePortionsToggle = (checked: boolean) => {
     methods.setValue("hasPortions", checked);
@@ -293,7 +317,7 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
       kitchenId: values.kitchen,
       isPortionEnabled: values.hasPortions,
       portions: values.hasPortions
-        ? values.portions.map((p) => ({ name: p.name.trim(), basePrice: Number(p.price) || 0 }))
+        ? values.portions.map((p) => ({ name: (p.name ?? "").trim(), basePrice: Number(p.price) || 0 }))
         : [],
       basePrice: values.basePrice,
       customerTypes: customerTypeOptions
@@ -349,18 +373,21 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
               <div>
                 <FormInput name="foodName" label="Food Name" placeholder="Enter Food Name" required />
 
-                <div className="mt-4 w-full max-w-[366px]">
+                <div className="mt-4 w-full">
                   <label className="mb-3 block text-sm font-medium text-black sm:text-base">
                     Food Type <span className="text-[#FF3B3B]">*</span>
                   </label>
-                  <div className="flex flex-wrap items-center justify-start gap-3  text-sm text-[#808080] sm:justify-around sm:text-base">
+
+                 <div
+                    className={`flex flex-wrap items-center justify-start gap-3 rounded-[8px] p-2 text-sm font-normal text-[#808080] transition-colors sm:justify-around sm:text-base `}
+                  >
                     <label htmlFor="food-type-veg" className="cursor-pointer">Veg</label>
                     <input
                       id="food-type-veg"
                       type="radio"
                       value="Veg"
                       {...methods.register("foodType")}
-                      className="h-[18px] w-[18px] appearance-none rounded-full border-2 border-[#9C9C9C] checked:border-[4px] checked:border-[#450042]"
+                      className={`h-[18px] w-[18px] appearance-none rounded-full border-2 border-[#9C9C9C] checked:border-[3px] checked:bg-[#450042]`}
                     />
                     <label htmlFor="food-type-nonveg" className="cursor-pointer">Non-Veg</label>
                     <input
@@ -368,9 +395,11 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
                       type="radio"
                       value="Non-Veg"
                       {...methods.register("foodType")}
-                      className="h-[18px] w-[18px] appearance-none rounded-full border-2 border-[#9C9C9C] checked:border-[4px] checked:border-[#450042]"
+                      className={`h-[18px] w-[18px] appearance-none rounded-full border-2 border-[#9C9C9C] checked:border-[3px] checked:bg-[#450042]`}
                     />
                   </div>
+
+                  {foodTypeError && <p className="mt-1 text-[#e7000b] text-sm ">{foodTypeError}</p>}
                 </div>
               </div>
 
@@ -423,7 +452,6 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
               label="Menu Type"
               options={menuTypeOptions}
               placeholder="Select Or search"
-              required
             />
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -454,7 +482,6 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
 
                   {portionFields.map((field, index) => {
                     const rowErrors = methods.formState.errors.portions?.[index];
-                    const nameErrorMessage = getErrorMessage(rowErrors?.name);
                     const priceErrorMessage = getErrorMessage(rowErrors?.price);
 
                     return (
@@ -473,7 +500,7 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
                               </span>
                             )}
                           </div>
-                          {nameErrorMessage && <p className="mt-1 text-sm text-[#FF3B3B]">{nameErrorMessage}</p>}
+                          {/* Portion name is optional — no error message rendered for it. */}
                         </div>
 
                         <div className="flex items-end gap-2">
@@ -515,7 +542,7 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
               )}
             </div>
 
-            <FormInput name="basePrice" label="Base Price" placeholder="Enter Base Price" type="number" required />
+            <FormInput name="basePrice" label="Base Price" placeholder="Enter Base Price" type="number" />
 
             <div>
               <label className="mb-3 block text-sm font-medium text-black sm:text-base">Pricing</label>

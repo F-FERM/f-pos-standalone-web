@@ -32,14 +32,14 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { label: "Sale", icon: saleIcon, href: "/home/sales" },
-  { label: "Delivery", icon: deliveryIcon, href: "/home/delivery" },
-  { label: "Kitchen", icon: kitchenIcon, href: "/home/kitchen" },
+  { label: "Delivery", icon: deliveryIcon, href: "/home/coming-soon" },
+  { label: "Kitchen", icon: kitchenIcon, href: "/home/coming-soon" },
   { label: "Customer", icon: customerIcon, href: "/home/customer" },
-  { label: "Purchase", icon: purchaseIcon, href: "/home/purchase" },
-  { label: "Expense", icon: expenseIcon, href: "/home/expense" },
-  { label: "Supplier", icon: supplierIcon, href: "/home/supplier" },
+  { label: "Purchase", icon: purchaseIcon, href: "/home/coming-soon" },
+  { label: "Expense", icon: expenseIcon, href: "/home/coming-soon" },
+  { label: "Supplier", icon: supplierIcon, href: "/home/coming-soon" },
   { label: "Menu", icon: menuIcon, href: "/home/menu" },
-  { label: "Reports", icon: reportsIcon, href: "/reports" },
+  { label: "Reports", icon: reportsIcon, href: "/home/coming-soon" },
   { label: "Accounts", icon: accountsIcon, href: "/home/accounts" },
   { label: "User", icon: userIcon, href: "/home/users" },
   { label: "Settings", icon: settingsIcon, href: "" }, 
@@ -55,7 +55,7 @@ const settingsCards: SettingsCardItem[] = [
   { label: "Pos Settings", icon: PosSettings, href: "/home/settings/pos-settings" },
   { label: "Restaurant", icon: Restaurant, href: "/home/settings/restaurant" },
   { label: "Kitchen", icon: Kitchen, href: "/home/settings/kitchen" },
-  { label: "Riders", icon: Riders, href: "/home/settings/riders" },
+  { label: "Riders", icon: Riders, href: "/home/coming-soon" },
 ];
 
 const CARD_CLASSNAME =

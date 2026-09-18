@@ -10,6 +10,7 @@ type PortionChoicesModalProps = {
   onClose: () => void;
   product: Food | null;
   onAdd: (items: CartItemType[]) => void;
+  tableId?: string | null;
 };
 
 export function PortionChoicesModal({ open, onClose, product, onAdd }: PortionChoicesModalProps) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Badge, Trash2 } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 
 import { useDeleteAccount } from "@/src/api/account/hooks/delete.hook";
@@ -152,7 +152,17 @@ export function AccountTable({ data, isLoading }: AccountTableProps) {
                       <TruncatedCell value={account.accountType} />
                     </TableCell>
                     <TableCell>{formatBalance(account.openingBalance)}</TableCell>
-                    <TableCell>{account.showInPos ? "Yes" : "No"}</TableCell>
+           <TableCell>
+  <span
+    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+      account.showInPos
+        ? "bg-green-700 text-green-200"
+        : "bg-red-700 text-red-200"
+    }`}
+  >
+    {account.showInPos ? "Yes" : "No"}
+  </span>
+</TableCell>
                     <TableCell>
                       <TruncatedCell value={account.description} />
                     </TableCell>

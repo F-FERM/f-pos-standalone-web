@@ -1,6 +1,11 @@
+
 export interface AddPaymentPayload {
   orderId: string;
-  amount: number;
-  
+  methods: Method[];
+ 
+}
+
+interface Method {
   accountId: string;
+  amount: number;
 }

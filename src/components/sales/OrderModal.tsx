@@ -113,6 +113,15 @@ export function OrderModal({ open, onClose, onEdit }: OrderModalProps) {
     }
   };
 
+  // When a payment completes successfully, close both the payment modal and
+  // this order modal — otherwise this modal stays open behind/underneath the
+  // navigation, since router.push doesn't remount it if you're already on
+  // the target route.
+  const handlePaymentSuccess = () => {
+    setPaymentOrderId(null);
+    onClose();
+  };
+
   if (!open) return null;
 
   const orders = data?.data || [];
@@ -121,13 +130,12 @@ export function OrderModal({ open, onClose, onEdit }: OrderModalProps) {
     o._id.toLowerCase().includes(search.toLowerCase())
   );
   
-  // Meta count for the currently active tab is in data?.meta?.count
-  // But for the badges we use the individual query data
+ 
 
 
   return (
     <>
-      <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-[2px]">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto  p-4 ">
         {/* Modal Container */}
         <div className="relative flex w-full max-w-[1000px] flex-col gap-6 rounded-[20px] border border-[#E0E0E0] bg-[#EFEFEF] p-6 shadow-2xl sm:p-8">
           
@@ -285,6 +293,7 @@ export function OrderModal({ open, onClose, onEdit }: OrderModalProps) {
         open={!!paymentOrderId}
         onClose={() => setPaymentOrderId(null)}
         orderId={paymentOrderId}
+        onPaymentSuccess={handlePaymentSuccess}
       />
     </>
   );
