@@ -11,10 +11,9 @@ import { CustomerTypeEnum, type CartItemType, type Product } from "@/src/compone
 import { CustomerTypeValue } from "@/src/interfaces/customer-type/AddCustomerTypePayload";
 import { useEffect, useState } from "react";
 
-
-
 const fluid = {
-  pagePad: "p-[clamp(4px,0.7vw,10px)]",
+  // sides + top only, no bottom padding, so the board sits closer to the footer
+  pagePad: "px-[clamp(4px,0.7vw,10px)] pt-[clamp(4px,0.7vw,10px)] pb-0",
   boardGap: "gap-[clamp(6px,0.8vw,10px)]",
   boardPad: "p-[clamp(6px,0.8vw,10px)]",
   barMinH: "min-h-[clamp(36px,3.8vw,46px)]",
@@ -22,7 +21,8 @@ const fluid = {
   barPadY: "py-[clamp(4px,0.6vw,8px)]",
   leftColMinH: "min-h-[clamp(320px,46vh,460px)]",
   rightColMinH: "min-h-[clamp(280px,40vh,420px)]",
-  footerPadY: "py-[clamp(2px,0.3vw,4px)]",
+  // small fixed footer padding instead of a fluid one
+  footerPadY: "pt-[2px] pb-[3px]",
   footerText: "text-[clamp(8px,0.75vw,12px)]",
 };
 
@@ -173,7 +173,7 @@ export default function POSScreen() {
       </div>
 
       {/* Footer */}
-      <div className={`flex shrink-0 items-center justify-center text-center ${fluid.footerPadY}`}>
+      <div className={`flex shrink-0 items-center justify-center text-center  ${fluid.footerPadY}`}>
         <span className={`font-medium leading-none text-[#939393] ${fluid.footerText}`}>
           © 2026 F-FERM Digital Labs. All rights reserved.
         </span>
