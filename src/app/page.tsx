@@ -1,26 +1,26 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { LoaderCircle } from "lucide-react";
 import { LocalStorage } from "../utility/localStorage";
-import { Loader } from "lucide-react";
 
-function Page() {
-   const router = useRouter();
+export default function Page() {
+  const router = useRouter();
 
   useEffect(() => {
     const token = LocalStorage.getItem("access_token");
+
     if (token) {
       router.replace("/home");
-    }else{
+    } else {
       router.replace("/login");
     }
   }, [router]);
+
   return (
-     <div className="flex h-[90vh] w-[100%] items-center justify-center">
-      <Loader type="dots" size={30} className="animate-spin" />
-    </div>
+    <main className="flex min-h-screen w-full items-center justify-center bg-white">
+      <LoaderCircle className="h-8 w-8 animate-spin" />
+    </main>
   );
 }
-
-export default Page;
