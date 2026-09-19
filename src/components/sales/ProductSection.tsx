@@ -97,17 +97,10 @@ export function ProductSection({
   const [selectedCategory, setSelectedCategory] = useState("");
   const [size, setSize] = useState({ width: 613, height: 564 });
 
-  // The beep itself is now fired by OrderPanel when the cart actually changes.
-  // This section still unlocks + pre-decodes the audio on pointer input, since
-  // the click on a food card is the user gesture that lets the AudioContext
-  // start running in the first place.
   useEffect(() => {
     const warmup = () => {
       void resumeBeepCtx().then(() => warmUpBeep());
     };
-
-    // Restoring from bfcache / returning to the tab can leave the context
-    // suspended or closed — repair it as soon as the page is visible again.
     const onPageShow = () => {
       void resumeBeepCtx().then(() => warmUpBeep());
     };
@@ -122,8 +115,6 @@ export function ProductSection({
     window.addEventListener("pageshow", onPageShow);
     document.addEventListener("visibilitychange", onVisibility);
 
-    // Also warm up straight away on mount (covers SPA back navigation, where
-    // no pageshow fires but the component remounts).
     void warmUpBeep();
 
     return () => {
