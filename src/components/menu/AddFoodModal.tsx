@@ -18,7 +18,6 @@ import FormMultiSelectInput from "@/src/components/form/FormMultiSelectInput";
 import FormCombobox from "@/src/components/form/FormCombobox";
 import { Button } from "../ui/button";
 
-
 import { ListCategoryApi } from "@/src/api/category/api/GetAll";
 import { ListMenuTypeApi } from "@/src/api/menu-type/api/GetAll";
 import { ListCustomerTypeApi } from "@/src/api/customer-type/api/GetAll";
@@ -169,6 +168,11 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
     label: formatCustomerTypeLabel(c.type),
   }));
 
+  // Default kitchen id (used to pre-fill the Kitchen field in "add" mode).
+  // Derived here so it is always included in the form reset below.
+  const defaultKitchenId =
+    (kitchenData?.data || []).find((k: Kitchen) => k.isDefault)?._id ?? "";
+
   // ─── Edit-mode fetch ────────────────────────────────────────────────────────
   const { data: foodData } = useQuery({
     queryKey: ["getFoodById", foodId],
@@ -226,25 +230,17 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
       });
       setImagePreview(record.foodImage ?? undefined);
     } else if (!isEdit) {
-      methods.reset({ ...emptyForm, customerPrices: defaultCustomerPrices });
+      methods.reset({
+        ...emptyForm,
+        kitchen: defaultKitchenId, // ✅ default kitchen is part of every add-mode reset
+        customerPrices: defaultCustomerPrices,
+      });
       setImagePreview(undefined);
     }
     setImageError(undefined);
     setChoiceInput("");
-  }, [isOpen, isEdit, foodData, customerTypeData]);
-
- 
-  useEffect(() => {
-    if (!isOpen || isEdit) return;
-
-    const kitchens = kitchenData?.data || [];
-    if (kitchens.length === 0) return;
-
-    const defaultKitchen = kitchens.find((k: Kitchen) => k.isDefault);
-    if (defaultKitchen && !methods.getValues("kitchen")) {
-      methods.setValue("kitchen", defaultKitchen._id, { shouldValidate: true });
-    }
-  }, [isOpen, isEdit, kitchenData, methods]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isEdit, foodData, customerTypeData, defaultKitchenId]);
 
   const handlePortionsToggle = (checked: boolean) => {
     methods.setValue("hasPortions", checked);
@@ -298,52 +294,52 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
     methods.setValue("choices", current.filter((c) => c !== value));
   };
 
- const handleSubmit = methods.handleSubmit(
-  (values) => {
-    const pendingChoice = choiceInput.trim();
-    const mergedChoices =
-      pendingChoice && !values.choices.includes(pendingChoice)
-        ? [...values.choices, pendingChoice]
-        : values.choices;
+  const handleSubmit = methods.handleSubmit(
+    (values) => {
+      const pendingChoice = choiceInput.trim();
+      const mergedChoices =
+        pendingChoice && !values.choices.includes(pendingChoice)
+          ? [...values.choices, pendingChoice]
+          : values.choices;
 
-    const payload = {
-      name: values.foodName.trim(),
-      foodType: (values.foodType === "Veg" ? "VEG" : "NON_VEG") as "VEG" | "NON_VEG",
-      menuTypeId: values.menuTypes[0] || "",
-      categoryId: values.category,
-      kitchenId: values.kitchen,
-      isPortionEnabled: values.hasPortions,
-      portions: values.hasPortions
-        ? values.portions.map((p) => ({ name: (p.name ?? "").trim(), basePrice: Number(p.price) || 0 }))
-        : [],
-      basePrice: values.basePrice,
-      customerTypes: customerTypeOptions
-        .map((opt) => ({ customerTypeId: opt.id, price: Number(values.customerPrices?.[opt.id]) || 0 }))
-        .filter((c) => c.price > 0),
-      isOfferEnabled: values.hasOffer,
-      offer: values.hasOffer
-        ? {
-            startDate: values.startDate || "",
-            endDate: values.endDate || "",
-            discount: Number(values.discountPercent) || 0,
-          }
-        : undefined,
-      choices: mergedChoices,
-      preparationTime: Number(values.preparationTime) || 0,
-    };
+      const payload = {
+        name: values.foodName.trim(),
+        foodType: (values.foodType === "Veg" ? "VEG" : "NON_VEG") as "VEG" | "NON_VEG",
+        menuTypeId: values.menuTypes[0] || "",
+        categoryId: values.category,
+        kitchenId: values.kitchen,
+        isPortionEnabled: values.hasPortions,
+        portions: values.hasPortions
+          ? values.portions.map((p) => ({ name: (p.name ?? "").trim(), basePrice: Number(p.price) || 0 }))
+          : [],
+        basePrice: values.basePrice,
+        customerTypes: customerTypeOptions
+          .map((opt) => ({ customerTypeId: opt.id, price: Number(values.customerPrices?.[opt.id]) || 0 }))
+          .filter((c) => c.price > 0),
+        isOfferEnabled: values.hasOffer,
+        offer: values.hasOffer
+          ? {
+              startDate: values.startDate || "",
+              endDate: values.endDate || "",
+              discount: Number(values.discountPercent) || 0,
+            }
+          : undefined,
+        choices: mergedChoices,
+        preparationTime: Number(values.preparationTime) || 0,
+      };
 
-    setChoiceInput("");
+      setChoiceInput("");
 
-    if (isEdit && foodId) {
-      updateFood({ id: foodId, value: payload, imageFile });
-    } else {
-      addFood({ value: payload, imageFile });
-    }
-  },
-  (errors) => {
-    console.log("Form validation errors:", errors);
-  },
-);
+      if (isEdit && foodId) {
+        updateFood({ id: foodId, value: payload, imageFile });
+      } else {
+        addFood({ value: payload, imageFile });
+      }
+    },
+    (errors) => {
+      console.log("Form validation errors:", errors);
+    },
+  );
 
   if (!isOpen) return null;
 
@@ -375,7 +371,7 @@ export function AddFoodDialogue({ isOpen, onClose, mode = "add", foodId }: AddFo
                     Food Type <span className="text-[#FF3B3B]">*</span>
                   </label>
 
-                 <div
+                  <div
                     className={`flex flex-wrap items-center justify-start gap-3 rounded-[8px] p-2 text-sm font-normal text-[#808080] transition-colors sm:justify-around sm:text-base `}
                   >
                     <label htmlFor="food-type-veg" className="cursor-pointer">Veg</label>

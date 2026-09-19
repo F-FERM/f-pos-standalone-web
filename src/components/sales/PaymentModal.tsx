@@ -7,7 +7,8 @@ import { getOrderById } from "@/src/api/order";
 import { Account } from "@/src/interfaces/accounts/ListAccountResponse";
 import { useAddPayment } from "@/src/api/payment/hooks/create.hook";
 import { useQuery } from "@tanstack/react-query";
-import { Banknote, ChevronDown, Smartphone, X } from "lucide-react";
+import { Banknote, ChevronDown, Plus, Smartphone, X } from "lucide-react";
+import AddCustomerModal from "../customer/AddCustomerDialogue";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
@@ -44,6 +45,7 @@ function playSpinopel() {
 
 export function PaymentModal({ open, onClose, orderId, onPaymentSuccess }: PaymentModalProps) {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
 
   // Multi-account: set of selected account IDs (in insertion order), capped at
   // MAX_SELECTED_ACCOUNTS.
@@ -206,21 +208,15 @@ export function PaymentModal({ open, onClose, orderId, onPaymentSuccess }: Payme
   let canPay = selectedAccountIds.length > 0;
 
   selectedAccountIds.forEach((accId) => {
-    const acc = accounts.find((a) => a._id === accId);
-    if (!acc) return;
     const entered = parseFloat(accountAmounts[accId] || "0");
     if (entered <= 0) {
       accountErrors[accId] = "Enter amount";
       canPay = false;
     }
-    if (!isCashAccount(acc) && entered > grandTotal) {
-      accountErrors[accId] = "Cannot exceed total";
-      canPay = false;
-    }
   });
 
-  // Also: total entered must cover the grand total
-  if (totalEntered < grandTotal) {
+  // Pay is only enabled when balance is exactly 0
+  if (balance !== 0) {
     canPay = false;
   }
 
@@ -238,7 +234,7 @@ export function PaymentModal({ open, onClose, orderId, onPaymentSuccess }: Payme
       if (Object.keys(accountErrors).length > 0) {
         toast.error(Object.values(accountErrors)[0]);
       } else {
-        toast.error("Entered amount must cover the total.");
+        toast.error("Entered amount must equal the total (balance must be 0).");
       }
       return;
     }
@@ -264,6 +260,7 @@ export function PaymentModal({ open, onClose, orderId, onPaymentSuccess }: Payme
   if (!open) return null;
 
   return (
+    <>
     <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-black/60 p-2 backdrop-blur-[2px] xs:p-3 sm:p-4">
       <div className="relative flex max-h-[95vh] w-full max-w-[800px] flex-col overflow-y-auto rounded-2xl bg-[#EFEFEF] border border-[#E0E0E0] p-3 shadow-2xl text-black xs:p-4 sm:rounded-[20px] sm:p-6">
 
@@ -286,15 +283,27 @@ export function PaymentModal({ open, onClose, orderId, onPaymentSuccess }: Payme
           <div className="flex flex-1 flex-col gap-4 sm:gap-6 min-w-0">
 
             {/* Customer Dropdown */}
-            <SimpleSearchDropdown
-              placeholder="Enter Customer Name"
-              value={selectedCustomerId}
-              onChange={handleCustomerSelect}
-              options={customers.map((c) => ({
-                label: c.name,
-                value: c._id,
-              }))}
-            />
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <SimpleSearchDropdown
+                  placeholder="Enter Customer Name"
+                  value={selectedCustomerId}
+                  onChange={handleCustomerSelect}
+                  options={customers.map((c) => ({
+                    label: c.name,
+                    value: c._id,
+                  }))}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddCustomerOpen(true)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] bg-[#670063] text-white hover:bg-[#85007f] transition-colors sm:h-[46px] sm:w-[46px]"
+                aria-label="Add Customer"
+              >
+                <Plus size={20} strokeWidth={2.5} />
+              </button>
+            </div>
 
             {/* Account Buttons — multi-select, capped at MAX_SELECTED_ACCOUNTS */}
             <div className="grid grid-cols-2 gap-2.5 xs:gap-3 sm:grid-cols-3 sm:gap-4">
@@ -426,7 +435,7 @@ export function PaymentModal({ open, onClose, orderId, onPaymentSuccess }: Payme
                 className={`row-span-2 rounded-xl flex items-center justify-center text-base font-bold transition-colors sm:text-lg ${
                   canPay && !isPaying
                     ? "bg-[#009933] text-white hover:bg-[#007A29]"
-                    : "bg-[#004d1a] text-[#80bf99] cursor-not-allowed"
+                    : "bg-gray-400 text-gray-100 cursor-not-allowed"
                 }`}
               >
                 {isPaying ? "..." : "Pay"}
@@ -442,6 +451,13 @@ export function PaymentModal({ open, onClose, orderId, onPaymentSuccess }: Payme
         </div>
       </div>
     </div>
+
+    <AddCustomerModal
+      isOpen={isAddCustomerOpen}
+      onClose={() => setIsAddCustomerOpen(false)}
+      mode="add"
+    />
+    </>
   );
 }
 

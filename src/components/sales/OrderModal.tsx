@@ -1,7 +1,7 @@
 "use client";
 
 import { getOrders, Item, ListOrderFilteredResponse, updateOrder, type CreateOrderPayload } from "@/src/api/order";
-import { useMutation, useQuery, useQueries, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Eye, Pen, X } from "lucide-react";
 import { useState } from "react";
@@ -10,6 +10,7 @@ import { OrderDetailsModal } from "./OrderDetailsModal";
 import { PaymentModal } from "./PaymentModal";
 import { CustomerTypeEnum, OrderStatus, OrderTab } from "./Types";
 import { printOrder } from "@/src/api/order";
+import { ListCustomerTypeApi } from "@/src/api/customer-type/api/GetAll";
 
 type OrderModalProps = {
   open: boolean;
@@ -41,22 +42,57 @@ function formatElapsedTime(dateString: string) {
 export function OrderModal({ open, onClose, onEdit }: OrderModalProps) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<OrderTab>(OrderTab.ONGOING);
-  const [activeType, setActiveType] = useState<CustomerTypeEnum>(CustomerTypeEnum.DINE_IN);
+
+  // ✅ No default customer type — the user has to pick one
+  const [activeType, setActiveType] = useState<CustomerTypeEnum | null>(null);
+
   const [search, setSearch] = useState("");
   const [viewOrderId, setViewOrderId] = useState<string | null>(null);
   const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
 
-  const orderQueries = useQueries({
-    queries: customerTypes.map((type) => ({
-      queryKey: ["orders", activeTab, type.value],
-      queryFn: () => getOrders(activeTab, type.value),
-      enabled: open,
-    })),
+  // 1) Unfiltered list for the tab -> GET /order?tab=ongoing
+  //    Always loaded; it feeds the count badge on every customer type button.
+  const { data: allData, isLoading: isAllLoading } = useQuery({
+    queryKey: ["orders", activeTab, "all"],
+    queryFn: () => getOrders(activeTab),
+    enabled: open,
   });
 
-  const activeQueryIndex = customerTypes.findIndex((t) => t.value === activeType);
-  const data = orderQueries[activeQueryIndex]?.data;
-  const isLoading = orderQueries[activeQueryIndex]?.isLoading;
+  // 2) Filtered list -> GET /order?tab=ongoing&customerType=DINE_IN
+  //    Only requested once the user selects a customer type.
+  const { data: typedData, isLoading: isTypedLoading } = useQuery({
+    queryKey: ["orders", activeTab, activeType],
+    queryFn: () => getOrders(activeTab, activeType as CustomerTypeEnum),
+    enabled: open && !!activeType,
+  });
+
+  const data = activeType ? typedData : allData;
+  const isLoading = activeType ? isTypedLoading : isAllLoading;
+
+  // Customer types (same query key as OrderPanel, so it comes from cache)
+  const { data: customerTypeData } = useQuery({
+    queryKey: ["getAllCustomerTypes"],
+    queryFn: () => ListCustomerTypeApi({ limit: 100, page: 1 }),
+    enabled: open,
+  });
+
+  // Count orders per customer type from the unfiltered list
+  const typeById = new Map(
+    (customerTypeData?.data ?? []).map((c) => [c._id, c.type as string])
+  );
+
+  const countsByType = (allData?.data ?? []).reduce<Record<string, number>>(
+    (acc, order) => {
+      const id =
+        typeof order.customerTypeId === "string"
+          ? order.customerTypeId
+          : order.customerTypeId?._id;
+      const type = id ? typeById.get(id) : undefined;
+      if (type) acc[type] = (acc[type] ?? 0) + 1;
+      return acc;
+    },
+    {}
+  );
 
   interface UpdateOrderVariables {
     order: ListOrderFilteredResponse["data"][0];
@@ -107,6 +143,7 @@ export function OrderModal({ open, onClose, onEdit }: OrderModalProps) {
   const handlePrint = async (orderId: string) => {
     try {
       await printOrder(orderId);
+      queryClient.invalidateQueries({ queryKey: ["orders"] }); // ✅ refresh lists
       toast.success("Order printed successfully");
     } catch (error) {
       toast.error("Failed to print order");
@@ -118,6 +155,7 @@ export function OrderModal({ open, onClose, onEdit }: OrderModalProps) {
   // navigation, since router.push doesn't remount it if you're already on
   // the target route.
   const handlePaymentSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["orders"] }); // ✅ refresh lists
     setPaymentOrderId(null);
     onClose();
   };
@@ -172,9 +210,9 @@ export function OrderModal({ open, onClose, onEdit }: OrderModalProps) {
           {/* Customer Type Sub-Tabs + Search */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap gap-3">
-              {customerTypes.map((type, index) => {
+              {customerTypes.map((type) => {
                 const isActive = activeType === type.value;
-                const count = orderQueries[index]?.data?.meta?.count || 0;
+                const count = countsByType[type.value] ?? 0;
                 return (
                   <div key={type.value} className="relative">
                     <button
@@ -188,7 +226,7 @@ export function OrderModal({ open, onClose, onEdit }: OrderModalProps) {
                       {type.label}
                     </button>
                     {/* Badge */}
-                    <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-white bg-[#FF0F0F] text-[10px] font-bold text-white shadow-sm">
+                    <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full border border-white bg-[#FF0F0F] px-1 text-[10px] font-bold text-white shadow-sm">
                       {count}
                     </span>
                   </div>
@@ -222,7 +260,7 @@ export function OrderModal({ open, onClose, onEdit }: OrderModalProps) {
               </div>
             ) : filteredOrders.length === 0 ? (
               <div className="flex h-[300px] items-center justify-center">
-                <span className="text-[#848484]">No orders found for {customerTypes.find(t => t.value === activeType)?.label}.</span>
+                <span className="text-[#848484]">No orders found{activeType ? ` for ${customerTypes.find((t) => t.value === activeType)?.label}` : ""}.</span>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">

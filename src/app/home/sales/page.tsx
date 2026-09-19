@@ -14,15 +14,15 @@ import { useEffect, useState } from "react";
 
 
 const fluid = {
-  pagePad: "p-[clamp(6px,1.4vw,20px)]",
-  boardGap: "gap-[clamp(8px,1vw,16px)]",
-  boardPad: "p-[clamp(8px,1vw,16px)]",
-  barMinH: "min-h-[clamp(44px,4.8vw,56px)]",
-  barPadX: "px-[clamp(10px,1.4vw,16px)]",
-  barPadY: "py-[clamp(8px,1vw,14px)]",
+  pagePad: "p-[clamp(4px,0.7vw,10px)]",
+  boardGap: "gap-[clamp(6px,0.8vw,10px)]",
+  boardPad: "p-[clamp(6px,0.8vw,10px)]",
+  barMinH: "min-h-[clamp(36px,3.8vw,46px)]",
+  barPadX: "px-[clamp(10px,1.2vw,16px)]",
+  barPadY: "py-[clamp(4px,0.6vw,8px)]",
   leftColMinH: "min-h-[clamp(320px,46vh,460px)]",
   rightColMinH: "min-h-[clamp(280px,40vh,420px)]",
-  footerPadY: "py-[clamp(4px,0.6vw,8px)]",
+  footerPadY: "py-[clamp(2px,0.3vw,4px)]",
   footerText: "text-[clamp(8px,0.75vw,12px)]",
 };
 
@@ -129,7 +129,7 @@ export default function POSScreen() {
       <div className={`flex min-h-0 flex-1 flex-col overflow-y-auto md:overflow-hidden ${fluid.pagePad}`}>
         <div className={`flex min-h-0 flex-1 flex-col rounded-[15px] bg-[#D2D2D2] lg:flex-row ${fluid.boardGap} ${fluid.boardPad}`}>
        
-          <div className={`flex min-w-0 flex-1 flex-col gap-3 lg:min-h-0 lg:basis-[56%] ${fluid.leftColMinH}`}>
+          <div className={`flex min-w-0 flex-1 flex-col gap-2 lg:min-h-0 lg:basis-[56%] ${fluid.leftColMinH}`}>
             <div className={`flex h-auto shrink-0 flex-wrap items-center gap-2.5 rounded-xl bg-[#EFEFEF] ${fluid.barMinH} ${fluid.barPadX} ${fluid.barPadY}`}>
               <CategoryHeader
                 selectedFilter={selectedMenuType}

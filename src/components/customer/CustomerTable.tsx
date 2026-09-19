@@ -9,6 +9,7 @@ import { useDeleteCustomer } from "@/src/api/customer/hooks/delete.hook";
 import { ConfirmationDialog } from "../common/ConfirmationDialogue";
 import { CustomerFormAction } from "./AddCustomer";
 import CustomerTableSkeleton from "./CustomerTableSkeleton";
+import { CustomerDetailModal } from "./CustomerDetailModal";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
@@ -54,17 +55,22 @@ function TruncatedCell({ value }: { value: string }) {
     </Tooltip>
   );
 }
+
 type CustomerTableProps = {
   data: Customer[];
   isLoading?: boolean;
 };
 
 export function CustomerTable({ data, isLoading }: CustomerTableProps) {
+  // delete dialog state
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<{
     id: string;
     name: string;
   } | null>(null);
+
+  // detail modal state (row click)
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
   const { mutate: deleteCustomer, isPending } = useDeleteCustomer();
 
@@ -138,7 +144,17 @@ export function CustomerTable({ data, isLoading }: CustomerTableProps) {
                 data.map((customer, index) => (
                   <TableRow
                     key={customer._id}
-                    className="border-black/5 text-[11px] text-black hover:bg-black/5 sm:text-[12px]"
+                    tabIndex={0}
+                    onClick={() => setSelectedCustomerId(customer._id)}
+                    onKeyDown={(e) => {
+                      // ignore keys pressed on inner buttons (edit/delete)
+                      if (e.target !== e.currentTarget) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedCustomerId(customer._id);
+                      }
+                    }}
+                    className="cursor-pointer border-black/5 text-[11px] text-black hover:bg-black/5 sm:text-[12px]"
                   >
                     <TableCell>{index + 1}</TableCell>
                     <TableCell>
@@ -154,7 +170,12 @@ export function CustomerTable({ data, isLoading }: CustomerTableProps) {
                     <TableCell>0</TableCell>
                     <TableCell>0</TableCell>
                     <TableCell>{formatDate(customer.createdAt)}</TableCell>
-                    <TableCell>
+
+                    {/* Actions: stop propagation so edit/delete don't open the detail modal */}
+                    <TableCell
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    >
                       <div className="flex items-center justify-center gap-2">
                         <CustomerFormAction isEdit id={customer._id} />
 
@@ -186,6 +207,13 @@ export function CustomerTable({ data, isLoading }: CustomerTableProps) {
         </div>
       </div>
 
+      {/* Customer detail modal (get by id) */}
+      <CustomerDetailModal
+        customerId={selectedCustomerId}
+        onClose={() => setSelectedCustomerId(null)}
+      />
+
+      {/* Delete confirmation */}
       <ConfirmationDialog
         open={isConfirmDialogOpen}
         onOpenChange={handleConfirmDialogClose}

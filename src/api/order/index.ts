@@ -173,14 +173,16 @@ export const createOrder = async (payload: CreateOrderPayload) => {
 
 export const getOrders = async (
   tab: OrderTab,
-  customerType: CustomerTypeEnum
+  customerType?: CustomerTypeEnum
 ): Promise<ListOrderFilteredResponse> => {
-  const response = await axiosInstance.get(
-    `order?tab=${tab}&customerType=${customerType}`
-  );
+  const response = await axiosInstance.get("order", {
+    params: {
+      tab,
+      ...(customerType ? { customerType } : {}),
+    },
+  });
   return response.data;
 };
-
 export const getOrderById = async (id: string): Promise<ListOrderByIdResponse> => {
   const response = await axiosInstance.get(`order/${id}`);
   return response.data;
