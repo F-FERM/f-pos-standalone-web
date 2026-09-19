@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
@@ -42,10 +42,8 @@ import { OnlinePlatformModal } from "./onlinePlatformModal";
 
 import { CartItemType, CustomerTypeEnum, OrderStatus } from "./Types";
 import { playBeep } from "./Beep";
+import { SelectCustomerTypeModal } from "./SelectedCustomerTypeModal";
 
-
-/* -------------------------------------------------------------------------- */
-/* Media URL                                                                  */
 /* -------------------------------------------------------------------------- */
 
 const API_MEDIA_BASE_URL =
@@ -62,16 +60,6 @@ function getMediaUrl(path?: string | null): string | undefined {
   return `${API_MEDIA_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Numeric input sizing                                                       */
-/* ASSUMPTION: qty / rate values are expected to stay in the 1–999999 range.  */
-/* The width grows in `ch` (character) units with the value's length so long  */
-/* numbers (9999, 15000.50, etc.) are never clipped, but it's capped at 8ch   */
-/* so a runaway value can't blow out the row layout — beyond 8 digits it      */
-/* just stops growing and the number scrolls within the input. Raise maxCh    */
-/* if you expect larger numbers than that.                                   */
-/* -------------------------------------------------------------------------- */
-
 function numInputWidth(
   value: number | string | undefined | null,
   minCh = 2,
@@ -80,10 +68,6 @@ function numInputWidth(
   const len = String(value ?? "").length;
   return `${Math.min(Math.max(len + 1, minCh), maxCh)}ch`;
 }
-
-/* -------------------------------------------------------------------------- */
-/* Constants                                                                  */
-/* -------------------------------------------------------------------------- */
 
 const CUSTOMER_TYPE_LABELS: Record<CustomerTypeValue, string> = {
   TAKE_AWAY: "Take Away",
@@ -99,32 +83,24 @@ const footerActions = [
 ];
 
 /* -------------------------------------------------------------------------- */
-/* Fluid sizing tokens                                                        */
-/* All scale continuously between the two viewport widths via clamp() —       */
-/* one rule per property, no stacked breakpoint variants, no plugin, no JS.   */
-/* clamp(MIN, PREFERRED, MAX): stays at MIN below ~360px, at MAX above        */
-/* ~1440px, and scales linearly with viewport width in between.              */
-/*                                                                            */
-/* CHANGE: colQty / colVat / colRate / colAmount switched from `w-[...]`      */
-/* (fixed width) to `min-w-[...]` (floor only). That lets each column grow    */
-/* past its clamp() size when the value inside is wider than usual (large    */
-/* qty, rate, VAT or amount), while the item-name column — which already has */
-/* `flex-1 min-w-0` + `truncate` — absorbs the shrink instead of the numbers */
-/* getting clipped.                                                          */
+/* Fluid sizes                                                                */
+/* Compact values so ~7 cart rows are visible before the scrollbar appears    */
+/* on a 1024x768 POS screen. Everything is clamp()-based, so it scales up on  */
+/* bigger screens and down on smaller ones.                                   */
 /* -------------------------------------------------------------------------- */
 
 const fluid = {
-  tabH: "h-[clamp(20px,3.4vw,36px)]",
+  tabH: "h-[clamp(20px,2.6vw,30px)]",
   tabText: "text-[clamp(7.5px,1vw,12px)]",
   tabPadX: "px-[clamp(4px,0.7vw,10px)]",
 
-  headerH: "h-[clamp(32px,4.2vw,40px)]",
+  headerH: "h-[clamp(26px,3vw,32px)]",
   headerPadX: "px-[clamp(6px,0.9vw,14px)]",
-  headerPadY: "py-[clamp(4px,0.6vw,10px)]",
+  headerPadY: "py-[clamp(2px,0.4vw,6px)]",
   headerText: "text-[clamp(8.5px,0.95vw,13px)]",
 
   imgW: "w-[clamp(56px,9vw,118px)]",
-  imgH: "h-[clamp(32px,4.6vw,48px)]",
+  imgH: "h-[clamp(28px,3.4vw,36px)]",
 
   colQty: "min-w-[clamp(20px,2.2vw,30px)]",
   colVat: "min-w-[clamp(20px,2vw,30px)]",
@@ -134,24 +110,20 @@ const fluid = {
   rowGap: "gap-[clamp(2px,0.35vw,6px)]",
 
   rowText: "text-[clamp(10px,1.1vw,13px)]",
-  smallText: "text-[clamp(9px,1vw,13px)]",
+  smallText: "text-[clamp(9px,1vw,13px)] leading-tight",
 
   discountW: "w-[clamp(56px,7vw,72px)]",
 
-  totalText: "text-[clamp(14px,1.9vw,22px)]",
+  totalText: "text-[clamp(13px,1.6vw,20px)] leading-none",
 
-  actionH: "h-[clamp(28px,3.6vw,40px)]",
+  actionH: "h-[clamp(26px,3vw,34px)]",
   actionText: "text-[clamp(9px,1.05vw,14px)]",
 
-  footerH: "h-[clamp(48px,7vw,72px)]",
-  footerBtnH: "h-[clamp(36px,5.6vw,56px)]",
+  footerH: "h-[clamp(40px,5vw,52px)]",
+  footerBtnH: "h-[clamp(28px,3.7vw,38px)]",
   footerIcon: "w-[clamp(14px,1.9vw,20px)] h-[clamp(14px,1.9vw,20px)]",
   footerLabel: "text-[clamp(6.5px,0.85vw,9px)]",
 };
-
-/* -------------------------------------------------------------------------- */
-/* Types                                                                      */
-/* -------------------------------------------------------------------------- */
 
 interface DeliveryDetailsState {
   location: string;
@@ -178,10 +150,6 @@ type OrderPanelProps = {
   onTotalChange?: (total: number) => void;
 };
 
-/* -------------------------------------------------------------------------- */
-/* Component                                                                  */
-/* -------------------------------------------------------------------------- */
-
 export function OrderPanel({
   cartItems,
   setCartItems,
@@ -194,10 +162,12 @@ export function OrderPanel({
   onEditOrder,
   onTotalChange,
 }: OrderPanelProps) {
-  const router = useRouter();
-
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Shown when the user tries to save / print / cancel without a customer type
+  const [isSelectTypeModalOpen, setIsSelectTypeModalOpen] = useState(false);
 
   /* ------------------------- Home delivery / online ---------------------- */
 
@@ -216,55 +186,27 @@ export function OrderPanel({
 
   const [onlinePlatform, setOnlinePlatform] = useState<string | null>(null);
 
-  /* ------------------------------- Discount ------------------------------ */
-
-  // CHANGE: default is a real "0" now, not "" with a display-time fallback.
-  // The old version rendered "0" whenever the state was "" (`discount === ""
-  // ? "0" : discount`), so `onFocus` clearing the state to "" immediately
-  // got overwritten back to "0" on the next render — the field could never
-  // actually be cleared. Now the state itself holds what's shown.
   const [discount, setDiscount] = useState<string>("0");
-
-  /* ------------------------------------------------------------------------ */
-  /* Add-to-cart beep                                                         */
-  /* ------------------------------------------------------------------------ */
-
-  // Snapshot of the previous cart, used to tell an "add" apart from any other
-  // cart change (remove, rate edit, reset).
   const prevCartRef = useRef<{ ids: string[]; totalQty: number } | null>(null);
-
-  // Set to true right before a quantity change that came from the cart's own
-  // +/- buttons or qty input, so those don't beep — only adds from the product
-  // grid do. Delete these if you want every quantity bump to beep.
   const suppressBeepRef = useRef(false);
 
   useEffect(() => {
     const ids = cartItems.map((item) => item.id);
 
     const totalQty = cartItems.reduce(
-      (sum, item) =>
-        sum + (typeof item.qty === "number" ? item.qty : 0),
+      (sum, item) => sum + (typeof item.qty === "number" ? item.qty : 0),
       0
     );
-
     const prev = prevCartRef.current;
-
     prevCartRef.current = { ids, totalQty };
-
-    // First run — don't beep for a cart that was already there on mount
-    // (e.g. when opening an existing order for editing).
     if (!prev) {
       return;
     }
-
     if (suppressBeepRef.current) {
       suppressBeepRef.current = false;
       return;
     }
-
     const hasNewItem = ids.some((id) => !prev.ids.includes(id));
-
-    // A brand new row, or the same food added again (which bumps qty).
     if (hasNewItem || totalQty > prev.totalQty) {
       playBeep();
     }
@@ -279,20 +221,9 @@ export function OrderPanel({
     queryFn: () => ListCustomerTypeApi({ limit: 100, page: 1 }),
   });
 
-  const foodsQuery = useQuery({
-    queryKey: ["getAllFoods"],
-    queryFn: () => ListFoodApi({ page: 1, limit: 100 }),
-  });
-
   const restaurantQuery = useQuery({
     queryKey: ["getAllRestaurants"],
     queryFn: () => listRestaurants(),
-  });
-
-  const customersQuery = useQuery({
-    queryKey: ["getAllCustomers"],
-    queryFn: () => ListCustomerApi({ limit: 100, page: 1 }),
-    enabled: selectedType === CustomerTypeEnum.HOME_DELIVERY,
   });
 
   const customerTypes = customerTypesQuery.data?.data || [];
@@ -307,8 +238,7 @@ export function OrderPanel({
     }) || [];
 
   const sortedCustomerTypes = [...customerTypes].sort(
-    (a: any, b: any) =>
-      (a.order ?? a.index ?? 0) - (b.order ?? b.index ?? 0)
+    (a: any, b: any) => (a.order ?? a.index ?? 0) - (b.order ?? b.index ?? 0)
   );
 
   const vatPercentage = restaurants[0]?.vat ?? 0;
@@ -317,11 +247,8 @@ export function OrderPanel({
   /* Customer type                                                            */
   /* ------------------------------------------------------------------------ */
 
-  useEffect(() => {
-    if (!selectedType && customerTypes.length > 0) {
-      setSelectedType(customerTypes[0].type as CustomerTypeValue);
-    }
-  }, [customerTypes, selectedType, setSelectedType]);
+  // NOTE: there is intentionally no auto-select of the first customer type.
+  // The user must choose one; otherwise saving shows <SelectCustomerTypeModal />.
 
   const selectedCustomerType = customerTypes.find(
     (customerType) => customerType.type === selectedType
@@ -330,16 +257,12 @@ export function OrderPanel({
   const onlineCustomerType = customerTypes.find(
     (ct) => ct.type === CustomerTypeEnum.ONLINE
   ) as
-    | (typeof customerTypes[number] & {
+    | ((typeof customerTypes)[number] & {
         onlinePlatforms?: string[];
       })
     | undefined;
 
   const onlinePlatformOptions = onlineCustomerType?.onlinePlatforms ?? [];
-
-  /* ------------------------------------------------------------------------ */
-  /* Type-specific modal handling                                             */
-  /* ------------------------------------------------------------------------ */
 
   useEffect(() => {
     if (selectedType === CustomerTypeEnum.HOME_DELIVERY) {
@@ -379,12 +302,6 @@ export function OrderPanel({
     setIsOnlinePlatformModalOpen(false);
   };
 
-  // Re-clicking a tab that's already selected doesn't change `selectedType`,
-  // so the effect above (which only fires on a real change) won't reopen the
-  // Online/Home Delivery picker if it was closed without completing it. This
-  // handler opens the right modal directly from the click itself, so it
-  // works whether or not the tab was already active — and it's what the tab
-  // button's onClick below must call (not setSelectedType directly).
   const handleSelectCustomerType = (typeValue: CustomerTypeValue) => {
     setSelectedType(typeValue);
 
@@ -522,6 +439,21 @@ export function OrderPanel({
 
   const existingOrder = orderResponse?.data;
 
+  // Edit mode: since there is no default customer type any more, pre-fill it
+  // from the order being edited (only when nothing is selected yet).
+  // Adjust `customerTypeId` if your order response uses a different field.
+  useEffect(() => {
+    if (!existingOrder || selectedType || customerTypes.length === 0) return;
+
+    const raw = (existingOrder as any).customerTypeId;
+    const id = typeof raw === "object" ? raw?._id : raw;
+    const match = customerTypes.find((ct) => ct._id === id);
+
+    if (match) {
+      setSelectedType(match.type as CustomerTypeValue);
+    }
+  }, [existingOrder, selectedType, customerTypes, setSelectedType]);
+
   const [localExistingItems, setLocalExistingItems] = useState<any[]>([]);
 
   useEffect(() => {
@@ -535,8 +467,7 @@ export function OrderPanel({
   const existingSubtotal = localExistingItems.reduce(
     (sum, item) =>
       sum +
-      item.unitPrice *
-        (typeof item.quantity === "number" ? item.quantity : 0),
+      item.unitPrice * (typeof item.quantity === "number" ? item.quantity : 0),
     0
   );
 
@@ -557,8 +488,7 @@ export function OrderPanel({
 
   const discountValue = parseFloat(discount) || 0;
 
-  const total =
-    existingTotal + newSubtotal + newVat - discountValue;
+  const total = existingTotal + newSubtotal + newVat - discountValue;
 
   useEffect(() => {
     onTotalChange?.(total);
@@ -574,19 +504,14 @@ export function OrderPanel({
   > => {
     if (selectedType === CustomerTypeEnum.HOME_DELIVERY) {
       const extras = {
-        ...(selectedCustomerId
-          ? { customerId: selectedCustomerId }
-          : {}),
+        ...(selectedCustomerId ? { customerId: selectedCustomerId } : {}),
         ...(deliveryDetails ? { deliveryDetails } : {}),
       };
 
       return extras;
     }
 
-    if (
-      selectedType === CustomerTypeEnum.ONLINE &&
-      onlinePlatform
-    ) {
+    if (selectedType === CustomerTypeEnum.ONLINE && onlinePlatform) {
       return {
         onlinePlatform,
       };
@@ -613,30 +538,26 @@ export function OrderPanel({
   /* ------------------------------------------------------------------------ */
 
   const handleOrderAction = async (status: OrderStatus) => {
-    if (!selectedCustomerType || cartItems.length === 0) {
+    // The user must pick a customer type before saving / printing / cancelling
+    if (!selectedType || !selectedCustomerType) {
+      setIsSelectTypeModalOpen(true);
       return;
     }
 
-    if (
-      selectedType === CustomerTypeEnum.HOME_DELIVERY &&
-      !deliveryDetails
-    ) {
-      toast.error(
-        "Please fill in the home delivery details first."
-      );
+    if (cartItems.length === 0) {
+      return;
+    }
+
+    if (selectedType === CustomerTypeEnum.HOME_DELIVERY && !deliveryDetails) {
+      toast.error("Please fill in the home delivery details first.");
 
       setIsHomeDeliveryModalOpen(true);
 
       return;
     }
 
-    if (
-      selectedType === CustomerTypeEnum.ONLINE &&
-      !onlinePlatform
-    ) {
-      toast.error(
-        "Please select an online platform first."
-      );
+    if (selectedType === CustomerTypeEnum.ONLINE && !onlinePlatform) {
+      toast.error("Please select an online platform first.");
 
       setIsOnlinePlatformModalOpen(true);
 
@@ -658,9 +579,7 @@ export function OrderPanel({
           items: [
             ...localExistingItems.map((item) => ({
               foodId:
-                typeof item.foodId === "object"
-                  ? item.foodId._id
-                  : item.foodId,
+                typeof item.foodId === "object" ? item.foodId._id : item.foodId,
 
               portion: item.portionId || null,
 
@@ -668,16 +587,11 @@ export function OrderPanel({
 
               originalPrice: item.unitPrice,
 
-              qty:
-                typeof item.quantity === "number"
-                  ? item.quantity
-                  : 0,
+              qty: typeof item.quantity === "number" ? item.quantity : 0,
 
               total:
                 item.unitPrice *
-                (typeof item.quantity === "number"
-                  ? item.quantity
-                  : 0),
+                (typeof item.quantity === "number" ? item.quantity : 0),
 
               foodName: item.foodName,
 
@@ -689,15 +603,12 @@ export function OrderPanel({
 
               const price = getItemPrice(item);
 
-              const originalPrice =
-                getItemOriginalPrice(item.food);
+              const originalPrice = getItemOriginalPrice(item.food);
 
               return {
                 foodId: item.food._id,
 
-                portion: item.portion
-                  ? item.portion._id
-                  : null,
+                portion: item.portion ? item.portion._id : null,
 
                 price,
 
@@ -709,9 +620,7 @@ export function OrderPanel({
 
                 foodName: item.food.name,
 
-                priceDetails: getPriceDetails(
-                  item.food
-                ),
+                priceDetails: getPriceDetails(item.food),
 
                 choices: item.choices,
               };
@@ -744,15 +653,12 @@ export function OrderPanel({
 
             const price = getItemPrice(item);
 
-            const originalPrice =
-              getItemOriginalPrice(item.food);
+            const originalPrice = getItemOriginalPrice(item.food);
 
             return {
               foodId: item.food._id,
 
-              portion: item.portion
-                ? item.portion._id
-                : null,
+              portion: item.portion ? item.portion._id : null,
 
               price,
 
@@ -764,9 +670,7 @@ export function OrderPanel({
 
               foodName: item.food.name,
 
-              priceDetails: getPriceDetails(
-                item.food
-              ),
+              priceDetails: getPriceDetails(item.food),
 
               choices: item.choices,
             };
@@ -786,6 +690,8 @@ export function OrderPanel({
 
       if (status === OrderStatus.PLACED) {
         toast.success("Order saved successfully!");
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+        queryClient.invalidateQueries({ queryKey: ["orderById"] });
 
         resetOrderState();
       } else if (status === OrderStatus.PRINTED) {
@@ -798,10 +704,7 @@ export function OrderPanel({
         resetOrderState();
       }
     } catch (error: any) {
-      console.error(
-        "Unable to create order",
-        error?.response?.data ?? error
-      );
+      console.error("Unable to create order", error?.response?.data ?? error);
 
       toast.error(
         error?.response?.data?.message ??
@@ -812,13 +715,12 @@ export function OrderPanel({
   };
 
   /* ------------------------------------------------------------------------ */
-  /* Cart scrollbar                                                           */
+  /* Custom scroll thumb                                                      */
   /* ------------------------------------------------------------------------ */
 
   const cartScrollRef = useRef<HTMLDivElement>(null);
 
-  const [cartThumbTop, setCartThumbTop] =
-    useState<number | null>(null);
+  const [cartThumbTop, setCartThumbTop] = useState<number | null>(null);
 
   const THUMB_HEIGHT = 104;
 
@@ -832,58 +734,37 @@ export function OrderPanel({
     }
 
     const updateThumb = () => {
-      const {
-        scrollTop: st,
-        scrollHeight,
-        clientHeight,
-      } = scrollEl;
+      const { scrollTop: st, scrollHeight, clientHeight } = scrollEl;
 
       if (scrollHeight <= clientHeight + 1) {
         setCartThumbTop(null);
         return;
       }
 
-      const maxTop =
-        clientHeight -
-        THUMB_HEIGHT -
-        THUMB_MIN_TOP;
+      const maxTop = clientHeight - THUMB_HEIGHT - THUMB_MIN_TOP;
 
-      const scrollRatio =
-        st / (scrollHeight - clientHeight);
+      const scrollRatio = st / (scrollHeight - clientHeight);
 
-      setCartThumbTop(
-        THUMB_MIN_TOP +
-          scrollRatio * Math.max(maxTop, 0)
-      );
+      setCartThumbTop(THUMB_MIN_TOP + scrollRatio * Math.max(maxTop, 0));
     };
 
     updateThumb();
 
-    scrollEl.addEventListener(
-      "scroll",
-      updateThumb
-    );
+    scrollEl.addEventListener("scroll", updateThumb);
 
     const ro = new ResizeObserver(updateThumb);
 
     ro.observe(scrollEl);
 
     return () => {
-      scrollEl.removeEventListener(
-        "scroll",
-        updateThumb
-      );
+      scrollEl.removeEventListener("scroll", updateThumb);
 
       ro.disconnect();
     };
   }, [cartItems.length]);
 
   /* ------------------------------------------------------------------------ */
-  /* Column configuration — fluid widths, no breakpoint chains                */
-  /* CHANGE: qty / vat / amount are now `whitespace-nowrap tabular-nums` so   */
-  /* large numbers stay on one line and digits stay aligned as the column     */
-  /* grows past its clamp() floor. `rate` keeps its own centering wrapper     */
-  /* since it holds an input, not a span.                                    */
+  /* Column classes                                                           */
   /* ------------------------------------------------------------------------ */
 
   const colCls = {
@@ -896,22 +777,17 @@ export function OrderPanel({
     del: `${fluid.colDel} shrink-0`,
   };
 
-  /* ------------------------------------------------------------------------ */
-  /* Render                                                                   */
-  /* ------------------------------------------------------------------------ */
-
   return (
     <>
       <div className="flex h-full w-full flex-col">
-
         {/* Customer Type Tabs */}
-        <div className={`flex w-full shrink-0 items-center justify-between gap-1.5 rounded-[10px] bg-[#D2D2D2] p-[3px] ${fluid.tabH}`}>
+        <div
+          className={`flex w-full shrink-0 items-center justify-between gap-1.5 rounded-[10px] bg-[#D2D2D2] p-[3px] ${fluid.tabH}`}
+        >
           {sortedCustomerTypes.map((customerType) => {
-            const typeValue =
-              customerType.type as CustomerTypeValue;
+            const typeValue = customerType.type as CustomerTypeValue;
 
-            const active =
-              typeValue === selectedType;
+            const active = typeValue === selectedType;
 
             const label =
               CUSTOMER_TYPE_LABELS[typeValue] ||
@@ -922,20 +798,14 @@ export function OrderPanel({
               <button
                 key={customerType._id}
                 type="button"
-                onClick={() =>
-                  handleSelectCustomerType(typeValue)
-                }
+                onClick={() => handleSelectCustomerType(typeValue)}
                 className={`flex h-full flex-1 items-center justify-center rounded-md transition-colors ${fluid.tabPadX} ${
-                  active
-                    ? "bg-[#3B0038]"
-                    : "bg-[#EFEFEF]"
+                  active ? "bg-[#3B0038]" : "bg-[#EFEFEF]"
                 }`}
               >
                 <span
                   className={`whitespace-nowrap font-medium leading-none tracking-wide ${fluid.tabText} ${
-                    active
-                      ? "text-white"
-                      : "text-[#3B0038]"
+                    active ? "text-white" : "text-[#3B0038]"
                   }`}
                 >
                   {label}
@@ -947,10 +817,10 @@ export function OrderPanel({
 
         {/* Card */}
         <div className="mt-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[15px] border border-[#C4C4C4] bg-[#EFEFEF]">
-
           {/* Header */}
-          <div className={`flex shrink-0 items-center rounded-t-[15px] bg-[#9494945E] ${fluid.rowGap} ${fluid.headerH} ${fluid.headerPadX} ${fluid.headerPadY}`}>
-
+          <div
+            className={`flex shrink-0 items-center rounded-t-[15px] bg-[#9494945E] ${fluid.rowGap} ${fluid.headerH} ${fluid.headerPadX} ${fluid.headerPadY}`}
+          >
             <span className={colCls.img} />
 
             <span
@@ -988,7 +858,6 @@ export function OrderPanel({
 
           {/* Cart area */}
           <div className="relative min-h-0 flex-1">
-
             {cartThumbTop !== null && (
               <span
                 className="pointer-events-none absolute left-0 z-10 h-[104px] w-[3px] rounded-[5px] bg-[#3B0038] opacity-100 transition-[top] duration-150"
@@ -998,245 +867,183 @@ export function OrderPanel({
 
             <div
               ref={cartScrollRef}
-              className="flex h-full flex-col gap-1.5 overflow-y-auto bg-[#EFEFEF] py-2 pb-1.5 pl-2 pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="flex h-full flex-col gap-1 overflow-y-auto bg-[#EFEFEF] py-1.5 pb-1 pl-2 pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
-
               {/* Existing Items */}
               {localExistingItems.length > 0 && (
-                <div className="mb-2 flex flex-col gap-1.5">
+                <div className="mb-1.5 flex flex-col gap-1">
+                  {localExistingItems.map((item, index) => {
+                    const exQty =
+                      typeof item.quantity === "number" ? item.quantity : 0;
 
-                  {localExistingItems.map(
-                    (item, index) => {
-                      const exQty =
-                        typeof item.quantity === "number"
-                          ? item.quantity
-                          : 0;
+                    const exRate = item.unitPrice || 0;
 
-                      const exRate =
-                        item.unitPrice || 0;
+                    const exVatAmt = (exRate * exQty * vatPercentage) / 100;
 
-                      const exVatAmt =
-                        (exRate *
-                          exQty *
-                          vatPercentage) /
-                        100;
+                    const exAmount = exRate * exQty + exVatAmt;
 
-                      const exAmount =
-                        exRate * exQty +
-                        exVatAmt;
-
-                      return (
+                    return (
+                      <div
+                        key={`existing-${index}`}
+                        className={`flex min-h-[42px] shrink-0 items-center rounded-md border border-[#CECECE] px-2 py-1 opacity-80 ${fluid.rowGap}`}
+                      >
+                        {/* Food image */}
                         <div
-                          key={`existing-${index}`}
-                          className={`flex min-h-[70px] shrink-0 items-center rounded-md border border-[#CECECE] px-2 py-1.5 opacity-80 ${fluid.rowGap}`}
+                          className={`flex shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-[#D2D2D2] ${fluid.imgW} ${fluid.imgH}`}
                         >
-
-                          {/* Food image */}
-                          <div className={`flex shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-[#D2D2D2] ${fluid.imgW} ${fluid.imgH}`}>
-                            {getMediaUrl(
-                              item.foodId?.foodImage ??
-                                null
-                            ) ? (
-                              <Image
-                                src={
-                                  getMediaUrl(
-                                    item.foodId
-                                      ?.foodImage ??
-                                      null
-                                  )!
-                                }
-                                alt={item.foodName}
-                                width={118}
-                                height={48}
-                                className="h-full w-full rounded-[6px] object-cover"
-                              />
-                            ) : (
-                              <span className="flex h-full w-full items-center justify-center text-[8px] text-[#878787]">
-                                🍽
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Item name + qty */}
-                          <div
-                            className={`${colCls.item} flex flex-col gap-0.5`}
-                          >
-                            <p className={`truncate font-medium text-black ${fluid.rowText}`}>
-                              {item.foodName}
-
-                              {item.portionName
-                                ? ` (${item.portionName})`
-                                : ""}
-
-                              {item.choices?.length > 0
-                                ? ` [${item.choices.join(
-                                    ", "
-                                  )}]`
-                                : ""}
-                            </p>
-
-                            <div className="flex items-center gap-1">
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setLocalExistingItems(
-                                    (prev) =>
-                                      prev.map(
-                                        (i, idx) =>
-                                          idx === index
-                                            ? {
-                                                ...i,
-                                                quantity:
-                                                  Math.max(
-                                                    1,
-                                                    (typeof i.quantity ===
-                                                    "number"
-                                                      ? i.quantity
-                                                      : 1) - 1
-                                                  ),
-                                              }
-                                            : i
-                                      )
-                                  )
-                                }
-                                className="flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full border border-[#C4C4C4] bg-white"
-                              >
-                                <Minus
-                                  size={8}
-                                  className="text-black"
-                                />
-                              </button>
-
-                              <input
-                                type="number"
-                                value={exQty}
-                                onChange={(e) => {
-                                  const v =
-                                    parseInt(
-                                      e.target.value,
-                                      10
-                                    );
-
-                                  if (
-                                    !isNaN(v) &&
-                                    v > 0
-                                  ) {
-                                    setLocalExistingItems(
-                                      (prev) =>
-                                        prev.map(
-                                          (i, idx) =>
-                                            idx === index
-                                              ? {
-                                                  ...i,
-                                                  quantity:
-                                                    v,
-                                                }
-                                              : i
-                                        )
-                                    );
-                                  }
-                                }}
-                                onBlur={(e) => {
-                                  if (
-                                    !e.target.value ||
-                                    parseInt(
-                                      e.target.value,
-                                      10
-                                    ) < 1
-                                  ) {
-                                    setLocalExistingItems(
-                                      (prev) =>
-                                        prev.map(
-                                          (i, idx) =>
-                                            idx === index
-                                              ? {
-                                                  ...i,
-                                                  quantity: 1,
-                                                }
-                                              : i
-                                        )
-                                    );
-                                  }
-                                }}
-                                style={{
-                                  width: numInputWidth(exQty),
-                                }}
-                                className="min-w-[24px] shrink-0 border-b border-black/30 bg-transparent text-center text-xs font-medium text-black outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                              />
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setLocalExistingItems(
-                                    (prev) =>
-                                      prev.map(
-                                        (i, idx) =>
-                                          idx === index
-                                            ? {
-                                                ...i,
-                                                quantity:
-                                                  (typeof i.quantity ===
-                                                  "number"
-                                                    ? i.quantity
-                                                    : 0) + 1,
-                                              }
-                                            : i
-                                      )
-                                  )
-                                }
-                                className="flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full bg-[#670063]"
-                              >
-                                <Plus
-                                  size={8}
-                                  className="text-white"
-                                />
-                              </button>
-
-                            </div>
-                          </div>
-
-                          <span
-                            className={`${colCls.qty} font-medium text-black ${fluid.rowText}`}
-                          >
-                            {exQty}
-                          </span>
-
-                          <span
-                            className={`${colCls.vat} text-[#555] ${fluid.rowText}`}
-                          >
-                            {exVatAmt.toFixed(1)}
-                          </span>
-
-                          <span
-                            className={`${colCls.rate} font-medium text-black ${fluid.rowText}`}
-                          >
-                            {exRate.toFixed(2)}
-                          </span>
-
-                          <span
-                            className={`${colCls.amount} font-semibold text-black ${fluid.rowText}`}
-                          >
-                            {exAmount.toFixed(2)}
-                          </span>
-
-                          <span className={colCls.del} />
+                          {getMediaUrl(item.foodId?.foodImage ?? null) ? (
+                            <Image
+                              src={
+                                getMediaUrl(item.foodId?.foodImage ?? null)!
+                              }
+                              alt={item.foodName}
+                              width={118}
+                              height={48}
+                              className="h-full w-full rounded-[6px] object-cover"
+                            />
+                          ) : (
+                            <span className="flex h-full w-full items-center justify-center text-[8px] text-[#878787]">
+                              🍽
+                            </span>
+                          )}
                         </div>
-                      );
-                    }
-                  )}
+
+                        {/* Item name + qty */}
+                        <div className={`${colCls.item} flex flex-col gap-0.5`}>
+                          <p
+                            className={`truncate font-medium text-black ${fluid.rowText}`}
+                          >
+                            {item.foodName}
+
+                            {item.portionName ? ` (${item.portionName})` : ""}
+
+                            {item.choices?.length > 0
+                              ? ` [${item.choices.join(", ")}]`
+                              : ""}
+                          </p>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setLocalExistingItems((prev) =>
+                                  prev.map((i, idx) =>
+                                    idx === index
+                                      ? {
+                                          ...i,
+                                          quantity: Math.max(
+                                            1,
+                                            (typeof i.quantity === "number"
+                                              ? i.quantity
+                                              : 1) - 1
+                                          ),
+                                        }
+                                      : i
+                                  )
+                                )
+                              }
+                              className="flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full border border-[#C4C4C4] bg-white"
+                            >
+                              <Minus size={8} className="text-black" />
+                            </button>
+
+                            <input
+                              type="number"
+                              value={exQty}
+                              onChange={(e) => {
+                                const v = parseInt(e.target.value, 10);
+
+                                if (!isNaN(v) && v > 0) {
+                                  setLocalExistingItems((prev) =>
+                                    prev.map((i, idx) =>
+                                      idx === index ? { ...i, quantity: v } : i
+                                    )
+                                  );
+                                }
+                              }}
+                              onBlur={(e) => {
+                                if (
+                                  !e.target.value ||
+                                  parseInt(e.target.value, 10) < 1
+                                ) {
+                                  setLocalExistingItems((prev) =>
+                                    prev.map((i, idx) =>
+                                      idx === index ? { ...i, quantity: 1 } : i
+                                    )
+                                  );
+                                }
+                              }}
+                              style={{
+                                width: numInputWidth(exQty),
+                              }}
+                              className="min-w-[24px] shrink-0 border-b border-black/30 bg-transparent text-center text-xs font-medium text-black outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            />
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setLocalExistingItems((prev) =>
+                                  prev.map((i, idx) =>
+                                    idx === index
+                                      ? {
+                                          ...i,
+                                          quantity:
+                                            (typeof i.quantity === "number"
+                                              ? i.quantity
+                                              : 0) + 1,
+                                        }
+                                      : i
+                                  )
+                                )
+                              }
+                              className="flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full bg-[#670063]"
+                            >
+                              <Plus size={8} className="text-white" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`${colCls.qty} font-medium text-black ${fluid.rowText}`}
+                        >
+                          {exQty}
+                        </span>
+
+                        <span
+                          className={`${colCls.vat} text-[#555] ${fluid.rowText}`}
+                        >
+                          {exVatAmt.toFixed(1)}
+                        </span>
+
+                        <span
+                          className={`${colCls.rate} font-medium text-black ${fluid.rowText}`}
+                        >
+                          {exRate.toFixed(2)}
+                        </span>
+
+                        <span
+                          className={`${colCls.amount} font-semibold text-black ${fluid.rowText}`}
+                        >
+                          {exAmount.toFixed(2)}
+                        </span>
+
+                        <span className={colCls.del} />
+                      </div>
+                    );
+                  })}
 
                   <div className="mt-1 flex items-center gap-2 rounded-md bg-[#E2E2E2] px-1 py-1 text-[10px] font-bold text-[#3B0038]">
                     <span>Additional Order</span>
                     <Utensils size={12} />
                   </div>
-
                 </div>
               )}
 
               {/* Empty */}
               {cartItems.length === 0 && (
-                <p className={`py-4 text-center text-[#878787] ${fluid.smallText}`}>
+                <p
+                  className={`py-4 text-center text-[#878787] ${fluid.smallText}`}
+                >
                   No items in cart
                 </p>
               )}
@@ -1247,37 +1054,25 @@ export function OrderPanel({
 
                 const rate = getItemRate(item);
 
-                const itemVat =
-                  (rate *
-                    qty *
-                    vatPercentage) /
-                  100;
+                const itemVat = (rate * qty * vatPercentage) / 100;
 
-                const amount =
-                  rate * qty + itemVat;
+                const amount = rate * qty + itemVat;
 
                 const rateInputValue =
-                  item.customRate !== undefined
-                    ? item.customRate
-                    : rate;
+                  item.customRate !== undefined ? item.customRate : rate;
 
                 return (
                   <div
                     key={item.id}
-                    className={`flex min-h-[62px] shrink-0 items-center rounded-md border border-[#CECECE] px-2 py-1.5 ${fluid.rowGap}`}
+                    className={`flex min-h-[42px] shrink-0 items-center rounded-md border border-[#CECECE] px-2 py-1 ${fluid.rowGap}`}
                   >
-
                     {/* Food image */}
-                    <div className={`flex shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-[#D2D2D2] ${fluid.imgW} ${fluid.imgH}`}>
-                      {getMediaUrl(
-                        item.food.foodImage
-                      ) ? (
+                    <div
+                      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-[#D2D2D2] ${fluid.imgW} ${fluid.imgH}`}
+                    >
+                      {getMediaUrl(item.food.foodImage) ? (
                         <Image
-                          src={
-                            getMediaUrl(
-                              item.food.foodImage
-                            )!
-                          }
+                          src={getMediaUrl(item.food.foodImage)!}
                           alt={item.food.name}
                           width={118}
                           height={48}
@@ -1291,38 +1086,26 @@ export function OrderPanel({
                     </div>
 
                     {/* Item name + qty */}
-                    <div
-                      className={`${colCls.item} flex flex-col gap-0.5`}
-                    >
-                      <p className={`truncate font-medium text-black ${fluid.rowText}`}>
+                    <div className={`${colCls.item} flex flex-col gap-0.5`}>
+                      <p
+                        className={`truncate font-medium text-black ${fluid.rowText}`}
+                      >
                         {item.food.name}
 
-                        {item.portion
-                          ? ` (${item.portion.name})`
-                          : ""}
+                        {item.portion ? ` (${item.portion.name})` : ""}
 
                         {item.choices?.length > 0
-                          ? ` [${item.choices.join(
-                              ", "
-                            )}]`
+                          ? ` [${item.choices.join(", ")}]`
                           : ""}
                       </p>
 
                       <div className="flex items-center gap-1">
-
                         <button
                           type="button"
-                          onClick={() =>
-                            handleDecrement(
-                              item.id
-                            )
-                          }
+                          onClick={() => handleDecrement(item.id)}
                           className="flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full border border-[#C4C4C4] bg-white"
                         >
-                          <Minus
-                            size={8}
-                            className="text-black"
-                          />
+                          <Minus size={8} className="text-black" />
                         </button>
 
                         <input
@@ -1331,66 +1114,38 @@ export function OrderPanel({
                           onChange={(e) => {
                             suppressBeepRef.current = true;
 
-                            const val =
-                              parseInt(
-                                e.target.value,
-                                10
-                              );
+                            const val = parseInt(e.target.value, 10);
 
-                            if (
-                              !isNaN(val) &&
-                              val > 0
-                            ) {
-                              setCartItems(
-                                (prev) =>
-                                  prev.map(
-                                    (i) =>
-                                      i.id === item.id
-                                        ? {
-                                            ...i,
-                                            qty: val,
-                                          }
-                                        : i
-                                  )
+                            if (!isNaN(val) && val > 0) {
+                              setCartItems((prev) =>
+                                prev.map((i) =>
+                                  i.id === item.id ? { ...i, qty: val } : i
+                                )
                               );
-                            } else if (
-                              e.target.value === ""
-                            ) {
-                              setCartItems(
-                                (prev) =>
-                                  prev.map(
-                                    (i) =>
-                                      i.id === item.id
-                                        ? {
-                                            ...i,
-                                            qty: "" as unknown as number,
-                                          }
-                                        : i
-                                  )
+                            } else if (e.target.value === "") {
+                              setCartItems((prev) =>
+                                prev.map((i) =>
+                                  i.id === item.id
+                                    ? {
+                                        ...i,
+                                        qty: "" as unknown as number,
+                                      }
+                                    : i
+                                )
                               );
                             }
                           }}
                           onBlur={(e) => {
                             if (
                               !e.target.value ||
-                              parseInt(
-                                e.target.value,
-                                10
-                              ) < 1
+                              parseInt(e.target.value, 10) < 1
                             ) {
                               suppressBeepRef.current = true;
 
-                              setCartItems(
-                                (prev) =>
-                                  prev.map(
-                                    (i) =>
-                                      i.id === item.id
-                                        ? {
-                                            ...i,
-                                            qty: 1,
-                                          }
-                                        : i
-                                  )
+                              setCartItems((prev) =>
+                                prev.map((i) =>
+                                  i.id === item.id ? { ...i, qty: 1 } : i
+                                )
                               );
                             }
                           }}
@@ -1402,19 +1157,11 @@ export function OrderPanel({
 
                         <button
                           type="button"
-                          onClick={() =>
-                            handleIncrement(
-                              item.id
-                            )
-                          }
+                          onClick={() => handleIncrement(item.id)}
                           className="flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full bg-[#670063]"
                         >
-                          <Plus
-                            size={8}
-                            className="text-white"
-                          />
+                          <Plus size={8} className="text-white" />
                         </button>
-
                       </div>
                     </div>
 
@@ -1440,29 +1187,18 @@ export function OrderPanel({
                         type="number"
                         value={rateInputValue}
                         onChange={(e) =>
-                          handleRateChange(
-                            item.id,
-                            e.target.value
-                          )
+                          handleRateChange(item.id, e.target.value)
                         }
                         onBlur={(e) => {
                           if (
                             !e.target.value ||
-                            parseFloat(
-                              e.target.value
-                            ) < 0
+                            parseFloat(e.target.value) < 0
                           ) {
-                            handleRateChange(
-                              item.id,
-                              rate.toString()
-                            );
+                            handleRateChange(item.id, rate.toString());
                           }
                         }}
                         style={{
-                          width: numInputWidth(
-                            rateInputValue,
-                            3
-                          ),
+                          width: numInputWidth(rateInputValue, 3),
                         }}
                         className={`min-w-[32px] border-b border-black/30 bg-transparent text-center font-medium text-black outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${fluid.rowText}`}
                       />
@@ -1478,18 +1214,12 @@ export function OrderPanel({
                     {/* Delete */}
                     <button
                       type="button"
-                      onClick={() =>
-                        handleRemoveItem(item.id)
-                      }
+                      onClick={() => handleRemoveItem(item.id)}
                       aria-label={`Remove ${item.food.name} from cart`}
                       className={`${colCls.del} flex h-[15px] w-[15px] items-center justify-center rounded-[10px] bg-[#FF0F0F] p-0.5`}
                     >
-                      <X
-                        size={9}
-                        className="text-white"
-                      />
+                      <X size={9} className="text-white" />
                     </button>
-
                   </div>
                 );
               })}
@@ -1501,15 +1231,11 @@ export function OrderPanel({
 
           {/* Bottom section */}
           <div className="mx-auto flex w-[calc(100%-18px)] shrink-0 flex-col gap-[3px] pb-2 pt-1.5">
-
             {/* Items */}
-            <div className={`flex justify-between gap-2 font-medium text-black ${fluid.smallText}`}>
-              <span>
-                Items (
-                {cartItems.length +
-                  localExistingItems.length}
-                )
-              </span>
+            <div
+              className={`flex justify-between gap-2 font-medium text-black ${fluid.smallText}`}
+            >
+              <span>Items ({cartItems.length + localExistingItems.length})</span>
 
               <span className="whitespace-nowrap font-normal tabular-nums">
                 {subtotal.toFixed(2)}
@@ -1517,7 +1243,9 @@ export function OrderPanel({
             </div>
 
             {/* Subtotal */}
-            <div className={`flex justify-between gap-2 font-medium text-black ${fluid.smallText}`}>
+            <div
+              className={`flex justify-between gap-2 font-medium text-black ${fluid.smallText}`}
+            >
               <span>Subtotal</span>
 
               <span className="whitespace-nowrap font-normal tabular-nums">
@@ -1526,10 +1254,10 @@ export function OrderPanel({
             </div>
 
             {/* VAT */}
-            <div className={`flex justify-between gap-2 font-medium text-black ${fluid.smallText}`}>
-              <span>
-                VAT ({vatPercentage}%)
-              </span>
+            <div
+              className={`flex justify-between gap-2 font-medium text-black ${fluid.smallText}`}
+            >
+              <span>VAT ({vatPercentage}%)</span>
 
               <span className="whitespace-nowrap font-normal tabular-nums">
                 {vat.toFixed(2)}
@@ -1537,10 +1265,10 @@ export function OrderPanel({
             </div>
 
             {/* Discount */}
-            <div className={`flex items-center justify-between gap-2 font-medium text-black ${fluid.smallText}`}>
-              <label className="shrink-0">
-                Discount
-              </label>
+            <div
+              className={`flex items-center justify-between gap-2 font-medium text-black ${fluid.smallText}`}
+            >
+              <label className="shrink-0">Discount</label>
 
               <input
                 type="number"
@@ -1549,18 +1277,11 @@ export function OrderPanel({
                 onChange={(e) => {
                   const v = e.target.value;
 
-                  if (
-                    v === "" ||
-                    parseFloat(v) >= 0
-                  ) {
+                  if (v === "" || parseFloat(v) >= 0) {
                     setDiscount(v);
                   }
                 }}
                 onFocus={(e) => {
-                  // Select the current value so the first keystroke
-                  // replaces it (e.g. typing "5" over a selected "0"
-                  // gives "5", not "05"), and backspace clears it in
-                  // one press instead of fighting a leading zero.
                   e.target.select();
                 }}
                 onBlur={(e) => {
@@ -1572,7 +1293,7 @@ export function OrderPanel({
               />
             </div>
 
-            <div className="my-1 border-t border-[#878787]" />
+            <div className="my-0.5 border-t border-[#878787]" />
 
             {/* Total */}
             <div className="flex items-center justify-between gap-2">
@@ -1580,21 +1301,18 @@ export function OrderPanel({
                 Total
               </span>
 
-              <span className={`whitespace-nowrap font-bold tabular-nums text-black ${fluid.totalText}`}>
+              <span
+                className={`whitespace-nowrap font-bold tabular-nums text-black ${fluid.totalText}`}
+              >
                 {Math.max(0, total).toFixed(2)}
               </span>
             </div>
 
             {/* Action buttons */}
-            <div className="mb-2 flex flex-wrap justify-between gap-2">
-
+            <div className="mb-1 flex flex-wrap justify-between gap-2">
               <button
                 type="button"
-                onClick={() =>
-                  handleOrderAction(
-                    OrderStatus.PLACED
-                  )
-                }
+                onClick={() => handleOrderAction(OrderStatus.PLACED)}
                 className={`flex min-w-[80px] flex-1 items-center justify-center rounded-[10px] bg-[#3EA200] font-semibold text-white ${fluid.actionH} ${fluid.actionText}`}
               >
                 Save
@@ -1602,11 +1320,7 @@ export function OrderPanel({
 
               <button
                 type="button"
-                onClick={() =>
-                  void handleOrderAction(
-                    OrderStatus.PRINTED
-                  )
-                }
+                onClick={() => void handleOrderAction(OrderStatus.PRINTED)}
                 className={`flex min-w-[80px] flex-1 items-center justify-center rounded-[10px] bg-[#3B0038] font-semibold text-white ${fluid.actionH} ${fluid.actionText}`}
               >
                 Print
@@ -1614,56 +1328,45 @@ export function OrderPanel({
 
               <button
                 type="button"
-                onClick={() =>
-                  handleOrderAction(
-                    OrderStatus.CANCELLED
-                  )
-                }
+                onClick={() => handleOrderAction(OrderStatus.CANCELLED)}
                 className={`flex min-w-[80px] flex-1 items-center justify-center rounded-[10px] bg-[#FF0F0F] font-semibold text-white ${fluid.actionH} ${fluid.actionText}`}
               >
                 Cancel
               </button>
-
             </div>
 
             {/* Footer actions */}
-            <div className={`mb-0 flex items-center justify-between gap-1 rounded-[10px] bg-[#D2D2D2] px-2 py-1.5 ${fluid.footerH}`}>
+            <div
+              className={`mb-0 flex items-center justify-between gap-1 rounded-[10px] bg-[#D2D2D2] px-2 py-1 ${fluid.footerH}`}
+            >
+              {footerActions.map(({ icon: Icon, label }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => {
+                    if (label === "Table") {
+                      openTableModal();
+                    }
 
-              {footerActions.map(
-                ({ icon: Icon, label }) => (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => {
-                      if (label === "Table") {
-                        openTableModal();
-                      }
+                    if (label === "Order") {
+                      setIsOrderModalOpen(true);
+                    }
 
-                      if (label === "Order") {
-                        setIsOrderModalOpen(
-                          true
-                        );
-                      }
+                    if (label === "Customers") {
+                      setIsCustomerModalOpen(true);
+                    }
+                  }}
+                  className={`flex max-w-[82px] flex-1 flex-col items-center justify-center gap-0.5 rounded-md bg-[#EFEFEF] px-1 py-1 ${fluid.footerBtnH}`}
+                >
+                  <Icon className={`text-[#3B0038] ${fluid.footerIcon}`} />
 
-                      if (
-                        label === "Customers"
-                      ) {
-                        setIsCustomerModalOpen(
-                          true
-                        );
-                      }
-                    }}
-                    className={`flex max-w-[82px] flex-1 flex-col items-center justify-center gap-0.5 rounded-md bg-[#EFEFEF] px-1 py-1 ${fluid.footerBtnH}`}
+                  <span
+                    className={`font-normal text-[#3B0038] ${fluid.footerLabel}`}
                   >
-                    <Icon className={`text-[#3B0038] ${fluid.footerIcon}`} />
-
-                    <span className={`font-normal text-[#3B0038] ${fluid.footerLabel}`}>
-                      {label}
-                    </span>
-                  </button>
-                )
-              )}
-
+                    {label}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -1672,9 +1375,7 @@ export function OrderPanel({
       {/* Order Modal */}
       <OrderModal
         open={isOrderModalOpen}
-        onClose={() =>
-          setIsOrderModalOpen(false)
-        }
+        onClose={() => setIsOrderModalOpen(false)}
         onEdit={(orderId) => {
           onEditOrder(orderId);
           setIsOrderModalOpen(false);
@@ -1684,28 +1385,28 @@ export function OrderPanel({
       {/* Customer Modal */}
       <CustomerModal
         open={isCustomerModalOpen}
-        onClose={() =>
-          setIsCustomerModalOpen(false)
-        }
+        onClose={() => setIsCustomerModalOpen(false)}
       />
 
       {/* Home Delivery Modal */}
       <HomeDeliveryModal
         open={isHomeDeliveryModalOpen}
-        onClose={() =>
-          setIsHomeDeliveryModalOpen(false)
-        }
+        onClose={() => setIsHomeDeliveryModalOpen(false)}
         onSubmit={handleHomeDeliverySubmit}
       />
 
       {/* Online Platform Modal */}
       <OnlinePlatformModal
         open={isOnlinePlatformModalOpen}
-        onClose={() =>
-          setIsOnlinePlatformModalOpen(false)
-        }
+        onClose={() => setIsOnlinePlatformModalOpen(false)}
         platforms={onlinePlatformOptions}
         onSubmit={handleOnlinePlatformSubmit}
+      />
+
+      {/* Select Customer Type Modal */}
+      <SelectCustomerTypeModal
+        open={isSelectTypeModalOpen}
+        onClose={() => setIsSelectTypeModalOpen(false)}
       />
     </>
   );
