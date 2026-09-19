@@ -1,8 +1,6 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import {
   ClipboardList,
   Minus,
@@ -12,9 +10,9 @@ import {
   Utensils,
   X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-
 import {
   createOrder,
   getOrderById,
@@ -26,13 +24,9 @@ import { CustomerModal } from "./CustomerModal";
 import { OrderModal } from "./OrderModal";
 
 import { ListCustomerTypeApi } from "@/src/api/customer-type/api/GetAll";
-import { ListCustomerApi } from "@/src/api/customer/api/GetAll";
-import { ListFoodApi } from "@/src/api/food/api/GetAll";
 import { listRestaurants } from "@/src/api/restaurant";
-
 import { CustomerTypeValue } from "@/src/interfaces/customer-type/AddCustomerTypePayload";
 import { Food } from "@/src/interfaces/food/ListFoodResponse";
-
 import {
   HomeDeliveryModal,
   type HomeDeliveryFormValues,
@@ -40,9 +34,9 @@ import {
 
 import { OnlinePlatformModal } from "./onlinePlatformModal";
 
-import { CartItemType, CustomerTypeEnum, OrderStatus } from "./Types";
 import { playBeep } from "./Beep";
 import { SelectCustomerTypeModal } from "./SelectedCustomerTypeModal";
+import { CartItemType, CustomerTypeEnum, OrderStatus } from "./Types";
 
 /* -------------------------------------------------------------------------- */
 
@@ -82,12 +76,6 @@ const footerActions = [
   { icon: UsersRound, label: "Customers" },
 ];
 
-/* -------------------------------------------------------------------------- */
-/* Fluid sizes                                                                */
-/* Compact values so ~7 cart rows are visible before the scrollbar appears    */
-/* on a 1024x768 POS screen. Everything is clamp()-based, so it scales up on  */
-/* bigger screens and down on smaller ones.                                   */
-/* -------------------------------------------------------------------------- */
 
 const fluid = {
   tabH: "h-[clamp(20px,2.6vw,30px)]",
@@ -183,13 +171,11 @@ export function OrderPanel({
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
     null
   );
-
   const [onlinePlatform, setOnlinePlatform] = useState<string | null>(null);
 
   const [discount, setDiscount] = useState<string>("0");
   const prevCartRef = useRef<{ ids: string[]; totalQty: number } | null>(null);
   const suppressBeepRef = useRef(false);
-
   useEffect(() => {
     const ids = cartItems.map((item) => item.id);
 
@@ -242,13 +228,6 @@ export function OrderPanel({
   );
 
   const vatPercentage = restaurants[0]?.vat ?? 0;
-
-  /* ------------------------------------------------------------------------ */
-  /* Customer type                                                            */
-  /* ------------------------------------------------------------------------ */
-
-  // NOTE: there is intentionally no auto-select of the first customer type.
-  // The user must choose one; otherwise saving shows <SelectCustomerTypeModal />.
 
   const selectedCustomerType = customerTypes.find(
     (customerType) => customerType.type === selectedType
@@ -439,9 +418,7 @@ export function OrderPanel({
 
   const existingOrder = orderResponse?.data;
 
-  // Edit mode: since there is no default customer type any more, pre-fill it
-  // from the order being edited (only when nothing is selected yet).
-  // Adjust `customerTypeId` if your order response uses a different field.
+
   useEffect(() => {
     if (!existingOrder || selectedType || customerTypes.length === 0) return;
 
@@ -538,7 +515,6 @@ export function OrderPanel({
   /* ------------------------------------------------------------------------ */
 
   const handleOrderAction = async (status: OrderStatus) => {
-    // The user must pick a customer type before saving / printing / cancelling
     if (!selectedType || !selectedCustomerType) {
       setIsSelectTypeModalOpen(true);
       return;
@@ -636,7 +612,7 @@ export function OrderPanel({
           status,
 
           ...buildOrderTypeExtras(),
-        } as any);
+        });
       } else {
         await createOrder({
           customerTypeId: selectedCustomerType._id,
