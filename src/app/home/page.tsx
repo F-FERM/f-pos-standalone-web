@@ -3,8 +3,9 @@
 import { User, X } from "lucide-react";
 import Image, { StaticImageData } from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { LocalStorage } from "@/src/utility/localStorage";
 import { ConfirmationDialog } from "@/src/components/common/ConfirmationDialogue";
 import expenseIcon from "../../../public/images/icons/Expense.png";
 import supplierIcon from "../../../public/images/icons/Supplier.png";
@@ -77,6 +78,14 @@ export default function RestaurantDashboard() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const router = useRouter();
+
+  // Auth guard: redirect to login if no token (handles page refresh)
+  useEffect(() => {
+    const token = LocalStorage.getItem("access_token");
+    if (!token) {
+      router.replace("/login");
+    }
+  }, [router]);
 
   return (
     <div className="min-h-dvh w-full bg-[#EFEFEF]">
@@ -211,7 +220,10 @@ export default function RestaurantDashboard() {
       <ConfirmationDialog
         open={isLogoutModalOpen}
         onOpenChange={setIsLogoutModalOpen}
-        onConfirm={() => router.push("/login")}
+        onConfirm={() => {
+          LocalStorage.clear();
+          router.replace("/login");
+        }}
         message="Are you sure you want to logout?"
         confirmText="LOGOUT"
         pendingText="LOGGING OUT..."
